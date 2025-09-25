@@ -4,12 +4,11 @@ import { useState, useRef, useEffect } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { updateProfile } from 'firebase/auth';
+import { updateProfile, Auth, User } from 'firebase/auth';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Camera } from 'lucide-react';
@@ -38,11 +37,14 @@ export default function ProfilePage() {
   const [optimisticPhotoURL, setOptimisticPhotoURL] = useState<string | null>(null);
 
   useEffect(() => {
-    // Sync optimisticPhotoURL with the fetched data from firestore
+    // When userProfile data loads, sync the optimistic URL
     if (userProfile?.photoURL) {
       setOptimisticPhotoURL(userProfile.photoURL);
+    } else if (!isProfileLoading) {
+      // If loading is finished and there's no photoURL, clear it
+      setOptimisticPhotoURL(null);
     }
-  }, [userProfile?.photoURL]);
+  }, [userProfile?.photoURL, isProfileLoading]);
 
   const getInitials = () => {
     if (!userProfile) return '';
@@ -58,8 +60,10 @@ export default function ProfilePage() {
     if (!file || !user || !userProfileRef) return;
 
     setIsUploading(true);
-    let tempUrl = URL.createObjectURL(file);
-    setOptimisticPhotoURL(tempUrl);
+    
+    // 1. Create a temporary local URL for instant preview
+    const tempLocalUrl = URL.createObjectURL(file);
+    setOptimisticPhotoURL(tempLocalUrl);
 
     toast({
       title: 'Uploading...',
@@ -70,47 +74,48 @@ export default function ProfilePage() {
       const storage = getStorage();
       const storageRef = ref(storage, `profilePictures/${user.uid}/${file.name}`);
       
+      // 2. Upload the file to Firebase Storage
       const snapshot = await uploadBytes(storageRef, file);
+      
+      // 3. Get the permanent downloadable URL
       const downloadURL = await getDownloadURL(snapshot.ref);
 
-      // Update in parallel
+      // 4. Update Firebase Auth profile and Firestore document in parallel
       await Promise.all([
         updateProfile(user, { photoURL: downloadURL }),
         updateDoc(userProfileRef, { photoURL: downloadURL })
       ]);
-
-      setOptimisticPhotoURL(downloadURL); // Set the final URL
+      
+      // 5. Set the final, permanent URL for the UI
+      setOptimisticPhotoURL(downloadURL);
 
       toast({
         title: 'Success!',
         description: 'Your profile picture has been updated.',
       });
 
-    } catch (error) {
-      console.error('Error uploading file:', error);
+    } catch (uploadError: any) {
+      console.error('Error uploading file:', uploadError);
       toast({
         variant: 'destructive',
         title: 'Upload Failed',
-        description: 'There was an error uploading your picture. Please try again.',
+        description: uploadError.message || 'There was an error uploading your picture. Please try again.',
       });
-      // Revert to original photo on failure
+      // Revert to the original photo on failure
       setOptimisticPhotoURL(userProfile?.photoURL || null);
     } finally {
       setIsUploading(false);
-      // Revoke the object URL to free up memory
-      if (tempUrl) {
-          URL.revokeObjectURL(tempUrl);
-      }
-      // Reset file input to allow re-selection of the same file
+      // Clean up the temporary local URL
+      URL.revokeObjectURL(tempLocalUrl);
+      // Reset file input to allow re-selection of the same file if needed
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
     }
   };
 
-
   const isLoading = isUserLoading || isProfileLoading;
-  const displayPhoto = optimisticPhotoURL || userProfile?.photoURL;
+  const displayPhoto = optimisticPhotoURL;
 
   if (isLoading) {
     return (
@@ -142,7 +147,7 @@ export default function ProfilePage() {
         <div className="flex flex-col sm:flex-row items-center gap-6">
           <div className="relative">
             <Avatar className="h-32 w-32">
-              <AvatarImage src={displayPhoto} alt="Profile picture" />
+              <AvatarImage src={displayPhoto || undefined} alt="Profile picture" />
               <AvatarFallback className="text-4xl">{getInitials()}</AvatarFallback>
             </Avatar>
             <Input
@@ -151,7 +156,7 @@ export default function ProfilePage() {
               ref={fileInputRef}
               onChange={handleFileChange}
               className="hidden"
-              accept="image/*"
+              accept="image/png, image/jpeg, image/gif"
               disabled={isUploading}
             />
             <button

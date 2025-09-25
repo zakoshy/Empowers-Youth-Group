@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { updateProfile, Auth, User } from 'firebase/auth';
+import { updateProfile } from 'firebase/auth';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -37,11 +37,9 @@ export default function ProfilePage() {
   const [optimisticPhotoURL, setOptimisticPhotoURL] = useState<string | null>(null);
 
   useEffect(() => {
-    // When userProfile data loads, sync the optimistic URL
     if (userProfile?.photoURL) {
       setOptimisticPhotoURL(userProfile.photoURL);
     } else if (!isProfileLoading) {
-      // If loading is finished and there's no photoURL, clear it
       setOptimisticPhotoURL(null);
     }
   }, [userProfile?.photoURL, isProfileLoading]);
@@ -61,7 +59,6 @@ export default function ProfilePage() {
 
     setIsUploading(true);
     
-    // 1. Create a temporary local URL for instant preview
     const tempLocalUrl = URL.createObjectURL(file);
     setOptimisticPhotoURL(tempLocalUrl);
 
@@ -74,19 +71,15 @@ export default function ProfilePage() {
       const storage = getStorage();
       const storageRef = ref(storage, `profilePictures/${user.uid}/${file.name}`);
       
-      // 2. Upload the file to Firebase Storage
       const snapshot = await uploadBytes(storageRef, file);
-      
-      // 3. Get the permanent downloadable URL
       const downloadURL = await getDownloadURL(snapshot.ref);
 
-      // 4. Update Firebase Auth profile and Firestore document in parallel
+      // Use setDoc with merge to create or update the photoURL field
       await Promise.all([
         updateProfile(user, { photoURL: downloadURL }),
-        updateDoc(userProfileRef, { photoURL: downloadURL })
+        setDoc(userProfileRef, { photoURL: downloadURL }, { merge: true })
       ]);
       
-      // 5. Set the final, permanent URL for the UI
       setOptimisticPhotoURL(downloadURL);
 
       toast({
@@ -101,13 +94,10 @@ export default function ProfilePage() {
         title: 'Upload Failed',
         description: uploadError.message || 'There was an error uploading your picture. Please try again.',
       });
-      // Revert to the original photo on failure
       setOptimisticPhotoURL(userProfile?.photoURL || null);
     } finally {
       setIsUploading(false);
-      // Clean up the temporary local URL
       URL.revokeObjectURL(tempLocalUrl);
-      // Reset file input to allow re-selection of the same file if needed
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }

@@ -10,12 +10,13 @@ import { constitution } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { FileText, Calendar } from "lucide-react";
+import { FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { doc } from "firebase/firestore";
 
 interface UserProfile {
   firstName?: string;
+  role?: string;
 }
 
 export default function DashboardPage() {

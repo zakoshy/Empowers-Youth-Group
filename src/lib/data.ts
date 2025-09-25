@@ -115,11 +115,11 @@ export const roles = ["Admin", "Chairperson", "Vice Chairperson", "Treasurer", "
 export const dashboardNavLinks = (userRole: string = "Member") => {
   const links = [
     { href: "/dashboard", label: "Dashboard", icon: "Home", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
-    { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer"] },
-    { href: "/dashboard/events", label: "Events", icon: "Calendar", roles: ["Member", "Coordinator"] },
-    { href: "/dashboard/reports", label: "Investments", icon: "TrendingUp", roles: ["Member", "Investment Lead"] },
-    { href: "/dashboard/polls", label: "Polls", icon: "Vote", roles: ["Member", "Chairperson"] },
-    { href: "/dashboard/constitution", label: "Constitution", icon: "FileText", roles: ["Member", "Chairperson"] },
+    { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer", "Admin"] },
+    { href: "/dashboard/events", label: "Events", icon: "Calendar", roles: ["Member", "Coordinator", "Admin"] },
+    { href: "/dashboard/reports", label: "Investments", icon: "TrendingUp", roles: ["Member", "Investment Lead", "Admin"] },
+    { href: "/dashboard/polls", label: "Polls", icon: "Vote", roles: ["Member", "Chairperson", "Admin"] },
+    { href: "/dashboard/constitution", label: "Constitution", icon: "FileText", roles: ["Member", "Chairperson", "Admin"] },
   ];
 
   const adminLinks = [
@@ -128,6 +128,11 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
   ]
   
   const allLinks = [...links, ...adminLinks];
+
+  // A user with "Admin" role should see everything.
+  if (userRole === "Admin") {
+    return allLinks;
+  }
 
   return allLinks.filter(link => link.roles.includes(userRole));
 };

@@ -13,7 +13,6 @@ import { EmpowerHubLogo } from "../icons";
 import { dashboardNavLinks } from "@/lib/data";
 import { Bell, Home, LineChart, Package, Package2, ShoppingCart, Users, Vote, FileText, DollarSign, TrendingUp, Calendar, Settings, BookOpen } from "lucide-react";
 import { Button } from "../ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
 
@@ -73,21 +72,6 @@ export function DashboardSidebar() {
                     })}
                 </SidebarMenu>
             </SidebarContent>
-            <SidebarFooter>
-                <Card>
-                    <CardHeader className="p-2 pt-0 md:p-4">
-                        <CardTitle>Need Help?</CardTitle>
-                        <CardDescription>
-                            Contact support for any questions.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
-                        <Button size="sm" className="w-full">
-                            Contact Us
-                        </Button>
-                    </CardContent>
-                </Card>
-            </SidebarFooter>
         </Sidebar>
     )
 }

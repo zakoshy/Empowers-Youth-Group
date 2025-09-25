@@ -73,7 +73,7 @@ export function RegisterForm() {
         firstName: values.firstName,
         lastName: values.lastName,
         role: userRole,
-        photoURL: user.photoURL,
+        photoURL: user.photoURL || null,
       };
 
       const userDocRef = doc(firestore, "userProfiles", user.uid);

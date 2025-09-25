@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { updateProfile } from 'firebase/auth';
+import { updateProfile, getAuth } from 'firebase/auth';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -74,11 +74,12 @@ export default function ProfilePage() {
       const snapshot = await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(snapshot.ref);
 
-      // Use setDoc with merge to create or update the photoURL field
-      await Promise.all([
-        updateProfile(user, { photoURL: downloadURL }),
-        setDoc(userProfileRef, { photoURL: downloadURL }, { merge: true })
-      ]);
+      // Update the user's auth profile first
+      await updateProfile(user, { photoURL: downloadURL });
+      
+      // Now, explicitly set/update the document in Firestore
+      // This will create the photoURL field if it doesn't exist, or update it if it does.
+      await setDoc(userProfileRef, { photoURL: downloadURL }, { merge: true });
       
       setOptimisticPhotoURL(downloadURL);
 
@@ -94,6 +95,7 @@ export default function ProfilePage() {
         title: 'Upload Failed',
         description: uploadError.message || 'There was an error uploading your picture. Please try again.',
       });
+      // Revert to the original URL on failure
       setOptimisticPhotoURL(userProfile?.photoURL || null);
     } finally {
       setIsUploading(false);

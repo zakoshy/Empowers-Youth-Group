@@ -16,6 +16,8 @@ import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth } from "@/fireb
 import { doc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 const icons: { [key: string]: React.ElementType } = {
   Home,
@@ -38,6 +40,7 @@ export function DashboardSidebar() {
     const firestore = useFirestore();
     const auth = useAuth();
     const { toast } = useToast();
+    const pathname = usePathname();
     
     const userProfileRef = useMemoFirebase(() => {
         if (!user) return null;
@@ -79,9 +82,10 @@ export function DashboardSidebar() {
                 <SidebarMenu>
                     {navItems.map(item => {
                         const Icon = icons[item.icon];
+                        const isActive = pathname === item.href;
                         return (
                             <SidebarMenuItem key={item.label}>
-                                <SidebarMenuButton asChild tooltip={item.label}>
+                                <SidebarMenuButton asChild tooltip={item.label} isActive={isActive}>
                                     <Link href={item.href}>
                                         {Icon && <Icon />}
                                         <span>{item.label}</span>

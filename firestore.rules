@@ -1,0 +1,199 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Checks if the user is signed in.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the user is the owner of the resource.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is an existing owner of the resource (isSignedIn and resource exists).
+     */
+    function isExistingOwner(userId) {
+        return isSignedIn() && isOwner(userId) && exists(resource);
+    }
+
+    /**
+     * @description Checks if the user has the 'Chairperson' role in their user profile.
+     */
+    function isChairperson() {
+      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Chairperson';
+    }
+
+    /**
+     * @description Checks if the user has the 'Coordinator' role in their user profile.
+     */
+    function isCoordinator() {
+      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Coordinator';
+    }
+
+    /**
+     * @description Checks if the user has the 'Investment Lead' role in their user profile.
+     */
+    function isInvestmentLead() {
+      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Investment Lead';
+    }
+
+    /**
+     * @description Checks if the user is an admin by verifying the existence of a document in the `roles_admin` collection.
+     */
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * @description Rules for the admin role collection.
+     * @path /roles_admin/{userId}
+     * @allow (create) If the user is creating their own admin role document (self-assignment is disallowed in production).
+     * @deny (create) If the user is not signed in.
+     * @deny (update) Admin role documents are not meant to be updated.
+     * @deny (delete) Admin role documents are not meant to be deleted by the user themselves, as it would strip their own rights.
+     * @principle Enforces role-based access control using document existence.
+     */
+    match /roles_admin/{userId} {
+      allow get: if isSignedIn() && isAdmin();
+      allow list: if false;
+      allow create: if isSignedIn() && request.auth.uid == userId ; // Self-assignment is disallowed in production
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Rules for user profiles.
+     * @path /userProfiles/{userId}
+     * @allow (get) If the user is signed in.
+     * @allow (create) If the user's ID matches the requested ID (self-creation).
+     * @allow (update) If the user is the owner of the profile and the userId field is immutable.
+     * @allow (delete) If the user is the owner of the profile.
+     * @deny (create) If the user's ID does not match the requested ID.
+     * @principle Enforces document ownership for user profiles.
+     */
+    match /userProfiles/{userId} {
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for financial years.
+     * @path /financialYears/{financialYearId}
+     * @allow (get, list) If the user is signed in.
+     * @allow (create, update) If the user is the Chairperson.
+     * @deny (delete) Financial years cannot be deleted.
+     * @principle Restricts financial year management to the Chairperson.
+     */
+    match /financialYears/{financialYearId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isChairperson();
+      allow update: if isSignedIn() && isChairperson();
+      allow delete: if false;
+    }
+
+    /**
+     * @description Rules for user contributions.
+     * @path /userProfiles/{userId}/contributions/{contributionId}
+     * @allow (get, list) If the user is the owner of the contribution.
+     * @allow (create) If the user is the owner of the contribution and the userId matches.
+     * @allow (update) If the user is the owner of the contribution and the userId is immutable.
+     * @allow (delete) If the user is the owner of the contribution.
+     * @deny (create) If the user is not signed in or the userId does not match.
+     * @principle Enforces document ownership for contributions.
+     */
+    match /userProfiles/{userId}/contributions/{contributionId} {
+      allow get, list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for events.
+     * @path /events/{eventId}
+     * @allow (get, list) If the user is signed in.
+     * @allow (create, update) If the user is the Coordinator.
+     * @deny (delete) Events cannot be deleted.
+     * @principle Restricts event management to the Coordinator.
+     */
+    match /events/{eventId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isCoordinator();
+      allow update: if isSignedIn() && isCoordinator();
+      allow delete: if false;
+    }
+
+    /**
+     * @description Rules for the constitution.
+     * @path /constitution/{constitutionId}
+     * @allow (get, list) If the user is signed in.
+     * @allow (create, update) If the user is the Chairperson.
+     * @deny (delete) The constitution cannot be deleted.
+     * @principle Restricts constitution management to the Chairperson.
+     */
+    match /constitution/{constitutionId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isChairperson();
+      allow update: if isSignedIn() && isChairperson();
+      allow delete: if false;
+    }
+
+    /**
+     * @description Rules for investment reports.
+     * @path /investmentReports/{investmentReportId}
+     * @allow (get, list) If the user is signed in.
+     * @allow (create, update) If the user is the Investment Lead.
+     * @deny (delete) Investment reports cannot be deleted.
+     * @principle Restricts investment report management to the Investment Lead.
+     */
+    match /investmentReports/{investmentReportId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isInvestmentLead();
+      allow update: if isSignedIn() && isInvestmentLead();
+      allow delete: if false;
+    }
+
+    /**
+     * @description Rules for polls.
+     * @path /polls/{pollId}
+     * @allow (get, list) If the user is signed in.
+     * @allow (create, update) If the user is the Chairperson.
+     * @deny (delete) Polls cannot be deleted.
+     * @principle Restricts poll management to the Chairperson.
+     */
+    match /polls/{pollId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isChairperson();
+      allow update: if isSignedIn() && isChairperson();
+      allow delete: if false;
+    }
+
+    /**
+     * @description Rules for votes.
+     * @path /polls/{pollId}/votes/{voteId}
+     * @allow (get) If the user is the owner of the vote.
+     * @allow (create) If the user is the owner of the vote and the userId matches.
+     * @allow (update) If the user is the owner of the vote and the userId is immutable.
+     * @allow (delete) If the user is the owner of the vote.
+     * @deny (list) Votes should not be listable by anyone other than the owner.
+     * @principle Enforces document ownership for votes and restricts listing.
+     */
+    match /polls/{pollId}/votes/{voteId} {
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow list: if false;
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

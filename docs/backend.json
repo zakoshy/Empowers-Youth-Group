@@ -1,0 +1,443 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user profile in the system.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user profile."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "User's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "User's last name."
+        },
+        "role": {
+          "type": "string",
+          "description": "The user's role within the organization (e.g., Chairperson, Treasurer, Coordinator, Investment Lead, Member)."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "firstName",
+        "lastName"
+      ]
+    },
+    "FinancialYear": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FinancialYear",
+      "type": "object",
+      "description": "Represents a financial year for tracking contributions.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the financial year."
+        },
+        "year": {
+          "type": "number",
+          "description": "The financial year (e.g., 2025)."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The starting date of the financial year.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The ending date of the financial year.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "year",
+        "startDate",
+        "endDate"
+      ]
+    },
+    "Contribution": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Contribution",
+      "type": "object",
+      "description": "Represents a member's monthly contribution.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the contribution record."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N Contribution)"
+        },
+        "financialYearId": {
+          "type": "string",
+          "description": "Reference to FinancialYear. (Relationship: FinancialYear 1:N Contribution)"
+        },
+        "month": {
+          "type": "number",
+          "description": "The month of the contribution (1-12)."
+        },
+        "amount": {
+          "type": "number",
+          "description": "The contribution amount for the month."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "financialYearId",
+        "month",
+        "amount"
+      ]
+    },
+    "Event": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Event",
+      "type": "object",
+      "description": "Represents an event created by the coordinator.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the event."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the event."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed description of the event."
+        },
+        "date": {
+          "type": "string",
+          "description": "The date and time of the event.",
+          "format": "date-time"
+        },
+        "location": {
+          "type": "string",
+          "description": "The location of the event."
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "date",
+        "location"
+      ]
+    },
+    "Constitution": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Constitution",
+      "type": "object",
+      "description": "Represents the group's constitution document.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the constitution document."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the constitution."
+        },
+        "content": {
+          "type": "string",
+          "description": "The content of the constitution document (can be stored as text or a link to cloud storage)."
+        },
+        "uploadDate": {
+          "type": "string",
+          "description": "The date when the constitution was uploaded.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "content",
+        "uploadDate"
+      ]
+    },
+    "InvestmentReport": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "InvestmentReport",
+      "type": "object",
+      "description": "Represents a report on investments done by the group.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the investment report."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the investment report."
+        },
+        "content": {
+          "type": "string",
+          "description": "The content of the investment report (can be stored as text or a link to cloud storage)."
+        },
+        "uploadDate": {
+          "type": "string",
+          "description": "The date when the investment report was uploaded.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "content",
+        "uploadDate"
+      ]
+    },
+    "Poll": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Poll",
+      "type": "object",
+      "description": "Represents a poll created by the chairperson.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the poll."
+        },
+        "question": {
+          "type": "string",
+          "description": "The poll question."
+        },
+        "options": {
+          "type": "array",
+          "description": "The options for the poll.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The date and time when the poll starts.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The date and time when the poll ends.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "question",
+        "options",
+        "startDate",
+        "endDate"
+      ]
+    },
+    "Vote": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Vote",
+      "type": "object",
+      "description": "Represents a user's vote in a poll.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the vote."
+        },
+        "pollId": {
+          "type": "string",
+          "description": "Reference to Poll. (Relationship: Poll 1:N Vote)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to UserProfile. (Relationship: UserProfile 1:N Vote)"
+        },
+        "selectedOption": {
+          "type": "string",
+          "description": "The option selected by the user."
+        },
+        "voteDate": {
+          "type": "string",
+          "description": "The date and time when the vote was cast.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "pollId",
+        "userId",
+        "selectedOption",
+        "voteDate"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "adminRole",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Documents in this collection indicate admin status. Existence of a document for a given userId grants admin privileges.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/userProfiles/{userId}",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profile information. Path based ownership simplifies security rules.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user. This ID is used as the document ID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/financialYears/{financialYearId}",
+        "definition": {
+          "entityName": "FinancialYear",
+          "schema": {
+            "$ref": "#/backend/entities/FinancialYear"
+          },
+          "description": "Stores financial year information. Accessible to all members but create/update restricted to Chairperson.",
+          "params": [
+            {
+              "name": "financialYearId",
+              "description": "Unique ID for the financial year document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/userProfiles/{userId}/contributions/{contributionId}",
+        "definition": {
+          "entityName": "Contribution",
+          "schema": {
+            "$ref": "#/backend/entities/Contribution"
+          },
+          "description": "Stores contribution records for each user, organized by financial year. Path based ownership simplifies access control and authorization.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user who made the contribution."
+            },
+            {
+              "name": "contributionId",
+              "description": "Unique ID for the contribution record."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/events/{eventId}",
+        "definition": {
+          "entityName": "Event",
+          "schema": {
+            "$ref": "#/backend/entities/Event"
+          },
+          "description": "Stores event information. Create/update restricted to Coordinator.",
+          "params": [
+            {
+              "name": "eventId",
+              "description": "Unique ID for the event document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/constitution/{constitutionId}",
+        "definition": {
+          "entityName": "Constitution",
+          "schema": {
+            "$ref": "#/backend/entities/Constitution"
+          },
+          "description": "Stores the group's constitution document.  Create/update restricted to Chairperson.",
+          "params": [
+            {
+              "name": "constitutionId",
+              "description": "Unique ID for the constitution document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/investmentReports/{investmentReportId}",
+        "definition": {
+          "entityName": "InvestmentReport",
+          "schema": {
+            "$ref": "#/backend/entities/InvestmentReport"
+          },
+          "description": "Stores investment reports. Create/update restricted to Investment Lead.",
+          "params": [
+            {
+              "name": "investmentReportId",
+              "description": "Unique ID for the investment report document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/polls/{pollId}",
+        "definition": {
+          "entityName": "Poll",
+          "schema": {
+            "$ref": "#/backend/entities/Poll"
+          },
+          "description": "Stores poll information. Create/update restricted to Chairperson.",
+          "params": [
+            {
+              "name": "pollId",
+              "description": "Unique ID for the poll document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/polls/{pollId}/votes/{voteId}",
+        "definition": {
+          "entityName": "Vote",
+          "schema": {
+            "$ref": "#/backend/entities/Vote"
+          },
+          "description": "Stores votes for each poll. Each user can only vote once per poll. Path based ownership ensures only the user can modify or delete their vote.",
+          "params": [
+            {
+              "name": "pollId",
+              "description": "Reference ID for the poll document."
+            },
+            {
+              "name": "voteId",
+              "description": "Unique ID for the vote document."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to manage user profiles, financial years, contributions, events, constitution, investment reports, polls, and votes for EmpowerHub. User roles (Admin, Chairperson, Treasurer, Coordinator, Secretary, Investment Lead, Member) are managed via the `roles_admin` collection and path-based ownership for `userProfiles` and subcollections to easily manage user owned data. This design adheres to the principles of Authorization Independence, Clarity of Intent, DBAC, QAPs, and Invariants.  Authorization Independence is achieved via path based ownership and avoiding `get()` calls in security rules. The structure also supports QAPs by using structural segregation: roles are managed via document existence, enabling secure list operations."
+  }
+}

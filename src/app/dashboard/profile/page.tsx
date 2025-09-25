@@ -2,9 +2,11 @@
 
 import { useState, useRef } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -57,7 +59,7 @@ export default function ProfilePage() {
     setIsUploading(true);
     toast({
       title: 'Uploading...',
-      description: 'Your new profile picture is being uploaded.',
+      description: 'Your new profile picture is being updated.',
     });
 
     const storage = getStorage();
@@ -71,7 +73,8 @@ export default function ProfilePage() {
            updateProfile(user, { photoURL: downloadURL });
         }
         if (userProfileRef) {
-           updateDoc(userProfileRef, { photoURL: downloadURL });
+           // Using the non-blocking update function
+           setDocumentNonBlocking(userProfileRef, { photoURL: downloadURL }, { merge: true });
         }
         
         toast({
@@ -91,8 +94,8 @@ export default function ProfilePage() {
       })
       .finally(() => {
         setIsUploading(false);
-        // Revoke the object URL to free up memory after the process is complete
-        if (optimisticPhotoURL?.startsWith('blob:')) {
+        // Revoke the object URL to free up memory
+        if (optimisticPhotoURL && optimisticPhotoURL.startsWith('blob:')) {
             URL.revokeObjectURL(optimisticPhotoURL);
         }
         // The useDoc hook will handle showing the final state, so we can clear the optimistic one.

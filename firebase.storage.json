@@ -1,8 +1,23 @@
-
 [
   {
-    "origin": ["*"],
-    "method": ["GET", "PUT", "POST", "DELETE"],
-    "maxAgeSeconds": 3600
+    "origin": [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "https://6000-firebase-studio-1758828900405.cluster-cbeiita7rbe7iuwhvjs5zww2i4.cloudworkstations.dev",
+      "https://*.web.app",
+      "https://*.firebaseapp.com"
+    ],
+    "method": [
+      "GET",
+      "POST",
+      "PUT",
+      "DELETE",
+      "OPTIONS"
+    ],
+    "maxAgeSeconds": 3600,
+    "responseHeader": [
+      "Content-Type",
+      "Authorization"
+    ]
   }
 ]

@@ -17,14 +17,28 @@ import { SidebarTrigger } from "../ui/sidebar";
 import { EmpowerHubLogo } from "../icons";
 import { useAuth } from "@/firebase";
 import { signOut } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
 
 export function DashboardHeader() {
   const auth = useAuth();
+  const { toast } = useToast();
 
-  const handleLogout = () => {
-    signOut(auth).then(() => {
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
       window.location.href = "/";
-    });
+    } catch (error) {
+      console.error("Logout Error: ", error);
+      toast({
+        variant: "destructive",
+        title: "Logout Failed",
+        description: "Something went wrong. Please try again.",
+      });
+    }
   };
 
   return (

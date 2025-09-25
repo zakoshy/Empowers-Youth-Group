@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -37,71 +35,79 @@ export default function ProfilePage() {
   const { data: userProfile, isLoading: isProfileLoading, error } = useDoc<UserProfile>(userProfileRef);
 
   const [isUploading, setIsUploading] = useState(false);
-  const [optimisticPhotoURL, setOptimisticPhotoURL] = useState<string | undefined>(undefined);
+  const [optimisticPhotoURL, setOptimisticPhotoURL] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Sync optimisticPhotoURL with the fetched data from firestore
+    if (userProfile?.photoURL) {
+      setOptimisticPhotoURL(userProfile.photoURL);
+    }
+  }, [userProfile?.photoURL]);
 
   const getInitials = () => {
     if (!userProfile) return '';
     return `${userProfile.firstName?.charAt(0) ?? ''}${userProfile.lastName?.charAt(0) ?? ''}`.toUpperCase();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const tempUrl = URL.createObjectURL(file);
-      setOptimisticPhotoURL(tempUrl);
-      handleUpload(file);
-    }
+  const handleCameraClick = () => {
+    fileInputRef.current?.click();
   };
 
-  const handleUpload = (file: File) => {
-    if (!user) return;
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user || !userProfileRef) return;
 
     setIsUploading(true);
+    let tempUrl = URL.createObjectURL(file);
+    setOptimisticPhotoURL(tempUrl);
+
     toast({
       title: 'Uploading...',
       description: 'Your new profile picture is being updated.',
     });
 
-    const storage = getStorage();
-    const storageRef = ref(storage, `profilePictures/${user.uid}/${file.name}`);
+    try {
+      const storage = getStorage();
+      const storageRef = ref(storage, `profilePictures/${user.uid}/${file.name}`);
+      
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
 
-    uploadBytes(storageRef, file)
-      .then(snapshot => getDownloadURL(snapshot.ref))
-      .then(async (downloadURL) => {
-        // Non-blocking updates to Auth and Firestore
-        if (user) {
-           updateProfile(user, { photoURL: downloadURL });
-        }
-        if (userProfileRef) {
-           // Using the non-blocking update function
-           setDocumentNonBlocking(userProfileRef, { photoURL: downloadURL }, { merge: true });
-        }
-        
-        toast({
-          title: 'Success!',
-          description: 'Your profile picture has been updated.',
-        });
-      })
-      .catch((error) => {
-        console.error('Error uploading file:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Upload Failed',
-          description: 'There was an error uploading your picture. Please try again.',
-        });
-        // Revert optimistic update on failure
-        setOptimisticPhotoURL(undefined);
-      })
-      .finally(() => {
-        setIsUploading(false);
-        // Revoke the object URL to free up memory
-        if (optimisticPhotoURL && optimisticPhotoURL.startsWith('blob:')) {
-            URL.revokeObjectURL(optimisticPhotoURL);
-        }
-        // The useDoc hook will handle showing the final state, so we can clear the optimistic one.
-        setOptimisticPhotoURL(undefined);
+      // Update in parallel
+      await Promise.all([
+        updateProfile(user, { photoURL: downloadURL }),
+        updateDoc(userProfileRef, { photoURL: downloadURL })
+      ]);
+
+      setOptimisticPhotoURL(downloadURL); // Set the final URL
+
+      toast({
+        title: 'Success!',
+        description: 'Your profile picture has been updated.',
       });
+
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Upload Failed',
+        description: 'There was an error uploading your picture. Please try again.',
+      });
+      // Revert to original photo on failure
+      setOptimisticPhotoURL(userProfile?.photoURL || null);
+    } finally {
+      setIsUploading(false);
+      // Revoke the object URL to free up memory
+      if (tempUrl) {
+          URL.revokeObjectURL(tempUrl);
+      }
+      // Reset file input to allow re-selection of the same file
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
   };
+
 
   const isLoading = isUserLoading || isProfileLoading;
   const displayPhoto = optimisticPhotoURL || userProfile?.photoURL;
@@ -136,7 +142,7 @@ export default function ProfilePage() {
         <div className="flex flex-col sm:flex-row items-center gap-6">
           <div className="relative">
             <Avatar className="h-32 w-32">
-              <AvatarImage src={displayPhoto} />
+              <AvatarImage src={displayPhoto} alt="Profile picture" />
               <AvatarFallback className="text-4xl">{getInitials()}</AvatarFallback>
             </Avatar>
             <Input
@@ -148,13 +154,14 @@ export default function ProfilePage() {
               accept="image/*"
               disabled={isUploading}
             />
-            <Label
-              htmlFor="picture"
-              className="absolute bottom-1 right-1 bg-secondary text-secondary-foreground rounded-full p-2 cursor-pointer hover:bg-secondary/80 transition-colors"
+            <button
+              onClick={handleCameraClick}
+              disabled={isUploading}
+              className="absolute bottom-1 right-1 bg-secondary text-secondary-foreground rounded-full p-2 cursor-pointer hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Change profile picture"
             >
               <Camera className="h-5 w-5" />
-              <span className="sr-only">Change profile picture</span>
-            </Label>
+            </button>
           </div>
 
           <div className="flex-1 w-full text-center sm:text-left">

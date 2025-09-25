@@ -20,6 +20,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { roles } from '@/lib/data';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface UserProfile {
   id: string;
@@ -27,6 +28,7 @@ interface UserProfile {
   lastName: string;
   email: string;
   role: string;
+  photoURL?: string;
 }
 
 export default function ManageUsersPage() {
@@ -42,6 +44,10 @@ export default function ManageUsersPage() {
     } catch (error) {
       console.error('Error updating role: ', error);
     }
+  };
+
+  const getInitials = (firstName: string, lastName: string) => {
+    return `${firstName?.charAt(0) ?? ''}${lastName?.charAt(0) ?? ''}`.toUpperCase();
   };
 
   return (
@@ -69,7 +75,15 @@ export default function ManageUsersPage() {
             <TableBody>
               {users?.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell>{user.firstName} {user.lastName}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarImage src={user.photoURL} />
+                        <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
+                      </Avatar>
+                      <div>{user.firstName} {user.lastName}</div>
+                    </div>
+                  </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <Select

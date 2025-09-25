@@ -1,9 +1,8 @@
 'use client';
 import Link from "next/link";
-import {
-  User,
-} from "lucide-react";
-
+import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
+import { doc } from "firebase/firestore";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,8 +14,51 @@ import {
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "../ui/sidebar";
 import { EmpowerHubLogo } from "../icons";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useToast } from "@/hooks/use-toast";
+
+interface UserProfile {
+  firstName?: string;
+  lastName?: string;
+  photoURL?: string;
+}
 
 export function DashboardHeader() {
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const auth = useAuth();
+  const { toast } = useToast();
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'userProfiles', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+
+  const getInitials = () => {
+    const firstName = userProfile?.firstName || '';
+    const lastName = userProfile?.lastName || '';
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Logout Error: ", error);
+      toast({
+        variant: "destructive",
+        title: "Logout Failed",
+        description: "Something went wrong. Please try again.",
+      });
+    }
+  };
 
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6">
@@ -31,15 +73,22 @@ export function DashboardHeader() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="secondary" size="icon" className="rounded-full">
-            <User className="h-5 w-5" />
+            <Avatar>
+              <AvatarImage src={userProfile?.photoURL} alt="User profile picture" />
+              <AvatarFallback>{getInitials()}</AvatarFallback>
+            </Avatar>
             <span className="sr-only">Toggle user menu</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Profile</DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link href="/dashboard/profile">Profile</Link>
+          </DropdownMenuItem>
           <DropdownMenuItem>Settings</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </header>

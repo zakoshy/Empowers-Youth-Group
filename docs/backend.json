@@ -26,6 +26,10 @@
         "role": {
           "type": "string",
           "description": "The user's role within the organization (e.g., Chairperson, Treasurer, Coordinator, Investment Lead, Member)."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL of the user's profile picture."
         }
       },
       "required": [

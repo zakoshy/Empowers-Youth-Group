@@ -11,10 +11,11 @@ import {
 } from "@/components/ui/sidebar"
 import { EmpowerHubLogo } from "../icons";
 import { dashboardNavLinks } from "@/lib/data";
-import { Bell, Home, LineChart, Package, Package2, ShoppingCart, Users, Vote, FileText, DollarSign, TrendingUp, Calendar, Settings, BookOpen } from "lucide-react";
-import { Button } from "../ui/button";
-import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { Home, LineChart, Package, Package2, ShoppingCart, Users, Vote, FileText, DollarSign, TrendingUp, Calendar, Settings, BookOpen, LogOut } from "lucide-react";
+import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
+import { signOut } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
 
 const icons: { [key: string]: React.ElementType } = {
   Home,
@@ -35,6 +36,8 @@ interface UserProfile {
 export function DashboardSidebar() {
     const { user } = useUser();
     const firestore = useFirestore();
+    const auth = useAuth();
+    const { toast } = useToast();
     
     const userProfileRef = useMemoFirebase(() => {
         if (!user) return null;
@@ -43,9 +46,26 @@ export function DashboardSidebar() {
 
     const { data: userProfile, isLoading } = useDoc<UserProfile>(userProfileRef);
 
-    // In a real app, you'd get the user's role from the session.
     const userRole = userProfile?.role || "Member"; 
     const navItems = dashboardNavLinks(userRole);
+
+    const handleLogout = async () => {
+        try {
+          await signOut(auth);
+          toast({
+            title: "Logged Out",
+            description: "You have been successfully logged out.",
+          });
+          window.location.href = "/";
+        } catch (error) {
+          console.error("Logout Error: ", error);
+          toast({
+            variant: "destructive",
+            title: "Logout Failed",
+            description: "Something went wrong. Please try again.",
+          });
+        }
+    };
 
     return (
         <Sidebar>
@@ -72,6 +92,16 @@ export function DashboardSidebar() {
                     })}
                 </SidebarMenu>
             </SidebarContent>
+            <SidebarFooter>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
+                            <LogOut />
+                            <span>Logout</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarFooter>
         </Sidebar>
     )
 }

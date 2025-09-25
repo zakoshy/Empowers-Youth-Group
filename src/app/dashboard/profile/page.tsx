@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { updateProfile, getAuth } from 'firebase/auth';
+import { updateProfile } from 'firebase/auth';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -17,7 +17,7 @@ interface UserProfile {
   firstName: string;
   lastName: string;
   email: string;
-  photoURL?: string;
+  photoURL?: string | null;
 }
 
 export default function ProfilePage() {
@@ -31,18 +31,22 @@ export default function ProfilePage() {
     return doc(firestore, 'userProfiles', user.uid);
   }, [firestore, user]);
 
-  const { data: userProfile, isLoading: isProfileLoading, error } = useDoc<UserProfile>(userProfileRef);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   const [isUploading, setIsUploading] = useState(false);
   const [optimisticPhotoURL, setOptimisticPhotoURL] = useState<string | null>(null);
 
   useEffect(() => {
+    // Set the initial avatar image from the loaded profile data
     if (userProfile?.photoURL) {
       setOptimisticPhotoURL(userProfile.photoURL);
-    } else if (!isProfileLoading) {
+    } else if (user?.photoURL) {
+      setOptimisticPhotoURL(user.photoURL);
+    } else {
       setOptimisticPhotoURL(null);
     }
-  }, [userProfile?.photoURL, isProfileLoading]);
+  }, [userProfile, user, isProfileLoading]);
+
 
   const getInitials = () => {
     if (!userProfile) return '';
@@ -59,6 +63,7 @@ export default function ProfilePage() {
 
     setIsUploading(true);
     
+    // Create a temporary local URL for an instant optimistic update
     const tempLocalUrl = URL.createObjectURL(file);
     setOptimisticPhotoURL(tempLocalUrl);
 
@@ -69,18 +74,20 @@ export default function ProfilePage() {
 
     try {
       const storage = getStorage();
-      const storageRef = ref(storage, `profilePictures/${user.uid}/${file.name}`);
+      // Create a unique path for the image to avoid cache issues
+      const storageRef = ref(storage, `profilePictures/${user.uid}/${Date.now()}_${file.name}`);
       
       const snapshot = await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(snapshot.ref);
 
-      // Update the user's auth profile first
+      // 1. Update the user's auth profile
       await updateProfile(user, { photoURL: downloadURL });
       
-      // Now, explicitly set/update the document in Firestore
-      // This will create the photoURL field if it doesn't exist, or update it if it does.
+      // 2. Update the document in Firestore
+      // Using set with merge:true will create the field if it doesn't exist or update it if it does.
       await setDoc(userProfileRef, { photoURL: downloadURL }, { merge: true });
       
+      // Set the final URL after successful upload
       setOptimisticPhotoURL(downloadURL);
 
       toast({
@@ -99,7 +106,9 @@ export default function ProfilePage() {
       setOptimisticPhotoURL(userProfile?.photoURL || null);
     } finally {
       setIsUploading(false);
+      // Clean up the temporary local URL
       URL.revokeObjectURL(tempLocalUrl);
+      // Reset the file input so the same file can be selected again if needed
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }

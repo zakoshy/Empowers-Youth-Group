@@ -1,3 +1,4 @@
+'use client';
 import Link from "next/link";
 import {
     Sidebar,
@@ -10,9 +11,11 @@ import {
 } from "@/components/ui/sidebar"
 import { EmpowerHubLogo } from "../icons";
 import { dashboardNavLinks } from "@/lib/data";
-import { Bell, Home, LineChart, Package, Package2, ShoppingCart, Users, Vote, FileText, DollarSign, TrendingUp, Calendar, Settings } from "lucide-react";
+import { Bell, Home, LineChart, Package, Package2, ShoppingCart, Users, Vote, FileText, DollarSign, TrendingUp, Calendar, Settings, BookOpen } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
 
 const icons: { [key: string]: React.ElementType } = {
   Home,
@@ -22,14 +25,27 @@ const icons: { [key: string]: React.ElementType } = {
   TrendingUp,
   Calendar,
   Users,
-  BookOpen: FileText,
+  BookOpen,
   Settings
 };
 
+interface UserProfile {
+    role: string;
+}
 
 export function DashboardSidebar() {
+    const { user } = useUser();
+    const firestore = useFirestore();
+    
+    const userProfileRef = useMemoFirebase(() => {
+        if (!user) return null;
+        return doc(firestore, 'userProfiles', user.uid);
+    }, [firestore, user]);
+
+    const { data: userProfile, isLoading } = useDoc<UserProfile>(userProfileRef);
+
     // In a real app, you'd get the user's role from the session.
-    const userRole = "Member"; 
+    const userRole = userProfile?.role || "Member"; 
     const navItems = dashboardNavLinks(userRole);
 
     return (

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  Search,
   User,
 } from "lucide-react";
 
@@ -12,12 +11,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "../ui/sidebar";
 import { EmpowerHubLogo } from "../icons";
+import { useAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
 
 export function DashboardHeader() {
+  const auth = useAuth();
+
+  const handleLogout = () => {
+    signOut(auth).then(() => {
+      window.location.href = "/";
+    });
+  };
+
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6">
       <SidebarTrigger className="md:hidden" />
@@ -41,8 +49,8 @@ export function DashboardHeader() {
           <DropdownMenuItem>Profile</DropdownMenuItem>
           <DropdownMenuItem>Settings</DropdownMenuItem>
           <DropdownMenuSeparator />
-           <DropdownMenuItem asChild>
-            <Link href="/">Logout</Link>
+           <DropdownMenuItem onClick={handleLogout}>
+            Logout
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

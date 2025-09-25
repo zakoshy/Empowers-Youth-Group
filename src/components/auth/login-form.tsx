@@ -4,6 +4,8 @@ import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { useAuth } from "@/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -26,25 +28,10 @@ const formSchema = z.object({
   }),
 });
 
-// This is a mock server action. In a real app, you'd handle login logic here.
-async function handleLogin(values: z.infer<typeof formSchema>) {
-  console.log(values);
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-  
-  if (values.email === "member@empowerhub.com") {
-    // In a real app, you would redirect to the dashboard here.
-    // For now, we'll just show a success message.
-    // window.location.href = "/dashboard";
-    return { success: true };
-  } else {
-    return { success: false, error: "Invalid email or password." };
-  }
-}
-
 export function LoginForm() {
   const { toast } = useToast();
-  
+  const auth = useAuth();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -54,20 +41,19 @@ export function LoginForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const result = await handleLogin(values);
-    if(result.success) {
-       toast({
+    try {
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      toast({
         title: "Login Successful",
         description: "Redirecting you to your dashboard...",
       });
-      // In a real app, NextAuth would handle the redirect.
-      // We simulate it here for demonstration.
       setTimeout(() => window.location.assign('/dashboard'), 1500);
-    } else {
-       toast({
+    } catch (error: any) {
+      console.error("Login Error: ", error);
+      toast({
         variant: "destructive",
         title: "Login Failed",
-        description: result.error,
+        description: error.message || "Invalid email or password.",
       });
     }
   }

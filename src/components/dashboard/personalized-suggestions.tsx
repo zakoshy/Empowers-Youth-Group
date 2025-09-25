@@ -11,25 +11,44 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Wand2 } from "lucide-react";
 import { getPersonalizedSuggestions } from "@/ai/flows/personalized-community-suggestions";
-import { memberData, investmentReports, events } from "@/lib/data";
+import { investmentReports, events } from "@/lib/data";
+import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+
+interface UserProfile {
+  id: string;
+  role: string;
+  financialSummary: any;
+}
 
 export function PersonalizedSuggestions() {
   const [suggestions, setSuggestions] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'userProfiles', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   useEffect(() => {
     async function fetchSuggestions() {
+      if (!userProfile) return;
+
       try {
         setLoading(true);
         setError("");
         
         const input = {
-          memberId: memberData.id,
+          memberId: userProfile.id,
           investmentReports: JSON.stringify(investmentReports),
           upcomingEvents: JSON.stringify(events),
-          contributionSummary: JSON.stringify(memberData.financialSummary),
-          memberRole: memberData.role,
+          contributionSummary: JSON.stringify({}), // Placeholder
+          memberRole: userProfile.role,
         };
 
         const result = await getPersonalizedSuggestions(input);
@@ -43,8 +62,10 @@ export function PersonalizedSuggestions() {
       }
     }
 
-    fetchSuggestions();
-  }, []);
+    if (userProfile) {
+      fetchSuggestions();
+    }
+  }, [userProfile]);
 
   return (
     <Card className="bg-gradient-to-br from-primary/10 to-card">

@@ -61,7 +61,7 @@ export function RegisterForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
-      const userRole = isFirstUser ? "Chairperson" : "Member";
+      const userRole = isFirstUser ? "Admin" : "Member";
 
       // Create user profile in Firestore
       const userProfile = {

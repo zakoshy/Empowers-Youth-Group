@@ -110,11 +110,11 @@ export const navLinks = [
   { href: "/events", label: "Events" },
 ];
 
-export const roles = ["Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead", "Member"];
+export const roles = ["Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead", "Member"];
 
 export const dashboardNavLinks = (userRole: string = "Member") => {
   const links = [
-    { href: "/dashboard", label: "Dashboard", icon: "Home", roles: ["Member", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
+    { href: "/dashboard", label: "Dashboard", icon: "Home", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer"] },
     { href: "/dashboard/events", label: "Events", icon: "Calendar", roles: ["Member", "Coordinator"] },
     { href: "/dashboard/reports", label: "Investments", icon: "TrendingUp", roles: ["Member", "Investment Lead"] },
@@ -123,8 +123,8 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
   ];
 
   const adminLinks = [
-    { href: "/dashboard/manage-users", label: "Manage Users", icon: "Users", roles: ["Chairperson"] },
-    { href: "/dashboard/manage-finances", label: "Manage Finances", icon: "BookOpen", roles: ["Chairperson", "Treasurer"] },
+    { href: "/dashboard/manage-users", label: "Manage Users", icon: "Users", roles: ["Admin", "Chairperson"] },
+    { href: "/dashboard/manage-finances", label: "Manage Finances", icon: "BookOpen", roles: ["Admin", "Chairperson", "Treasurer"] },
   ]
   
   const allLinks = [...links, ...adminLinks];

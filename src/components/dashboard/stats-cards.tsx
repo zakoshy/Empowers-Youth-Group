@@ -1,10 +1,12 @@
+'use client';
+
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { DollarSign, TrendingUp, TrendingDown, Scale } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Scale, Calendar } from "lucide-react";
 import { memberData } from "@/lib/data";
 
 export function StatsCards() {

@@ -8,7 +8,6 @@ import { updateProfile } from 'firebase/auth';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -46,7 +45,6 @@ export default function ProfilePage() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Create a temporary URL for optimistic update
       const tempUrl = URL.createObjectURL(file);
       setOptimisticPhotoURL(tempUrl);
       handleUpload(file);
@@ -67,20 +65,15 @@ export default function ProfilePage() {
 
     uploadBytes(storageRef, file)
       .then(snapshot => getDownloadURL(snapshot.ref))
-      .then(async (photoURL) => {
-        // We have the final URL, now update Auth and Firestore non-blockingly
-        await updateProfile(user, { photoURL });
+      .then(async (downloadURL) => {
+        // Non-blocking updates to Auth and Firestore
+        if (user) {
+           updateProfile(user, { photoURL: downloadURL });
+        }
         if (userProfileRef) {
-          await updateDoc(userProfileRef, { photoURL });
+           updateDoc(userProfileRef, { photoURL: downloadURL });
         }
         
-        // No need to set optimistic URL here, the useDoc hook will refresh with the new data.
-        // We can revoke the object URL to free memory.
-        if (optimisticPhotoURL?.startsWith('blob:')) {
-            URL.revokeObjectURL(optimisticPhotoURL);
-        }
-        setOptimisticPhotoURL(undefined);
-
         toast({
           title: 'Success!',
           description: 'Your profile picture has been updated.',
@@ -98,6 +91,12 @@ export default function ProfilePage() {
       })
       .finally(() => {
         setIsUploading(false);
+        // Revoke the object URL to free up memory after the process is complete
+        if (optimisticPhotoURL?.startsWith('blob:')) {
+            URL.revokeObjectURL(optimisticPhotoURL);
+        }
+        // The useDoc hook will handle showing the final state, so we can clear the optimistic one.
+        setOptimisticPhotoURL(undefined);
       });
   };
 
@@ -158,7 +157,7 @@ export default function ProfilePage() {
           <div className="flex-1 w-full text-center sm:text-left">
             <h2 className="text-2xl font-bold">{userProfile?.firstName} {userProfile?.lastName}</h2>
             <p className="text-muted-foreground">{userProfile?.email}</p>
-            {isUploading && <p className="text-sm text-primary mt-2">Uploading new photo...</p>}
+            {isUploading && <p className="text-sm text-primary mt-2">Updating photo...</p>}
           </div>
         </div>
       </CardContent>

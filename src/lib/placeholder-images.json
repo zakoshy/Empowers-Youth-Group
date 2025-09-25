@@ -1,3 +1,64 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero",
+      "description": "A group of young people working together and smiling.",
+      "imageUrl": "https://images.unsplash.com/photo-1660496756892-6e76652a1532?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx5b3V0aCUyMGNvbW11bml0eXxlbnwwfHx8fDE3NTg4MzExODR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "youth community"
+    },
+    {
+      "id": "community-card",
+      "description": "Hands holding a plant, symbolizing growth.",
+      "imageUrl": "https://images.unsplash.com/photo-1758304480396-c259d6ff1aa8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxjb21tdW5pdHklMjBncm93dGh8ZW58MHx8fHwxNzU4ODMxMTg0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "community growth"
+    },
+    {
+      "id": "investment-card",
+      "description": "Abstract image representing financial charts.",
+      "imageUrl": "https://images.unsplash.com/photo-1745509267699-1b1db256601e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxmaW5hbmNlJTIwY2hhcnR8ZW58MHx8fHwxNzU4NzA4NjE5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "finance chart"
+    },
+    {
+      "id": "events-card",
+      "description": "A calendar with a marked date.",
+      "imageUrl": "https://images.unsplash.com/photo-1624969862293-b749659ccc4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxldmVudCUyMGNhbGVuZGFyfGVufDB8fHx8MTc1ODgzMTE4NHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "event calendar"
+    },
+    {
+      "id": "about-story",
+      "description": "A scenic view of a village, representing the group's origins.",
+      "imageUrl": "https://images.unsplash.com/photo-1611479799221-d5862d2a62a6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHx2aWxsYWdlJTIwbGFuZHNjYXBlfGVufDB8fHx8MTc1ODgzMTE4NHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "village landscape"
+    },
+    {
+      "id": "event-1",
+      "description": "Community cleanup drive in action.",
+      "imageUrl": "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjb21tdW5pdHklMjBzZXJ2aWNlfGVufDB8fHx8MTc1ODgyNzY3OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "community service"
+    },
+    {
+      "id": "event-2",
+      "description": "Workshop on financial literacy.",
+      "imageUrl": "https://images.unsplash.com/flagged/photo-1576485436509-a7d286952b65?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8ZmluYW5jZSUyMHdvcmtzaG9wfGVufDB8fHx8MTc1ODgzMTE4NHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "finance workshop"
+    },
+    {
+      "id": "event-3",
+      "description": "Annual sports day event.",
+      "imageUrl": "https://images.unsplash.com/photo-1510698454686-1e2552e058e0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHx5b3V0aCUyMHNwb3J0c3xlbnwwfHx8fDE3NTg3ODI3NjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "youth sports"
+    },
+    {
+      "id": "mission-vision",
+      "description": "A person looking towards a bright horizon.",
+      "imageUrl": "https://images.unsplash.com/photo-1561664729-83f5ab9d8275?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxob3Jpem9uJTIwZnV0dXJlfGVufDB8fHx8MTc1ODgzMTE4NHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "horizon future"
+    },
+    {
+      "id": "auth-background",
+      "description": "An abstract geometric pattern with the brand's colors.",
+      "imageUrl": "https://images.unsplash.com/photo-1558244661-d248897f7bc4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8YWJzdHJhY3QlMjBwYXR0ZXJufGVufDB8fHx8MTc1ODczOTQ1Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract pattern"
+    }
+  ]
 }

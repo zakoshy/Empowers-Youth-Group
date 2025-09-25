@@ -5,8 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useAuth, useFirestore } from "@/firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { collection, getDocs, doc, setDoc } from "firebase/firestore";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { collection, getDocs, doc } from "firebase/firestore";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,6 @@ export function RegisterForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      // Check if any user exists
       const usersCollectionRef = collection(firestore, "userProfiles");
       const existingUsersSnapshot = await getDocs(usersCollectionRef);
       const isFirstUser = existingUsersSnapshot.empty;
@@ -61,9 +60,12 @@ export function RegisterForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
+      await updateProfile(user, {
+        displayName: `${values.firstName} ${values.lastName}`
+      });
+      
       const userRole = isFirstUser ? "Admin" : "Member";
 
-      // Create user profile in Firestore
       const userProfile = {
         id: user.uid,
         email: values.email,

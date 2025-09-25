@@ -1,6 +1,6 @@
 'use client';
 
-import { useUser } from "@/firebase";
+import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { EventsWidget } from "@/components/dashboard/events-widget";
 import { ReportsWidget } from "@/components/dashboard/reports-widget";
@@ -10,13 +10,28 @@ import { constitution } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { FileText } from "lucide-react";
+import { FileText, Calendar } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { doc } from "firebase/firestore";
+
+interface UserProfile {
+  firstName?: string;
+}
 
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
 
-  if (isUserLoading) {
+  const userProfileRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return doc(firestore, 'userProfiles', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+
+  const isLoading = isUserLoading || isProfileLoading;
+
+  if (isLoading) {
     return (
       <div className="flex flex-col gap-6">
         <div className="space-y-2">
@@ -46,7 +61,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-3xl font-bold font-headline">Welcome, {user?.displayName || 'Member'}!</h1>
+        <h1 className="text-3xl font-bold font-headline">Welcome, {userProfile?.firstName || user?.displayName?.split(' ')[0] || 'Member'}!</h1>
         <p className="text-muted-foreground">Here's a summary of your activities and group updates.</p>
       </div>
 

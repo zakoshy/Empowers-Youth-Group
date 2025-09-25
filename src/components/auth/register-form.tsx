@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -6,7 +7,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useAuth, useFirestore } from "@/firebase";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { collection, getDocs, doc } from "firebase/firestore";
+import { collection, doc } from "firebase/firestore";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 import { Button } from "@/components/ui/button";
@@ -53,10 +54,6 @@ export function RegisterForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const usersCollectionRef = collection(firestore, "userProfiles");
-      const existingUsersSnapshot = await getDocs(usersCollectionRef);
-      const isFirstUser = existingUsersSnapshot.empty;
-
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
@@ -64,7 +61,8 @@ export function RegisterForm() {
         displayName: `${values.firstName} ${values.lastName}`
       });
       
-      const userRole = isFirstUser ? "Admin" : "Member";
+      const isAdmin = values.email.toLowerCase() === "edwinoshome37@gmail.com";
+      const userRole = isAdmin ? "Admin" : "Member";
 
       const userProfile = {
         id: user.uid,
@@ -77,7 +75,7 @@ export function RegisterForm() {
       const userDocRef = doc(firestore, "userProfiles", user.uid);
       setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
 
-      if (isFirstUser) {
+      if (isAdmin) {
         const adminRoleRef = doc(firestore, "roles_admin", user.uid);
         setDocumentNonBlocking(adminRoleRef, { admin: true }, { merge: true });
       }

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
@@ -15,8 +16,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { doc } from "firebase/firestore";
 
 interface UserProfile {
-  firstName?: string;
-  role?: string;
+  firstName: string;
+  role: string;
 }
 
 export default function DashboardPage() {

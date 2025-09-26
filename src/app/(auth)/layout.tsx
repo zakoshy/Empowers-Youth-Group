@@ -17,7 +17,7 @@ export default function AuthLayout({
           <div className="grid gap-2 text-center">
             <Link href="/" className="flex items-center justify-center space-x-2 mb-4">
               <EmpowerHubLogo className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold font-headline">EmpowerHub</h1>
+              <h1 className="text-3xl font-bold font-headline">The Empowers youth group</h1>
             </Link>
           </div>
           {children}

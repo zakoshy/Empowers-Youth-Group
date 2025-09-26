@@ -35,7 +35,7 @@ const prompt = ai.definePrompt({
   name: 'personalizedSuggestionsPrompt',
   input: {schema: PersonalizedSuggestionsInputSchema},
   output: {schema: PersonalizedSuggestionsOutputSchema},
-  prompt: `You are an AI assistant designed to provide personalized community program suggestions to members of Empowers Youth Group.
+  prompt: `You are an AI assistant designed to provide personalized community program suggestions to members of The Empowers youth group.
 
   Based on the member's role, investment reports, upcoming events, and contribution summary, suggest programs that the member can effectively engage with the community.
 

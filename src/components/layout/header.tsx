@@ -20,7 +20,7 @@ export function Header() {
         <div className="mr-4 flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <EmpowerHubLogo className="h-6 w-6 text-primary" />
-            <span className="font-bold font-headline">EmpowerHub</span>
+            <span className="font-bold font-headline">The Empowers youth group</span>
           </Link>
           <nav className="hidden gap-6 md:flex">
             {navLinks.map((link) => (

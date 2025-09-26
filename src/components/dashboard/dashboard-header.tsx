@@ -65,7 +65,7 @@ export function DashboardHeader() {
       <SidebarTrigger className="md:hidden" />
       <Link href="/dashboard" className="md:hidden">
         <EmpowerHubLogo className="h-6 w-6 text-primary" />
-        <span className="sr-only">EmpowerHub</span>
+        <span className="sr-only">The Empowers youth group</span>
       </Link>
       <div className="w-full flex-1">
         {/* We can add a page title here if needed */}

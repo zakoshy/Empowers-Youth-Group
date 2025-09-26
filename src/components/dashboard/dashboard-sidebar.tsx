@@ -75,7 +75,7 @@ export function DashboardSidebar() {
             <SidebarHeader>
                  <Link href="/dashboard" className="flex items-center gap-2 font-semibold font-headline text-lg">
                     <EmpowerHubLogo className="h-6 w-6 text-primary" />
-                    <span>EmpowerHub</span>
+                    <span>The Empowers youth group</span>
                 </Link>
             </SidebarHeader>
             <SidebarContent>

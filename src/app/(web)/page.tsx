@@ -31,7 +31,7 @@ export default function HomePage() {
             Empowering Youth, Building Community
           </h1>
           <p className="mt-4 max-w-2xl text-lg md:text-xl">
-            From shared hardship to a beacon of hope, EmpowerHub is a youth-led initiative dedicated to giving back and uplifting our society.
+            From shared hardship to a beacon of hope, The Empowers youth group is a youth-led initiative dedicated to giving back and uplifting our society.
           </p>
           <div className="mt-8 flex gap-4">
             <Button size="lg" asChild style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
@@ -95,7 +95,7 @@ export default function HomePage() {
           <div className="order-2 md:order-1">
             <h2 className="text-3xl md:text-4xl font-headline font-semibold">Our Story of Resilience</h2>
             <p className="mt-4 text-muted-foreground">
-              EmpowerHub was born from the shared experiences of youths from our village who faced and overcame significant hardships. We believe in the power of unity and collective action to create a better future. Our journey from adversity to advocacy fuels our passion to give back and ensure that every young person in our community has the opportunity to thrive.
+              The Empowers youth group was born from the shared experiences of youths from our village who faced and overcame significant hardships. We believe in the power of unity and collective action to create a better future. Our journey from adversity to advocacy fuels our passion to give back and ensure that every young person in our community has the opportunity to thrive.
             </p>
             <Button asChild className="mt-6">
               <Link href="/about">
@@ -122,10 +122,10 @@ export default function HomePage() {
         <div className="container mx-auto text-center">
            <h2 className="text-3xl md:text-4xl font-headline font-semibold">Ready to Make a Difference?</h2>
            <p className="mt-2 max-w-2xl mx-auto text-muted-foreground">
-             Become a part of our journey. Whether you're from our village or share our vision, there's a place for you at EmpowerHub.
+             Become a part of our journey. Whether you're from our village or share our vision, there's a place for you at The Empowers youth group.
            </p>
            <Button size="lg" asChild className="mt-8" style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
-              <Link href="/register">Join EmpowerHub Today</Link>
+              <Link href="/register">Join The Empowers youth group Today</Link>
             </Button>
         </div>
       </section>

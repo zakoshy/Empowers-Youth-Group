@@ -3,21 +3,23 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, setDoc, getDocs, query, where, writeBatch } from 'firebase/firestore';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { collection, doc, writeBatch, getDocs, query, where } from 'firebase/firestore';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { MONTHS, FINANCIAL_CONFIG } from '@/lib/data';
-import debounce from 'lodash.debounce';
+import { MONTHS } from '@/lib/data';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Loader2 } from 'lucide-react';
 
 interface UserProfile {
   id: string;
   firstName: string;
   lastName:string;
   role: string;
+  photoURL?: string;
 }
 
 interface Contribution {
@@ -33,17 +35,19 @@ export default function TreasurerDashboard() {
   const firestore = useFirestore();
   const { toast } = useToast();
   
-  const usersRef = useMemoFirebase(() => collection(firestore, 'userProfiles'), [firestore]);
-  const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersRef);
+  const usersRef = useMemoFirebase(() => query(collection(firestore, 'userProfiles'), where('role', '!=', 'Admin')), [firestore]);
+  const { data: members, isLoading: usersLoading } = useCollection<UserProfile>(usersRef);
   
   const [contributions, setContributions] = useState<Record<string, Record<string, number>>>({});
   const [loadingContributions, setLoadingContributions] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const members = users?.filter(u => u.role !== 'Admin') || [];
+  const getInitials = (firstName: string, lastName: string) => {
+    return `${firstName?.charAt(0) ?? ''}${lastName?.charAt(0) ?? ''}`.toUpperCase();
+  };
 
   const fetchContributions = useCallback(async () => {
-    if (!members.length) {
+    if (!members || !members.length) {
         setLoadingContributions(false);
         return;
     };
@@ -69,46 +73,16 @@ export default function TreasurerDashboard() {
   }, [firestore, members]);
 
   useEffect(() => {
-    fetchContributions();
-  }, [users]); // Refetch when users list is loaded/changed
+    if (members) {
+      fetchContributions();
+    }
+  }, [members, fetchContributions]);
 
-  const debouncedSave = useCallback(
-    debounce(async (userId: string, month: number, amount: number) => {
-      setSaving(true);
-      const contributionId = `${MONTHS[month].toLowerCase()}_${currentYear}`;
-      const docRef = doc(firestore, 'userProfiles', userId, 'contributions', contributionId);
-      
-      try {
-        await setDoc(docRef, {
-          year: currentYear,
-          month: month,
-          amount: amount,
-        }, { merge: true });
-
-        toast({
-            title: 'Saved!',
-            description: `Contribution for ${MONTHS[month]} updated.`,
-        });
-
-      } catch (error) {
-        console.error("Failed to save contribution:", error);
-        toast({
-            variant: "destructive",
-            title: 'Save Failed',
-            description: `Could not update contribution.`,
-        });
-      } finally {
-        setSaving(false);
-      }
-    }, 1000), // 1-second debounce delay
-    [firestore, toast]
-  );
-
-  const handleAmountChange = (userId: string, month: number, value: string) => {
+  const handleAmountChange = (userId: string, monthIndex: number, value: string) => {
     const amount = Number(value);
     if (isNaN(amount)) return;
 
-    const monthKey = MONTHS[month].toLowerCase();
+    const monthKey = MONTHS[monthIndex].toLowerCase();
     
     setContributions(prev => ({
       ...prev,
@@ -117,8 +91,43 @@ export default function TreasurerDashboard() {
         [monthKey]: amount,
       },
     }));
+  };
 
-    debouncedSave(userId, month, amount);
+  const handleUpdateContributions = async () => {
+    setIsSaving(true);
+    const batch = writeBatch(firestore);
+
+    Object.entries(contributions).forEach(([userId, monthlyData]) => {
+      Object.entries(monthlyData).forEach(([monthName, amount]) => {
+        const monthIndex = MONTHS.findIndex(m => m.toLowerCase() === monthName);
+        if (monthIndex !== -1) {
+          const contributionId = `${monthName}_${currentYear}`;
+          const docRef = doc(firestore, 'userProfiles', userId, 'contributions', contributionId);
+          batch.set(docRef, {
+            year: currentYear,
+            month: monthIndex,
+            amount: amount,
+          }, { merge: true });
+        }
+      });
+    });
+
+    try {
+      await batch.commit();
+      toast({
+        title: 'Success!',
+        description: 'All member contributions have been updated.',
+      });
+    } catch (error) {
+      console.error("Failed to save contributions:", error);
+      toast({
+          variant: "destructive",
+          title: 'Update Failed',
+          description: 'Could not update contributions. Please try again.',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
   
   const isLoading = usersLoading || loadingContributions;
@@ -128,8 +137,7 @@ export default function TreasurerDashboard() {
       <CardHeader>
         <CardTitle>Manage Member Contributions - {currentYear}</CardTitle>
         <CardDescription>
-            Enter and update the monthly contributions for each member. Changes are saved automatically.
-            {saving && <span className="ml-2 text-sm text-primary animate-pulse">Saving...</span>}
+            Enter and update the monthly contributions for each member. Click "Update Contributions" to save all changes.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -142,17 +150,23 @@ export default function TreasurerDashboard() {
             <Table className="min-w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="sticky left-0 bg-card z-10">Member</TableHead>
+                  <TableHead className="sticky left-0 bg-card z-10 min-w-[200px]">Member</TableHead>
                   {MONTHS.map(month => (
                     <TableHead key={month} className="min-w-[120px]">{month}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {members.map(member => (
+                {members && members.map(member => (
                   <TableRow key={member.id}>
                     <TableCell className="font-medium sticky left-0 bg-card z-10">
-                      {member.firstName} {member.lastName}
+                       <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={member.photoURL} />
+                          <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
+                        </Avatar>
+                        <span>{member.firstName} {member.lastName}</span>
+                      </div>
                     </TableCell>
                     {MONTHS.map((month, index) => {
                       const monthKey = month.toLowerCase();
@@ -176,6 +190,12 @@ export default function TreasurerDashboard() {
           </div>
         )}
       </CardContent>
+      <CardFooter className="justify-end">
+        <Button onClick={handleUpdateContributions} disabled={isSaving}>
+          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isSaving ? 'Updating...' : 'Update Contributions'}
+        </Button>
+      </CardFooter>
     </Card>
   );
 }

@@ -13,14 +13,13 @@ import {
 } from "@/components/ui/sidebar"
 import { EmpowerHubLogo } from "../icons";
 import { dashboardNavLinks } from "@/lib/data";
-import { Home, LineChart, Package, Package2, ShoppingCart, Users, Vote, FileText, DollarSign, TrendingUp, Calendar, Settings, BookOpen, LogOut, MessageSquare } from "lucide-react";
+import { Home, LineChart, Package, Package2, ShoppingCart, Users, Vote, FileText, DollarSign, TrendingUp, Calendar, Settings, BookOpen, LogOut } from "lucide-react";
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ChatDialog } from "../chat-dialog";
 
 const icons: { [key: string]: React.ElementType } = {
   Home,
@@ -32,7 +31,6 @@ const icons: { [key: string]: React.ElementType } = {
   Users,
   BookOpen,
   Settings,
-  MessageSquare
 };
 
 interface UserProfile {
@@ -45,7 +43,6 @@ export function DashboardSidebar() {
     const auth = useAuth();
     const { toast } = useToast();
     const pathname = usePathname();
-    const [isChatOpen, setIsChatOpen] = useState(false);
     
     const userProfileRef = useMemoFirebase(() => {
         if (!user) return null;
@@ -104,14 +101,6 @@ export function DashboardSidebar() {
                 </SidebarContent>
                 <SidebarFooter>
                     <SidebarMenu>
-                        {userRole !== 'Admin' && (
-                             <SidebarMenuItem>
-                                <SidebarMenuButton onClick={() => setIsChatOpen(true)} tooltip="AI Assistant">
-                                    <MessageSquare />
-                                    <span>AI Assistant</span>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        )}
                         <SidebarMenuItem>
                             <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
                                 <LogOut />
@@ -121,7 +110,6 @@ export function DashboardSidebar() {
                     </SidebarMenu>
                 </SidebarFooter>
             </Sidebar>
-            {user && <ChatDialog isOpen={isChatOpen} onOpenChange={setIsChatOpen} userId={user.uid} />}
         </>
     )
 }

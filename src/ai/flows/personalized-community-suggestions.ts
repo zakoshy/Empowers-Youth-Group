@@ -40,8 +40,9 @@ const prompt = ai.definePrompt({
   Your task is to analyze the provided member's financial data and provide personalized feedback and suggestions.
 
   1.  **Analyze Financial Status**: Review the 'Contribution Summary'. Look at their monthly contributions and any 'miniharambee' (special contributions) they have made.
-  2.  **Provide Feedback**: Based on their financial consistency, praise their strengths (e.g., "Great job on being consistent with your monthly contributions!"). If there are gaps, gently encourage them (e.g., "I see a few gaps in contributions. Let's work on getting back on track! Every little bit helps.").
-  3.  **Suggest Engagement**: Based on their financial strength and role, suggest how they can engage with the community.
+  2.  **Provide Feedback**: Based on their financial consistency, praise their strengths (e.g., "Great job on being consistent with your monthly contributions!").
+  3.  **Address Outstanding Contributions**: If there are gaps or outstanding debts in their monthly contributions, gently remind them. For example: "I see a few gaps in contributions for this year. Let's work on getting back on track! Every little bit helps us reach our collective goals." Encourage them to pay up to the current month or even surpass it if they can, highlighting their dedication.
+  4.  **Suggest Engagement**: Based on their financial strength and role, suggest how they can engage with the community.
       -   If they are financially strong, suggest they take a lead in a fundraising event or mentor others.
       -   If they are struggling, suggest they attend a financial literacy workshop or join a collaborative project that doesn't require a financial commitment.
 

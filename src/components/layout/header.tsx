@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { EmpowerHubLogo } from "@/components/icons";
@@ -13,6 +13,48 @@ import { cn } from "@/lib/utils";
 export function Header() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activeLink, setActiveLink] = useState("");
+
+  const handleScroll = () => {
+    const sections = navLinks.map(link => document.getElementById(link.href.substring(2)));
+    const scrollPosition = window.scrollY + 100;
+
+    for (const section of sections) {
+      if (section && scrollPosition >= section.offsetTop && scrollPosition < section.offsetTop + section.offsetHeight) {
+        setActiveLink(`/${section.id}`);
+        break;
+      }
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+  
+  useEffect(() => {
+    if (pathname === '/') {
+      const hash = window.location.hash;
+      if (hash) {
+        const element = document.getElementById(hash.substring(1));
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    }
+  }, [pathname]);
+
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (pathname === '/') {
+      e.preventDefault();
+      const element = document.getElementById(href.substring(2));
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        setIsMenuOpen(false);
+      }
+    }
+  };
+
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -22,22 +64,23 @@ export function Header() {
             <EmpowerHubLogo className="h-6 w-6 text-primary" />
             <span className="font-bold font-headline">The Empowers youth group</span>
           </Link>
-          <nav className="hidden gap-6 md:flex">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "flex items-center text-sm font-medium transition-colors hover:text-primary",
-                  pathname === link.href ? "text-primary" : "text-foreground/60"
-                )}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
         </div>
-        <div className="flex flex-1 items-center justify-end space-x-2">
+        <nav className="hidden flex-1 md:flex justify-center gap-6">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              onClick={(e) => handleLinkClick(e, link.href)}
+              className={cn(
+                "flex items-center text-sm font-medium transition-colors hover:text-primary",
+                activeLink === link.href ? "text-primary" : "text-foreground/60"
+              )}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="flex flex-1 items-center justify-end space-x-2 md:flex-initial">
           <Button variant="ghost" asChild>
             <Link href="/login">Login</Link>
           </Button>
@@ -60,10 +103,10 @@ export function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                onClick={() => setIsMenuOpen(false)}
+                onClick={(e) => handleLinkClick(e, link.href)}
                 className={cn(
                   "text-lg font-medium",
-                  pathname === link.href ? "text-primary" : "text-foreground/80"
+                  activeLink === link.href ? "text-primary" : "text-foreground/80"
                 )}
               >
                 {link.label}

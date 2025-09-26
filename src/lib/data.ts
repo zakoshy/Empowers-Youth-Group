@@ -104,10 +104,10 @@ export const constitution = {
 };
 
 export const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/about", label: "About Us" },
-  { href: "/mission", label: "Mission & Vision" },
-  { href: "/events", label: "Events" },
+  { href: "/#", label: "Home" },
+  { href: "/#about", label: "About Us" },
+  { href: "/#mission", label: "Mission & Vision" },
+  { href: "/#events", label: "Events" },
 ];
 
 export const roles = ["Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead", "Member"];

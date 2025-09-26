@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { MONTHS } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2 } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface UserProfile {
   id: string;
@@ -146,46 +147,93 @@ export default function TreasurerDashboard() {
             {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="sticky left-0 bg-card z-10 min-w-[200px] whitespace-nowrap">Member</TableHead>
-                {MONTHS.map(month => (
-                  <TableHead key={month} className="min-w-[120px] whitespace-nowrap">{month}</TableHead>
+          <>
+            {/* Desktop View: Table */}
+            <div className="hidden md:block">
+              <div className="relative w-full overflow-auto">
+                 <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead className="sticky left-0 bg-card z-10 min-w-[200px] whitespace-nowrap">Member</TableHead>
+                        {MONTHS.map(month => (
+                        <TableHead key={month} className="min-w-[120px] whitespace-nowrap">{month}</TableHead>
+                        ))}
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {members && members.map(member => (
+                        <TableRow key={member.id}>
+                        <TableCell className="font-medium sticky left-0 bg-card z-10 whitespace-nowrap">
+                            <div className="flex items-center gap-3">
+                            <Avatar>
+                                <AvatarImage src={member.photoURL} />
+                                <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
+                            </Avatar>
+                            <span>{member.firstName} {member.lastName}</span>
+                            </div>
+                        </TableCell>
+                        {MONTHS.map((month, index) => {
+                            const monthKey = month.toLowerCase();
+                            const value = contributions[member.id]?.[monthKey] || '';
+                            return (
+                            <TableCell key={month}>
+                                <Input
+                                type="number"
+                                placeholder="0"
+                                value={value}
+                                onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
+                                className="w-24"
+                                />
+                            </TableCell>
+                            );
+                        })}
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+              </div>
+            </div>
+
+            {/* Mobile View: Accordion */}
+            <div className="md:hidden">
+              <Accordion type="multiple" className="w-full">
+                {members && members.map(member => (
+                  <AccordionItem value={member.id} key={member.id}>
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={member.photoURL} />
+                          <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
+                        </Avatar>
+                        <span>{member.firstName} {member.lastName}</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-4 p-2">
+                        {MONTHS.map((month, index) => {
+                          const monthKey = month.toLowerCase();
+                          const value = contributions[member.id]?.[monthKey] || '';
+                          return (
+                            <div key={month} className="flex items-center justify-between gap-4">
+                              <label htmlFor={`${member.id}-${month}`}>{month}</label>
+                              <Input
+                                id={`${member.id}-${month}`}
+                                type="number"
+                                placeholder="0"
+                                value={value}
+                                onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
+                                className="w-32 text-right"
+                              />
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
                 ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {members && members.map(member => (
-                <TableRow key={member.id}>
-                  <TableCell className="font-medium sticky left-0 bg-card z-10 whitespace-nowrap">
-                     <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={member.photoURL} />
-                        <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
-                      </Avatar>
-                      <span>{member.firstName} {member.lastName}</span>
-                    </div>
-                  </TableCell>
-                  {MONTHS.map((month, index) => {
-                    const monthKey = month.toLowerCase();
-                    const value = contributions[member.id]?.[monthKey] || '';
-                    return (
-                      <TableCell key={month}>
-                        <Input
-                          type="number"
-                          placeholder="0"
-                          value={value}
-                          onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
-                          className="w-24"
-                        />
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </Accordion>
+            </div>
+          </>
         )}
       </CardContent>
       <CardFooter className="justify-end">
@@ -197,3 +245,4 @@ export default function TreasurerDashboard() {
     </Card>
   );
 }
+

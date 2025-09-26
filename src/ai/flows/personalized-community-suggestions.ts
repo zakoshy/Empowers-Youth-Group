@@ -15,7 +15,7 @@ const PersonalizedSuggestionsInputSchema = z.object({
   memberId: z.string().describe('The ID of the member.'),
   investmentReports: z.string().describe('Summaries of investment reports.'),
   upcomingEvents: z.string().describe('Summaries of upcoming events.'),
-  contributionSummary: z.string().describe('The member contribution summary.'),
+  contributionSummary: z.string().describe('A JSON string of the member contribution summary, including monthly and special contributions.'),
   memberRole: z.string().describe('The role of the member'),
 });
 export type PersonalizedSuggestionsInput = z.infer<typeof PersonalizedSuggestionsInputSchema>;
@@ -35,16 +35,23 @@ const prompt = ai.definePrompt({
   name: 'personalizedSuggestionsPrompt',
   input: {schema: PersonalizedSuggestionsInputSchema},
   output: {schema: PersonalizedSuggestionsOutputSchema},
-  prompt: `You are an AI assistant designed to provide personalized community program suggestions to members of The Empowers youth group.
+  prompt: `You are an AI financial mentor and community engagement advisor for The Empowers youth group. Your tone should be encouraging, supportive, and motivating.
 
-  Based on the member's role, investment reports, upcoming events, and contribution summary, suggest programs that the member can effectively engage with the community.
+  Your task is to analyze the provided member's financial data and provide personalized feedback and suggestions.
 
+  1.  **Analyze Financial Status**: Review the 'Contribution Summary'. Look at their monthly contributions and any 'miniharambee' (special contributions) they have made.
+  2.  **Provide Feedback**: Based on their financial consistency, praise their strengths (e.g., "Great job on being consistent with your monthly contributions!"). If there are gaps, gently encourage them (e.g., "I see a few gaps in contributions. Let's work on getting back on track! Every little bit helps.").
+  3.  **Suggest Engagement**: Based on their financial strength and role, suggest how they can engage with the community.
+      -   If they are financially strong, suggest they take a lead in a fundraising event or mentor others.
+      -   If they are struggling, suggest they attend a financial literacy workshop or join a collaborative project that doesn't require a financial commitment.
+
+  Here is the data:
   Member Role: {{{memberRole}}}
-  Investment Reports: {{{investmentReports}}}
-  Upcoming Events: {{{upcomingEvents}}}
   Contribution Summary: {{{contributionSummary}}}
+  Upcoming Events: {{{upcomingEvents}}}
+  Investment Reports: {{{investmentReports}}}
 
-  Provide a list of suggestions.
+  Provide a concise, actionable list of suggestions in a few paragraphs.
   `,
 });
 

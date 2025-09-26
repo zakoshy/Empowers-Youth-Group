@@ -12,13 +12,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Wand2 } from "lucide-react";
 import { getPersonalizedSuggestions } from "@/ai/flows/personalized-community-suggestions";
 import { investmentReports, events } from "@/lib/data";
-import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from "@/firebase";
+import { doc, collection } from "firebase/firestore";
 
 interface UserProfile {
   id: string;
   role: string;
-  financialSummary: any;
+}
+
+interface Contribution {
+    month: number;
+    year: number;
+    amount: number;
+}
+
+interface SpecialContribution {
+    month: number;
+    year: number;
+    amount: number;
+    date: string;
 }
 
 export function PersonalizedSuggestions() {
@@ -33,21 +45,38 @@ export function PersonalizedSuggestions() {
     return doc(firestore, 'userProfiles', user.uid);
   }, [firestore, user]);
 
+  const contributionsRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return collection(firestore, 'userProfiles', user.uid, 'contributions');
+    }, [firestore, user]);
+
+  const specialContributionsRef = useMemoFirebase(() => {
+    if (!user) return null;
+    return collection(firestore, 'userProfiles', user.uid, 'specialContributions');
+  }, [firestore, user]);
+
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+  const { data: contributions } = useCollection<Contribution>(contributionsRef);
+  const { data: specialContributions } = useCollection<SpecialContribution>(specialContributionsRef);
 
   useEffect(() => {
     async function fetchSuggestions() {
-      if (!userProfile) return;
+      if (!userProfile || contributions === null || specialContributions === null) return;
 
       try {
         setLoading(true);
         setError("");
         
+        const contributionSummary = {
+            monthlyContributions: contributions,
+            specialContributions: specialContributions
+        }
+
         const input = {
           memberId: userProfile.id,
           investmentReports: JSON.stringify(investmentReports),
           upcomingEvents: JSON.stringify(events),
-          contributionSummary: JSON.stringify({}), // Placeholder
+          contributionSummary: JSON.stringify(contributionSummary),
           memberRole: userProfile.role,
         };
 
@@ -62,10 +91,10 @@ export function PersonalizedSuggestions() {
       }
     }
 
-    if (userProfile) {
+    if (userProfile && contributions !== null && specialContributions !== null) {
       fetchSuggestions();
     }
-  }, [userProfile]);
+  }, [userProfile, contributions, specialContributions]);
 
   return (
     <Card className="bg-gradient-to-br from-primary/10 to-card">

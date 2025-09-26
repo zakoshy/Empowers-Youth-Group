@@ -114,29 +114,30 @@ export const navLinks = [
 export const roles = ["Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead", "Member"];
 
 export const dashboardNavLinks = (userRole: string = "Member") => {
-  const links = [
+  const allLinks = [
+    // Common links
     { href: "/dashboard", label: "Dashboard", icon: "Home", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/profile", label: "Profile", icon: "Users", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
+    
+    // Role-specific links
     { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer", "Admin"] },
     { href: "/dashboard/events", label: "Events", icon: "Calendar", roles: ["Member", "Coordinator", "Admin"] },
     { href: "/dashboard/reports", label: "Investments", icon: "TrendingUp", roles: ["Member", "Investment Lead", "Admin"] },
     { href: "/dashboard/polls", label: "Polls", icon: "Vote", roles: ["Member", "Chairperson", "Admin"] },
     { href: "/dashboard/constitution", label: "Constitution", icon: "FileText", roles: ["Member", "Chairperson", "Admin"] },
-  ];
 
-  const adminLinks = [
+    // Admin/privileged links
     { href: "/dashboard/manage-users", label: "Manage Users", icon: "Users", roles: ["Admin", "Chairperson"] },
     { href: "/dashboard/manage-finances", label: "Manage Finances", icon: "BookOpen", roles: ["Admin", "Chairperson", "Treasurer"] },
-  ]
+  ];
   
-  const allLinks = [...links, ...adminLinks];
-
-  // A user with "Admin" role should see everything.
+  // Admins get all links. We use a Map to ensure uniqueness based on 'href'.
   if (userRole === "Admin") {
-    // We filter out duplicates, but ensure Profile is always included
-    const adminNavs = allLinks.filter(link => !links.some(l => l.href === link.href && l.href !== '/dashboard/profile'));
-    return [...links, ...adminNavs];
+    const uniqueLinks = new Map();
+    allLinks.forEach(link => uniqueLinks.set(link.href, link));
+    return Array.from(uniqueLinks.values());
   }
 
+  // Filter links for other roles based on their permissions.
   return allLinks.filter(link => link.roles.includes(userRole));
 };

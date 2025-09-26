@@ -202,6 +202,18 @@ export default function TreasurerDashboard() {
       });
     }
   }
+
+  const grandTotal = useMemo(() => {
+    const monthlyTotal = Object.values(contributions).reduce((total, userContributions) => {
+        return total + Object.values(userContributions).reduce((userTotal, amount) => userTotal + amount, 0);
+    }, 0);
+
+    const specialTotal = Object.values(specialContributions).reduce((total, userSpecialContributions) => {
+        return total + userSpecialContributions.reduce((userTotal, sc) => userTotal + sc.amount, 0);
+    }, 0);
+
+    return monthlyTotal + specialTotal;
+  }, [contributions, specialContributions]);
   
   const isLoading = usersLoading || loadingData;
 
@@ -379,7 +391,10 @@ export default function TreasurerDashboard() {
           </>
           )}
       </CardContent>
-      <CardFooter className="justify-end">
+      <CardFooter className="justify-between items-center">
+          <div className="text-lg font-bold">
+            Total Collected: <span className="text-primary">Ksh {grandTotal.toLocaleString()}</span>
+          </div>
           <Button onClick={handleUpdateContributions} disabled={isSaving}>
           {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isSaving ? 'Updating...' : 'Update Contributions'}

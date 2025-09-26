@@ -1,10 +1,22 @@
 {
   "placeholderImages": [
     {
-      "id": "hero",
-      "description": "A group of young people working together and smiling.",
-      "imageUrl": "https://images.unsplash.com/photo-1660496756892-6e76652a1532?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx5b3V0aCUyMGNvbW11bml0eXxlbnwwfHx8fDE3NTg4MzExODR8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "youth community"
+      "id": "empower4",
+      "description": "A group of diverse young people collaborating on a project.",
+      "imageUrl": "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx5b3V0aCUyMGNvbGxhYm9yYXRpb258ZW58MHx8fHwxNzU4ODQyNTU4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "youth collaboration"
+    },
+    {
+      "id": "empower1",
+      "description": "Young volunteers planting trees in a community garden.",
+      "imageUrl": "https://images.unsplash.com/photo-1599227690662-76d467e4b52c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx5b3V0aCUyMHZvbHVudGVlcmluZ3xlbnwwfHx8fDE3NTg4NDI1NTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "youth volunteering"
+    },
+    {
+      "id": "empower5",
+      "description": "A young person smiling confidently at the camera.",
+      "imageUrl": "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxlbXBvd2VyZWQlMjB5b3V0aHxlbnwwfHx8fDE3NTg4NDI1NTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "empowered youth"
     },
     {
       "id": "community-card",

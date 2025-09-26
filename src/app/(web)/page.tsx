@@ -14,9 +14,15 @@ import { collection, query, orderBy, where } from "firebase/firestore";
 import type { Event } from "@/lib/data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 export default function HomePage() {
-  const heroImage = PlaceHolderImages.find((img) => img.id === "hero");
+  const heroImages = [
+    PlaceHolderImages.find((img) => img.id === "empower4"),
+    PlaceHolderImages.find((img) => img.id === "empower1"),
+    PlaceHolderImages.find((img) => img.id === "empower5"),
+  ].filter(Boolean);
+
   const aboutImage = PlaceHolderImages.find((img) => img.id === "about-story");
   const missionVisionImage = PlaceHolderImages.find((img) => img.id === "mission-vision");
   const aboutStoryImage = PlaceHolderImages.find((img) => img.id === "about-story");
@@ -43,30 +49,42 @@ export default function HomePage() {
     <div className="flex flex-col">
       {/* Hero Section */}
       <section className="relative h-[60vh] md:h-[80vh] w-full">
-        {heroImage && (
-          <Image
-            src={heroImage.imageUrl}
-            alt={heroImage.description}
-            fill
-            className="object-cover"
-            data-ai-hint={heroImage.imageHint}
-            priority
-          />
-        )}
-        <div className="absolute inset-0 bg-black/50" />
-        <div className="relative container mx-auto h-full flex flex-col items-center justify-center text-center text-white">
-          <h1 className="text-4xl md:text-7xl font-headline font-bold">
-            Empowering Youth, Building Community
-          </h1>
-          <p className="mt-4 max-w-2xl text-lg md:text-xl">
-            From shared hardship to a beacon of hope, The Empowers youth group is a youth-led initiative dedicated to giving back and uplifting our society.
-          </p>
-          <div className="mt-8">
-            <Button size="lg" asChild style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
-              <Link href="/register">Join Us</Link>
-            </Button>
-          </div>
-        </div>
+        <Carousel className="w-full h-full" opts={{ loop: true }}>
+          <CarouselContent className="h-full">
+            {heroImages.map((heroImage) => (
+              heroImage && (
+                <CarouselItem key={heroImage.id} className="h-full">
+                  <div className="relative w-full h-full">
+                    <Image
+                      src={heroImage.imageUrl}
+                      alt={heroImage.description}
+                      fill
+                      className="object-cover"
+                      data-ai-hint={heroImage.imageHint}
+                      priority={heroImages.indexOf(heroImage) === 0}
+                    />
+                    <div className="absolute inset-0 bg-black/50" />
+                    <div className="relative container mx-auto h-full flex flex-col items-center justify-center text-center text-white">
+                      <h1 className="text-4xl md:text-7xl font-headline font-bold">
+                        Empowering Youth, Building Community
+                      </h1>
+                      <p className="mt-4 max-w-2xl text-lg md:text-xl">
+                        From shared hardship to a beacon of hope, The Empowers youth group is a youth-led initiative dedicated to giving back and uplifting our society.
+                      </p>
+                      <div className="mt-8">
+                        <Button size="lg" asChild style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
+                          <Link href="/register">Join Us</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CarouselItem>
+              )
+            ))}
+          </CarouselContent>
+          <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/20 hover:bg-black/50 border-none" />
+          <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/20 hover:bg-black/50 border-none" />
+        </Carousel>
       </section>
 
       {/* What We Do Section */}

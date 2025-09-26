@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, writeBatch, getDocs, query, where, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, writeBatch, getDocs, query, where, deleteDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -70,6 +70,24 @@ export default function TreasurerDashboard() {
     return `${firstName?.charAt(0) ?? ''}${lastName?.charAt(0) ?? ''}`.toUpperCase();
   };
   
+  const fetchSpecialContributions = useCallback(async () => {
+    if (!members || !members.length) return;
+
+    const allSpecialContributions: Record<string, SpecialContribution[]> = {};
+    for (const member of members) {
+      const specialContributionsRef = collection(firestore, 'userProfiles', member.id, 'specialContributions');
+      const qSpecial = query(specialContributionsRef, where('year', '==', currentYear));
+      const specialSnapshot = await getDocs(qSpecial);
+
+      const memberSpecialContributions: SpecialContribution[] = [];
+      specialSnapshot.forEach(doc => {
+          memberSpecialContributions.push({ id: doc.id, ...(doc.data() as Omit<SpecialContribution, 'id'>) });
+      });
+      allSpecialContributions[member.id] = memberSpecialContributions;
+    }
+    setSpecialContributions(allSpecialContributions);
+  }, [firestore, members]);
+
   const fetchData = useCallback(async () => {
     if (!members || !members.length) {
         setLoadingData(false);
@@ -78,8 +96,7 @@ export default function TreasurerDashboard() {
     
     setLoadingData(true);
     const allContributions: Record<string, Record<string, number>> = {};
-    const allSpecialContributions: Record<string, SpecialContribution[]> = {};
-
+    
     for (const member of members) {
       // Fetch regular contributions
       const contributionsRef = collection(firestore, 'userProfiles', member.id, 'contributions');
@@ -92,23 +109,12 @@ export default function TreasurerDashboard() {
         memberContributions[MONTHS[data.month].toLowerCase()] = data.amount;
       });
       allContributions[member.id] = memberContributions;
-      
-      // Fetch special contributions
-      const specialContributionsRef = collection(firestore, 'userProfiles', member.id, 'specialContributions');
-      const qSpecial = query(specialContributionsRef, where('year', '==', currentYear));
-      const specialSnapshot = await getDocs(qSpecial);
-
-      const memberSpecialContributions: SpecialContribution[] = [];
-      specialSnapshot.forEach(doc => {
-          memberSpecialContributions.push({ id: doc.id, ...(doc.data() as Omit<SpecialContribution, 'id'>) });
-      });
-      allSpecialContributions[member.id] = memberSpecialContributions;
     }
     
     setContributions(allContributions);
-    setSpecialContributions(allSpecialContributions);
+    await fetchSpecialContributions(); // Also fetch special contributions
     setLoadingData(false);
-  }, [firestore, members]);
+  }, [firestore, members, fetchSpecialContributions]);
 
   useEffect(() => {
     if (members) {
@@ -186,7 +192,7 @@ export default function TreasurerDashboard() {
         title: 'Deleted!',
         description: 'The special contribution has been removed.',
       });
-      fetchData(); // Refresh data
+      fetchSpecialContributions(); // Refresh only special contributions data
     } catch (error) {
       console.error('Failed to delete special contribution:', error);
       toast({
@@ -385,7 +391,7 @@ export default function TreasurerDashboard() {
               isOpen={isAddSpecialOpen}
               onOpenChange={(isOpen) => {
                   setIsAddSpecialOpen(isOpen);
-                  if (!isOpen) fetchData(); // Refresh on close
+                  if (!isOpen) fetchSpecialContributions(); // Refresh on close
               }}
               member={specialContributionData.member}
               month={specialContributionData.month}
@@ -397,7 +403,7 @@ export default function TreasurerDashboard() {
               isOpen={isEditSpecialOpen}
               onOpenChange={(isOpen) => {
                   setIsEditSpecialOpen(isOpen);
-                  if (!isOpen) fetchData(); // Refresh on close
+                  if (!isOpen) fetchSpecialContributions(); // Refresh on close
               }}
               contribution={editingContribution}
           />

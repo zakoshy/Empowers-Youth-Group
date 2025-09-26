@@ -77,6 +77,32 @@ export const constitution = {
   lastUpdated: "2024-01-10",
 };
 
+export const DUMMY_CONSTITUTION_TEXT = `
+The Constitution of The Empowers Youth Group
+
+Article I: Name and Purpose
+1.1 The name of this organization shall be "The Empowers Youth Group".
+1.2 Our purpose is to foster economic independence, social responsibility, and personal growth among the youth of our community.
+
+Article II: Membership
+2.1 Membership is open to any youth aged 18-35 residing in our village.
+2.2 Members must pay a monthly contribution of Ksh 200, due by the last day of each month.
+2.3 Failure to contribute for three consecutive months without valid reason may result in suspension of membership privileges.
+
+Article III: Governance
+3.1 The group shall be led by an elected committee consisting of a Chairperson, Treasurer, and Coordinator.
+3.2 Elections shall be held annually in December. All members in good standing are eligible to vote and be nominated.
+
+Article IV: Finances
+4.1 All funds shall be managed by the Treasurer and held in a group bank account.
+4.2 The Treasurer must provide a monthly financial report to all members.
+4.3 Investments require a majority vote from the members during a formal poll.
+
+Article V: Meetings and Events
+5.1 General meetings shall be held on the first Sunday of every month.
+5.2 The Coordinator is responsible for organizing community events and workshops.
+`;
+
 export const navLinks = [
   { href: "/#", label: "Home" },
   { href: "/#about", label: "About Us" },

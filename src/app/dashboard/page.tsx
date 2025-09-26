@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from "react";
 import { useUser, useFirestore, useDoc, useMemoFirebase } from "@/firebase";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { EventsWidget } from "@/components/dashboard/events-widget";
@@ -12,9 +13,18 @@ import { constitution } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { FileText, Phone } from "lucide-react";
+import { FileText, Phone, Wand2, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { doc } from "firebase/firestore";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { summarizeConstitution } from "@/ai/flows/summarize-constitution";
+import { DUMMY_CONSTITUTION_TEXT } from "@/lib/data";
 
 interface UserProfile {
   firstName: string;
@@ -26,12 +36,32 @@ export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [summary, setSummary] = useState("");
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+
   const userProfileRef = useMemoFirebase(() => {
     if (!user) return null;
     return doc(firestore, 'userProfiles', user.uid);
   }, [firestore, user]);
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+
+  const handleSummarize = async () => {
+    setIsSummaryOpen(true);
+    if (summary) return; // Don't re-fetch if summary is already loaded
+
+    setIsSummaryLoading(true);
+    try {
+      const result = await summarizeConstitution({ constitutionText: DUMMY_CONSTITUTION_TEXT });
+      setSummary(result.summary);
+    } catch (error) {
+      console.error("Failed to get summary:", error);
+      setSummary("Sorry, the summary could not be generated at this time.");
+    } finally {
+      setIsSummaryLoading(false);
+    }
+  };
 
   const isLoading = isUserLoading || isProfileLoading;
 
@@ -71,58 +101,93 @@ export default function DashboardPage() {
 
 
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-3xl font-bold font-headline">Welcome, {welcomeName}!</h1>
-        <p className="text-muted-foreground">Here's a summary of your activities and group updates.</p>
-      </div>
-      
-      {isMemberView && (
-        <Card className="bg-primary/5">
+    <>
+      <div className="flex flex-col gap-6">
+        <div>
+          <h1 className="text-3xl font-bold font-headline">Welcome, {welcomeName}!</h1>
+          <p className="text-muted-foreground">Here's a summary of your activities and group updates.</p>
+        </div>
+        
+        {isMemberView && (
+          <Card className="bg-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Phone className="h-5 w-5" />
+                <span>M-Pesa Contribution Details</span>
+              </CardTitle>
+              <CardDescription>
+                Use the number below to send your monthly contributions.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-2xl font-bold font-mono tracking-widest">0112263590</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {isMemberView && <StatsCards />}
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 grid gap-6">
+              {userRole === 'Investment Lead' ? <InvestmentSuggestions /> : (showPersonalizedSuggestions && <PersonalizedSuggestions />)}
+              <ReportsWidget />
+          </div>
+          <div className="lg:col-span-1 grid gap-6">
+              <EventsWidget />
+              {isMemberView && <PollsWidget />}
+          </div>
+        </div>
+
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Phone className="h-5 w-5" />
-              <span>M-Pesa Contribution Details</span>
-            </CardTitle>
-            <CardDescription>
-              Use the number below to send your monthly contributions.
-            </CardDescription>
+            <CardTitle>Group Constitution</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold font-mono tracking-widest">0112263590</p>
+          <CardContent className="flex flex-col sm:flex-row gap-4 items-start">
+            <div>
+              <p className="text-muted-foreground mb-4">
+                The guiding document for our group. Last updated: {constitution.lastUpdated}
+              </p>
+              <div className="flex gap-2">
+                <Button asChild variant="outline">
+                  <Link href={constitution.url} target="_blank">
+                      <FileText className="mr-2 h-4 w-4" />
+                      View Constitution
+                  </Link>
+                </Button>
+                <Button onClick={handleSummarize}>
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    Summarize with AI
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
-      )}
-
-      {isMemberView && <StatsCards />}
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 grid gap-6">
-            {userRole === 'Investment Lead' ? <InvestmentSuggestions /> : (showPersonalizedSuggestions && <PersonalizedSuggestions />)}
-            <ReportsWidget />
-        </div>
-        <div className="lg:col-span-1 grid gap-6">
-            <EventsWidget />
-            {isMemberView && <PollsWidget />}
-        </div>
       </div>
 
-       <Card>
-        <CardHeader>
-          <CardTitle>Group Constitution</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground mb-4">
-            The guiding document for our group. Last updated: {constitution.lastUpdated}
-          </p>
-          <Button asChild variant="outline">
-            <Link href={constitution.url} target="_blank">
-                <FileText className="mr-2 h-4 w-4" />
-                View Constitution
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+      <Dialog open={isSummaryOpen} onOpenChange={setIsSummaryOpen}>
+        <DialogContent className="sm:max-w-[625px]">
+          <DialogHeader>
+            <DialogTitle>AI Constitution Summary</DialogTitle>
+            <DialogDescription>
+              Here's a quick overview of the group's constitution. For full details, please refer to the complete document.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {isSummaryLoading ? (
+              <div className="flex items-center justify-center h-40">
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-muted-foreground">Generating summary...</p>
+                </div>
+              </div>
+            ) : (
+                <div className="prose prose-sm max-w-none text-foreground/80 dark:prose-invert prose-headings:font-headline prose-headings:text-foreground"
+                    dangerouslySetInnerHTML={{ __html: summary }}
+                />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

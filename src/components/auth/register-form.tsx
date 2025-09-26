@@ -73,7 +73,7 @@ export function RegisterForm() {
         firstName: values.firstName,
         lastName: values.lastName,
         role: userRole,
-        photoURL: user.photoURL || null,
+        photoURL: null,
       };
 
       const userDocRef = doc(firestore, "userProfiles", user.uid);
@@ -81,7 +81,8 @@ export function RegisterForm() {
 
       if (isAdmin) {
         const adminRoleRef = doc(firestore, "roles_admin", user.uid);
-        setDocumentNonBlocking(adminRoleRef, { admin: true }, { merge: true });
+        // This document grants admin privileges according to security rules.
+        setDocumentNonBlocking(adminRoleRef, { email: values.email, role: 'Admin' }, { merge: true });
       }
 
       toast({

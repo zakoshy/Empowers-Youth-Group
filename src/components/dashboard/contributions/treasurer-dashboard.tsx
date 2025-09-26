@@ -146,48 +146,46 @@ export default function TreasurerDashboard() {
             {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>
         ) : (
-          <div className="relative overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="sticky left-0 bg-card z-10 min-w-[200px] whitespace-nowrap">Member</TableHead>
-                  {MONTHS.map(month => (
-                    <TableHead key={month} className="min-w-[120px] whitespace-nowrap">{month}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {members && members.map(member => (
-                  <TableRow key={member.id}>
-                    <TableCell className="font-medium sticky left-0 bg-card z-10 whitespace-nowrap">
-                       <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarImage src={member.photoURL} />
-                          <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
-                        </Avatar>
-                        <span>{member.firstName} {member.lastName}</span>
-                      </div>
-                    </TableCell>
-                    {MONTHS.map((month, index) => {
-                      const monthKey = month.toLowerCase();
-                      const value = contributions[member.id]?.[monthKey] || '';
-                      return (
-                        <TableCell key={month}>
-                          <Input
-                            type="number"
-                            placeholder="0"
-                            value={value}
-                            onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
-                            className="w-24"
-                          />
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="sticky left-0 bg-card z-10 min-w-[200px] whitespace-nowrap">Member</TableHead>
+                {MONTHS.map(month => (
+                  <TableHead key={month} className="min-w-[120px] whitespace-nowrap">{month}</TableHead>
                 ))}
-              </TableBody>
-            </Table>
-          </div>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {members && members.map(member => (
+                <TableRow key={member.id}>
+                  <TableCell className="font-medium sticky left-0 bg-card z-10 whitespace-nowrap">
+                     <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarImage src={member.photoURL} />
+                        <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
+                      </Avatar>
+                      <span>{member.firstName} {member.lastName}</span>
+                    </div>
+                  </TableCell>
+                  {MONTHS.map((month, index) => {
+                    const monthKey = month.toLowerCase();
+                    const value = contributions[member.id]?.[monthKey] || '';
+                    return (
+                      <TableCell key={month}>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={value}
+                          onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
+                          className="w-24"
+                        />
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </CardContent>
       <CardFooter className="justify-end">

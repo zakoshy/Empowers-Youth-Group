@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, where } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
@@ -73,7 +73,8 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
 
   useEffect(() => {
     if (specialContributions) {
-        const total = specialContributions.reduce((sum, sc) => sum + sc.amount, 0);
+        const currentYearSpecialContributions = specialContributions.filter(sc => sc.year === currentYear);
+        const total = currentYearSpecialContributions.reduce((sum, sc) => sum + sc.amount, 0);
         setTotalSpecialContribution(total);
     }
   }, [specialContributions]);
@@ -177,7 +178,7 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
               </TableRow>
               </TableHeader>
               <TableBody>
-              {MONTHS.map((month) => {
+              {MONTHS.map((month, monthIndex) => {
                   const amount = yearlyData[month.toLowerCase()] || 0;
                   const isPaid = amount >= FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION;
                   const isPartial = amount > 0 && amount < FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION;
@@ -221,3 +222,5 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
     </div>
   );
 }
+
+    

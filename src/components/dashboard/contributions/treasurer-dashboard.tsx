@@ -1,8 +1,9 @@
+
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, writeBatch, getDocs, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, writeBatch, getDocs, query, where, deleteDoc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -11,9 +12,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { MONTHS } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, PlusCircle } from 'lucide-react';
+import { Loader2, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AddSpecialContributionDialog } from './add-special-contribution-dialog';
+import { EditSpecialContributionDialog } from './edit-special-contribution-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 
 interface UserProfile {
@@ -31,6 +34,18 @@ interface Contribution {
   year: number;
 }
 
+export interface SpecialContribution {
+    id: string;
+    userId: string;
+    financialYearId: string;
+    date: string;
+    amount: number;
+    description: string;
+    month: number;
+    year: number;
+}
+
+
 const currentYear = new Date().getFullYear();
 
 export default function TreasurerDashboard() {
@@ -41,48 +56,65 @@ export default function TreasurerDashboard() {
   const { data: members, isLoading: usersLoading } = useCollection<UserProfile>(usersRef);
   
   const [contributions, setContributions] = useState<Record<string, Record<string, number>>>({});
-  const [loadingContributions, setLoadingContributions] = useState(true);
+  const [specialContributions, setSpecialContributions] = useState<Record<string, SpecialContribution[]>>({});
+  const [loadingData, setLoadingData] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [isSpecialContributionDialogOpen, setIsSpecialContributionDialogOpen] = useState(false);
+  const [isAddSpecialOpen, setIsAddSpecialOpen] = useState(false);
+  const [isEditSpecialOpen, setIsEditSpecialOpen] = useState(false);
   const [specialContributionData, setSpecialContributionData] = useState<{member: UserProfile; month: number; year: number} | null>(null);
+  const [editingContribution, setEditingContribution] = useState<SpecialContribution | null>(null);
 
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName?.charAt(0) ?? ''}${lastName?.charAt(0) ?? ''}`.toUpperCase();
   };
-
-  const fetchContributions = useCallback(async () => {
+  
+  const fetchData = useCallback(async () => {
     if (!members || !members.length) {
-        setLoadingContributions(false);
+        setLoadingData(false);
         return;
     };
     
-    setLoadingContributions(true);
+    setLoadingData(true);
     const allContributions: Record<string, Record<string, number>> = {};
+    const allSpecialContributions: Record<string, SpecialContribution[]> = {};
 
     for (const member of members) {
+      // Fetch regular contributions
       const contributionsRef = collection(firestore, 'userProfiles', member.id, 'contributions');
-      const q = query(contributionsRef, where('year', '==', currentYear));
-      const snapshot = await getDocs(q);
+      const qCont = query(contributionsRef, where('year', '==', currentYear));
+      const contSnapshot = await getDocs(qCont);
       
       const memberContributions: Record<string, number> = {};
-      snapshot.forEach(doc => {
+      contSnapshot.forEach(doc => {
         const data = doc.data() as Contribution;
         memberContributions[MONTHS[data.month].toLowerCase()] = data.amount;
       });
       allContributions[member.id] = memberContributions;
+      
+      // Fetch special contributions
+      const specialContributionsRef = collection(firestore, 'userProfiles', member.id, 'specialContributions');
+      const qSpecial = query(specialContributionsRef, where('year', '==', currentYear));
+      const specialSnapshot = await getDocs(qSpecial);
+
+      const memberSpecialContributions: SpecialContribution[] = [];
+      specialSnapshot.forEach(doc => {
+          memberSpecialContributions.push({ id: doc.id, ...(doc.data() as Omit<SpecialContribution, 'id'>) });
+      });
+      allSpecialContributions[member.id] = memberSpecialContributions;
     }
     
     setContributions(allContributions);
-    setLoadingContributions(false);
+    setSpecialContributions(allSpecialContributions);
+    setLoadingData(false);
   }, [firestore, members]);
 
   useEffect(() => {
     if (members) {
-      fetchContributions();
+      fetchData();
     }
-  }, [members, fetchContributions]);
+  }, [members, fetchData]);
 
   const handleAmountChange = (userId: string, monthIndex: number, value: string) => {
     const amount = Number(value);
@@ -136,12 +168,36 @@ export default function TreasurerDashboard() {
     }
   };
 
-  const handleOpenSpecialContributionDialog = (member: UserProfile, monthIndex: number) => {
+  const handleOpenAddSpecialDialog = (member: UserProfile, monthIndex: number) => {
     setSpecialContributionData({member, month: monthIndex, year: currentYear});
-    setIsSpecialContributionDialogOpen(true);
+    setIsAddSpecialOpen(true);
+  }
+
+  const handleOpenEditSpecialDialog = (contribution: SpecialContribution) => {
+    setEditingContribution(contribution);
+    setIsEditSpecialOpen(true);
   }
   
-  const isLoading = usersLoading || loadingContributions;
+  const handleDeleteSpecialContribution = async (contribution: SpecialContribution) => {
+    const docRef = doc(firestore, 'userProfiles', contribution.userId, 'specialContributions', contribution.id);
+    try {
+      await deleteDoc(docRef);
+      toast({
+        title: 'Deleted!',
+        description: 'The special contribution has been removed.',
+      });
+      fetchData(); // Refresh data
+    } catch (error) {
+      console.error('Failed to delete special contribution:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Delete Failed',
+        description: 'Could not remove the contribution. Please try again.',
+      });
+    }
+  }
+  
+  const isLoading = usersLoading || loadingData;
 
   if (isLoading) {
       return <Skeleton className="h-[500px] w-full" />
@@ -157,7 +213,7 @@ export default function TreasurerDashboard() {
       <CardHeader>
           <CardTitle>Manage Member Contributions - {currentYear}</CardTitle>
           <CardDescription>
-              Enter and update the monthly contributions for each member. Click the '+' icon to add a special contribution (miniharambee).
+              Enter and update monthly contributions. Click the '+' icon to add a miniharambee for a specific month.
           </CardDescription>
       </CardHeader>
       <CardContent>
@@ -175,12 +231,12 @@ export default function TreasurerDashboard() {
                       <TableRow>
                           <TableHead className="sticky left-0 bg-card z-10 min-w-[200px] whitespace-nowrap">Member</TableHead>
                           {MONTHS.map(month => (
-                          <TableHead key={month} className="min-w-[150px] whitespace-nowrap text-center">{month}</TableHead>
+                          <TableHead key={month} className="min-w-[250px] whitespace-nowrap text-center">{month}</TableHead>
                           ))}
                       </TableRow>
                       </TableHeader>
                       <TableBody>
-                      {members && members.map(member => (
+                      {members.map(member => (
                           <TableRow key={member.id}>
                           <TableCell className="font-medium sticky left-0 bg-card z-10 whitespace-nowrap">
                               <div className="flex items-center gap-3">
@@ -194,8 +250,9 @@ export default function TreasurerDashboard() {
                           {MONTHS.map((month, index) => {
                               const monthKey = month.toLowerCase();
                               const value = contributions[member.id]?.[monthKey] || '';
+                              const monthlySpecialContributions = specialContributions[member.id]?.filter(sc => sc.month === index) || [];
                               return (
-                              <TableCell key={month} className="text-center">
+                              <TableCell key={month} className="text-center align-top">
                                   <div className="flex items-center gap-1 justify-center">
                                       <Input
                                       type="number"
@@ -204,9 +261,34 @@ export default function TreasurerDashboard() {
                                       onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
                                       className="w-24"
                                       />
-                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenSpecialContributionDialog(member, index)}>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenAddSpecialDialog(member, index)}>
                                           <PlusCircle className="h-4 w-4 text-green-500" />
                                       </Button>
+                                  </div>
+                                  <div className="mt-2 space-y-1 text-xs text-left">
+                                      {monthlySpecialContributions.map(sc => (
+                                          <div key={sc.id} className="flex items-center justify-between gap-1 bg-muted/50 p-1 rounded">
+                                              <span className="truncate" title={sc.description}>{sc.description}: Ksh {sc.amount}</span>
+                                              <div className="flex">
+                                                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenEditSpecialDialog(sc)}><Edit className="h-3 w-3" /></Button>
+                                                  <AlertDialog>
+                                                      <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive"><Trash2 className="h-3 w-3" /></Button>
+                                                      </AlertDialogTrigger>
+                                                      <AlertDialogContent>
+                                                          <AlertDialogHeader>
+                                                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                              <AlertDialogDescription>This action cannot be undone. This will permanently delete the special contribution.</AlertDialogDescription>
+                                                          </AlertDialogHeader>
+                                                          <AlertDialogFooter>
+                                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                              <AlertDialogAction onClick={() => handleDeleteSpecialContribution(sc)}>Delete</AlertDialogAction>
+                                                          </AlertDialogFooter>
+                                                      </AlertDialogContent>
+                                                  </AlertDialog>
+                                              </div>
+                                          </div>
+                                      ))}
                                   </div>
                               </TableCell>
                               );
@@ -221,7 +303,7 @@ export default function TreasurerDashboard() {
               {/* Mobile View: Accordion */}
               <div className="md:hidden">
               <Accordion type="multiple" className="w-full">
-                  {members && members.map(member => (
+                  {members.map(member => (
                   <AccordionItem value={member.id} key={member.id}>
                       <AccordionTrigger>
                       <div className="flex items-center gap-3">
@@ -237,6 +319,7 @@ export default function TreasurerDashboard() {
                           {MONTHS.map((month, index) => {
                           const monthKey = month.toLowerCase();
                           const value = contributions[member.id]?.[monthKey] || '';
+                          const monthlySpecialContributions = specialContributions[member.id]?.filter(sc => sc.month === index) || [];
                           return (
                               <div key={month}>
                                   <label htmlFor={`${member.id}-${month}`} className="block text-sm font-medium mb-1">{month}</label>
@@ -249,9 +332,34 @@ export default function TreasurerDashboard() {
                                           onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
                                           className="flex-grow"
                                       />
-                                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleOpenSpecialContributionDialog(member, index)}>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleOpenAddSpecialDialog(member, index)}>
                                           <PlusCircle className="h-5 w-5 text-green-500" />
                                       </Button>
+                                  </div>
+                                  <div className="mt-2 space-y-1 text-xs">
+                                      {monthlySpecialContributions.map(sc => (
+                                          <div key={sc.id} className="flex items-center justify-between gap-1 bg-muted/50 p-1 rounded">
+                                              <span className="truncate" title={sc.description}>{sc.description}: Ksh {sc.amount}</span>
+                                              <div className="flex">
+                                                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenEditSpecialDialog(sc)}><Edit className="h-3 w-3" /></Button>
+                                                  <AlertDialog>
+                                                      <AlertDialogTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive"><Trash2 className="h-3 w-3" /></Button>
+                                                      </AlertDialogTrigger>
+                                                      <AlertDialogContent>
+                                                          <AlertDialogHeader>
+                                                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                              <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                                                          </AlertDialogHeader>
+                                                          <AlertDialogFooter>
+                                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                              <AlertDialogAction onClick={() => handleDeleteSpecialContribution(sc)}>Delete</AlertDialogAction>
+                                                          </AlertDialogFooter>
+                                                      </AlertDialogContent>
+                                                  </AlertDialog>
+                                              </div>
+                                          </div>
+                                      ))}
                                   </div>
                               </div>
                           )
@@ -274,11 +382,24 @@ export default function TreasurerDashboard() {
       </Card>
       {specialContributionData && (
           <AddSpecialContributionDialog
-              isOpen={isSpecialContributionDialogOpen}
-              onOpenChange={setIsSpecialContributionDialogOpen}
+              isOpen={isAddSpecialOpen}
+              onOpenChange={(isOpen) => {
+                  setIsAddSpecialOpen(isOpen);
+                  if (!isOpen) fetchData(); // Refresh on close
+              }}
               member={specialContributionData.member}
               month={specialContributionData.month}
               year={specialContributionData.year}
+          />
+      )}
+      {editingContribution && (
+          <EditSpecialContributionDialog
+              isOpen={isEditSpecialOpen}
+              onOpenChange={(isOpen) => {
+                  setIsEditSpecialOpen(isOpen);
+                  if (!isOpen) fetchData(); // Refresh on close
+              }}
+              contribution={editingContribution}
           />
       )}
     </>

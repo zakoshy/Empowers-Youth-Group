@@ -3,18 +3,17 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, where } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MONTHS, FINANCIAL_CONFIG } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Gift } from 'lucide-react';
-import { format } from 'date-fns';
+import { TrendingUp, TrendingDown, Gift, Banknote } from 'lucide-react';
 
 interface Contribution {
-  id: string; // month_year e.g., 'january_2024'
+  id: string; 
   month: number;
   amount: number;
   year: number;
@@ -97,19 +96,20 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
 
   const outstandingDebt = annualTarget - totalContribution;
   const progressPercentage = (totalContribution / annualTarget) * 100;
+  const grandTotal = totalContribution + totalSpecialContribution;
 
   const isLoading = contributionsLoading || specialContributionsLoading;
 
   if (isLoading) {
     return (
         <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Skeleton className="h-28" />
                 <Skeleton className="h-28" />
                 <Skeleton className="h-28" />
                 <Skeleton className="h-28" />
             </div>
             <Skeleton className="h-96" />
-            <Skeleton className="h-64" />
       </div>
     );
   }
@@ -124,7 +124,7 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Monthly Contributions</CardTitle>
@@ -155,6 +155,16 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
                      <p className="text-xs text-muted-foreground">total raised this year</p>
                 </CardContent>
             </Card>
+            <Card className="bg-primary/10">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Grand Total</CardTitle>
+                    <Banknote className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">Ksh {grandTotal.toLocaleString()}</div>
+                     <p className="text-xs text-muted-foreground">monthly + miniharambees</p>
+                </CardContent>
+            </Card>
           </div>
             <div className="space-y-2">
                 <p className="text-sm font-medium">Yearly Contribution Progress</p>
@@ -178,7 +188,7 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
               </TableRow>
               </TableHeader>
               <TableBody>
-              {MONTHS.map((month, monthIndex) => {
+              {MONTHS.map((month) => {
                   const amount = yearlyData[month.toLowerCase()] || 0;
                   const isPaid = amount >= FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION;
                   const isPartial = amount > 0 && amount < FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION;
@@ -203,8 +213,11 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
                           {specialCons.length > 0 ? (
                               <ul className="space-y-1 text-sm">
                                   {specialCons.map(sc => (
-                                      <li key={sc.id}>
-                                          <span className="font-semibold">Ksh {sc.amount.toLocaleString()}</span> - <span className="text-muted-foreground">{sc.description}</span>
+                                      <li key={sc.id} className="flex items-center gap-2">
+                                          <Gift className="h-4 w-4 text-primary" />
+                                          <div>
+                                            <span className="font-semibold">Ksh {sc.amount.toLocaleString()}</span> - <span className="text-muted-foreground">{sc.description}</span>
+                                          </div>
                                       </li>
                                   ))}
                               </ul>
@@ -222,5 +235,3 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
     </div>
   );
 }
-
-    

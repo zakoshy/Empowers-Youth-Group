@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useFirestore } from '@/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import {
   Dialog,
   DialogContent,
@@ -22,20 +22,12 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { MONTHS } from '@/lib/data';
+import type { SpecialContribution } from './treasurer-dashboard';
 
-interface UserProfile {
-  id: string;
-  firstName: string;
-  lastName: string;
-}
-
-interface AddSpecialContributionDialogProps {
+interface EditSpecialContributionDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  member: UserProfile;
-  month: number;
-  year: number;
+  contribution: SpecialContribution;
 }
 
 const formSchema = z.object({
@@ -43,13 +35,11 @@ const formSchema = z.object({
   description: z.string().min(3, 'Description is required.').max(100),
 });
 
-export function AddSpecialContributionDialog({
+export function EditSpecialContributionDialog({
   isOpen,
   onOpenChange,
-  member,
-  month,
-  year,
-}: AddSpecialContributionDialogProps) {
+  contribution,
+}: EditSpecialContributionDialogProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,45 +47,39 @@ export function AddSpecialContributionDialog({
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      amount: 0,
-      description: '',
+      amount: contribution.amount,
+      description: contribution.description,
     },
   });
+
+  useEffect(() => {
+    form.reset({
+        amount: contribution.amount,
+        description: contribution.description,
+    })
+  }, [contribution, form])
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      const specialContributionsRef = collection(
-        firestore,
-        'userProfiles',
-        member.id,
-        'specialContributions'
-      );
-      
-      const docData = {
-          userId: member.id,
-          financialYearId: year.toString(),
-          date: new Date().toISOString(),
-          amount: values.amount,
-          description: values.description,
-          month: month,
-          year: year
-      }
-
-      await addDoc(specialContributionsRef, docData);
+        const docRef = doc(firestore, 'userProfiles', contribution.userId, 'specialContributions', contribution.id);
+        
+        await updateDoc(docRef, {
+            amount: values.amount,
+            description: values.description
+        });
 
       toast({
         title: 'Success!',
-        description: `Miniharambee for ${member.firstName} has been recorded.`,
+        description: `The special contribution has been updated.`,
       });
-      form.reset();
       onOpenChange(false);
     } catch (error) {
-      console.error('Failed to add special contribution:', error);
+      console.error('Failed to update special contribution:', error);
       toast({
         variant: 'destructive',
-        title: 'Submission Failed',
-        description: 'Could not record the contribution. Please try again.',
+        title: 'Update Failed',
+        description: 'Could not update the contribution. Please try again.',
       });
     } finally {
       setIsSubmitting(false);
@@ -106,9 +90,9 @@ export function AddSpecialContributionDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Miniharambee</DialogTitle>
+          <DialogTitle>Edit Miniharambee</DialogTitle>
           <DialogDescription>
-            Record a special contribution for {member.firstName} {member.lastName} for the month of {MONTHS[month]}.
+            Update the amount or description for this special contribution.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -120,7 +104,7 @@ export function AddSpecialContributionDialog({
                 <FormItem>
                   <FormLabel>Amount (Ksh)</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="e.g., 1000" {...field} />
+                    <Input type="number" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -133,7 +117,7 @@ export function AddSpecialContributionDialog({
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="e.g., Guest of honor contribution" {...field} />
+                    <Textarea {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -147,7 +131,7 @@ export function AddSpecialContributionDialog({
               </DialogClose>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Recording...' : 'Record Contribution'}
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
               </Button>
             </DialogFooter>
           </form>

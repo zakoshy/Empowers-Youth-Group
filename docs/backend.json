@@ -584,5 +584,3 @@
     "reasoning": "The Firestore structure is designed to manage user profiles, financial years, contributions, special contributions, events, constitution, investment reports, polls, and votes for EmpowerHub. User roles (Admin, Chairperson, Treasurer, Coordinator, Secretary, Investment Lead, Member) are managed via role-based access control rules defined for each collection. This ensures that only authorized users can perform specific actions (e.g., only a Treasurer can update contributions, only an Admin can manage users). A collection group query rule has been added for 'specialContributions' to allow Treasurers to list all of them across all users. This design adheres to the principles of Authorization Independence, Clarity of Intent, and least privilege."
   }
 }
-
-    

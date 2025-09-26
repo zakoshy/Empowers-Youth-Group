@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { CheckCircle, Vote, Edit, Trash2 } from "lucide-react"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import { collection, query, where, orderBy, addDoc, doc, updateDoc, getDoc, deleteDoc, getDocs } from "firebase/firestore";
+import { collection, query, where, orderBy, addDoc, doc, updateDoc, getDoc, deleteDoc, getDocs, writeBatch, setDoc } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton"
 import { PollFormDialog } from "./poll-form";
 import {
@@ -87,13 +87,15 @@ export function PollsWidget() {
     }
 
     try {
-        await addDoc(collection(firestore, 'polls', poll.id, 'votes'), {
+        // Create a private vote document for the user
+        await setDoc(voteRef, {
             pollId: poll.id,
             userId: user.uid,
             selectedOption: selectedOptionId,
             voteDate: new Date().toISOString(),
         });
         
+        // Atomically update the public poll results
         const pollRef = doc(firestore, 'polls', poll.id);
         const pollDoc = await getDoc(pollRef);
         if (pollDoc.exists()) {
@@ -101,6 +103,7 @@ export function PollsWidget() {
             const updatedOptions = pollData.options.map(opt => 
                 opt.id === selectedOptionId ? { ...opt, votes: (opt.votes || 0) + 1 } : opt
             );
+            // Track who has voted to update the UI
             const voted = pollData.voted ? [...pollData.voted, user.uid] : [user.uid];
 
             await updateDoc(pollRef, { options: updatedOptions, voted: voted });
@@ -281,5 +284,3 @@ export function PollsWidget() {
     </div>
   )
 }
-
-    

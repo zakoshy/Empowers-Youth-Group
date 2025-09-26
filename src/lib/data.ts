@@ -84,7 +84,7 @@ Article V: Meetings and Events
 export type Constitution = {
   id: string;
   title: string;
-  content: string;
+  content: string; // This will be the URL to the file in Firebase Storage
   uploadDate: string;
 };
 
@@ -106,7 +106,7 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
     { href: "/dashboard/events", label: "Manage Events", icon: "Calendar", roles: ["Coordinator", "Admin"] },
     { href: "https://meet.google.com/new", label: "Schedule Meeting", icon: "Video", roles: ["Coordinator", "Admin"] },
     { href: "/dashboard/reports", label: "Investments", icon: "TrendingUp", roles: ["Member", "Investment Lead", "Admin"] },
-    { href: "/dashboard/constitution", label: "Constitution", icon: "FileText", roles: ["Member", "Chairperson", "Admin"] },
+    { href: "/dashboard/constitution", label: "Manage Constitution", icon: "FileText", roles: ["Member", "Chairperson", "Admin"] },
     { href: "/dashboard/manage-users", label: "Manage Users", icon: "Users", roles: ["Admin"] },
   ];
   
@@ -130,3 +130,5 @@ export const FINANCIAL_CONFIG = {
   MONTHLY_CONTRIBUTION: 200,
   FINANCIAL_YEAR_START_MONTH: 0, // January
 };
+
+    

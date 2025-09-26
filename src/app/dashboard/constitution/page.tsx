@@ -1,81 +1,134 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { useState, useEffect, useRef } from 'react';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Upload, FileText, Trash2, Replace } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const constitutionSchema = z.object({
-  content: z.string().min(50, { message: "Constitution content must be at least 50 characters." }),
-});
-
-type ConstitutionFormValues = z.infer<typeof constitutionSchema>;
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface Constitution {
-    content: string;
+    content: string; // This will now be the URL
     uploadDate: string;
     title: string;
+    fileName: string;
 }
+
+const STORAGE_PATH = 'constitution/the_empowers_youth_group_constitution.pdf';
 
 export default function ConstitutionPage() {
   const firestore = useFirestore();
+  const storage = getStorage();
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const constitutionRef = useMemoFirebase(() => doc(firestore, 'constitution', 'main'), [firestore]);
-  const { data: constitutionData, isLoading: isDocLoading } = useDoc<Constitution>(constitutionRef);
-
-  const form = useForm<ConstitutionFormValues>({
-    resolver: zodResolver(constitutionSchema),
-    defaultValues: {
-      content: '',
-    },
-  });
+  const { data: constitutionData, isLoading: isDocLoading, error } = useDoc<Constitution>(constitutionRef);
 
   useEffect(() => {
-    if (constitutionData) {
-      form.reset({ content: constitutionData.content });
-    }
     if(!isDocLoading) {
         setIsLoading(false)
     }
-  }, [constitutionData, form, isDocLoading]);
+  }, [isDocLoading]);
 
-  const onSubmit = async (values: ConstitutionFormValues) => {
-    setIsSubmitting(true);
+  const handleFileSelect = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessing(true);
+    toast({ title: "Uploading...", description: "Your file is being uploaded." });
+
     try {
+      const storageRef = ref(storage, STORAGE_PATH);
+      await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(storageRef);
+
       await setDoc(constitutionRef, {
-        ...values,
+        content: downloadURL,
         title: "Group Constitution",
+        fileName: file.name,
         uploadDate: new Date().toISOString(),
-      }, { merge: true });
+      });
 
       toast({
         title: "Success!",
-        description: "The constitution has been updated.",
+        description: "The constitution has been uploaded.",
       });
     } catch (error) {
-      console.error("Failed to update constitution:", error);
+      console.error("Failed to upload constitution:", error);
       toast({
         variant: "destructive",
-        title: "Update Failed",
-        description: "Could not update the constitution. Please check your permissions and try again.",
+        title: "Upload Failed",
+        description: "Could not upload the file. Please check permissions and try again.",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsProcessing(false);
+      // Reset file input
+      if(fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
+  const handleDelete = async () => {
+      if (!constitutionData) return;
+
+      setIsProcessing(true);
+      toast({ title: "Deleting...", description: "Removing the constitution file." });
+
+      try {
+          // Delete the file from storage
+          const storageRef = ref(storage, STORAGE_PATH);
+          await deleteObject(storageRef);
+          
+          // Delete the document from firestore
+          await deleteDoc(constitutionRef);
+          
+          toast({
+              title: "Success!",
+              description: "The constitution has been deleted.",
+          });
+      } catch (error: any) {
+          // Handle case where file doesn't exist in storage but doc does
+          if (error.code === 'storage/object-not-found') {
+                await deleteDoc(constitutionRef); // Still delete the firestore doc
+                toast({
+                    title: "Success!",
+                    description: "The constitution record was removed.",
+                });
+          } else {
+            console.error("Failed to delete constitution:", error);
+            toast({
+                variant: "destructive",
+                title: "Delete Failed",
+                description: "Could not delete the file. Please try again.",
+            });
+          }
+      } finally {
+          setIsProcessing(false);
+      }
+  }
   
   if (isLoading) {
     return (
@@ -85,7 +138,7 @@ export default function ConstitutionPage() {
           <Skeleton className="h-4 w-3/4" />
         </CardHeader>
         <CardContent>
-          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-24 w-full" />
         </CardContent>
       </Card>
     )
@@ -96,38 +149,69 @@ export default function ConstitutionPage() {
       <CardHeader>
         <CardTitle>Manage Constitution</CardTitle>
         <CardDescription>
-          Update the content of the group's constitution. The changes will be visible to all members.
+          Upload, view, or delete the group's official constitution document.
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="content"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Constitution Content</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Enter the full text of the constitution here..."
-                      className="min-h-[400px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Saving...' : 'Save Constitution'}
-              </Button>
+      <CardContent className="space-y-6">
+        <Input 
+            type="file" 
+            className="hidden" 
+            ref={fileInputRef} 
+            onChange={handleFileUpload}
+            accept=".pdf,.doc,.docx"
+        />
+        {constitutionData ? (
+            <div className="p-4 border rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className='flex items-center gap-4'>
+                    <FileText className="h-8 w-8 text-primary" />
+                    <div>
+                        <p className="font-semibold">{constitutionData.fileName}</p>
+                        <p className="text-sm text-muted-foreground">Uploaded on: {new Date(constitutionData.uploadDate).toLocaleDateString()}</p>
+                    </div>
+                </div>
+                <div className="flex gap-2">
+                    <Button variant="outline" asChild>
+                        <a href={constitutionData.content} target="_blank" rel="noopener noreferrer">View</a>
+                    </Button>
+                     <Button variant="secondary" onClick={handleFileSelect} disabled={isProcessing}>
+                        {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Replace className="h-4 w-4" />}
+                        <span className="ml-2 hidden sm:inline">Replace</span>
+                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" disabled={isProcessing}>
+                                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Trash2 className="h-4 w-4" />}
+                                <span className="ml-2 hidden sm:inline">Delete</span>
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the constitution file.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
             </div>
-          </form>
-        </Form>
+        ) : (
+            <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
+                <p className="mb-4 text-muted-foreground">No constitution has been uploaded yet.</p>
+                <Button onClick={handleFileSelect} disabled={isProcessing}>
+                    {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                    {isProcessing ? 'Uploading...' : 'Upload Constitution'}
+                </Button>
+            </div>
+        )}
+        {error && <p className="text-sm text-destructive text-center">Error: {error.message}</p>}
       </CardContent>
     </Card>
   );
 }
+
+    

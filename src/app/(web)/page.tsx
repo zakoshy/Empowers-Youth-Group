@@ -128,21 +128,20 @@ export default function HomePage() {
               A journey of resilience, unity, and the drive to create lasting change.
             </p>
           </div>
-          <Card className="overflow-hidden">
-            <CardContent className="p-0 md:p-6 md:grid md:grid-cols-5 md:gap-10">
-              <div className="md:col-span-2">
+          <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-center">
+            <div className="flex justify-center">
                 {aboutStoryImage && (
                   <Image
                     src={aboutStoryImage.imageUrl}
                     alt={aboutStoryImage.description}
-                    width={600}
-                    height={400}
-                    className="w-full h-64 md:h-full object-cover rounded-t-lg md:rounded-lg"
+                    width={800}
+                    height={600}
+                    className="rounded-lg shadow-2xl object-cover"
                     data-ai-hint={aboutStoryImage.imageHint}
                   />
                 )}
-              </div>
-              <div className="p-6 md:p-0 md:col-span-3 flex flex-col justify-center">
+            </div>
+            <div className="flex flex-col justify-center">
                 <h2 className="text-2xl font-headline font-semibold">From Hardship to Hope</h2>
                 <p className="mt-4 text-muted-foreground">
                   EmpowerHub began not as an organization, but as a conversation among friends. We were a group of youths from the same village, each of us having navigated the challenges of limited opportunities and economic hardship. We had seen firsthand how talent and ambition could be stifled by circumstance. But we had also seen the power of community, of neighbors helping neighbors, and of shared determination.
@@ -157,9 +156,8 @@ export default function HomePage() {
                 <p className="mt-4 text-muted-foreground">
                   Today, EmpowerHub is more than just a group; it's a movement. It's a testament to the idea that with unity and a shared vision, a small community can achieve extraordinary things. We are run by the youth, for the youth, and we are committed to writing a new story for our village—one of prosperity, opportunity, and empowerment.
                 </p>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </section>
 

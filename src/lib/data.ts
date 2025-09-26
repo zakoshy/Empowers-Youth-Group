@@ -1,3 +1,4 @@
+
 export type Event = {
   id: string;
   title: string;
@@ -132,7 +133,9 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
 
   // A user with "Admin" role should see everything.
   if (userRole === "Admin") {
-    return allLinks.filter(link => !["Profile"].includes(link.label));
+    // We filter out duplicates, but ensure Profile is always included
+    const adminNavs = allLinks.filter(link => !links.some(l => l.href === link.href && l.href !== '/dashboard/profile'));
+    return [...links, ...adminNavs];
   }
 
   return allLinks.filter(link => link.roles.includes(userRole));

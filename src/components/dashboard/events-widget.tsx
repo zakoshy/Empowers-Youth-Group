@@ -2,7 +2,7 @@
 'use client';
 
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 import {
   Card,
   CardContent,
@@ -22,11 +22,14 @@ interface Event {
 
 export function EventsWidget() {
   const firestore = useFirestore();
+  const now = new Date().toISOString();
+
   const eventsRef = useMemoFirebase(() => query(
     collection(firestore, 'events'),
+    where('date', '>=', now),
     orderBy('date', 'asc'),
     limit(3)
-  ), [firestore]);
+  ), [firestore, now]);
 
   const { data: events, isLoading } = useCollection<Event>(eventsRef);
 
@@ -67,3 +70,5 @@ export function EventsWidget() {
     </Card>
   )
 }
+
+    

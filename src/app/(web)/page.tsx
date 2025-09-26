@@ -9,9 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Users, TrendingUp, Calendar, Target, Eye, Gem } from "lucide-react";
 import { EventCard } from "@/components/event-card";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy, limit } from "firebase/firestore";
+import { collection, query, orderBy, where } from "firebase/firestore";
 import type { Event } from "@/lib/data";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function HomePage() {
   const heroImage = PlaceHolderImages.find((img) => img.id === "hero");
@@ -20,13 +21,22 @@ export default function HomePage() {
   const aboutStoryImage = PlaceHolderImages.find((img) => img.id === "about-story");
 
   const firestore = useFirestore();
-  const eventsRef = useMemoFirebase(() => query(
-    collection(firestore, 'events'),
-    orderBy('date', 'asc'),
-    limit(3)
-  ), [firestore]);
+  const now = new Date().toISOString();
 
-  const { data: events, isLoading: eventsLoading } = useCollection<Event>(eventsRef);
+  const upcomingEventsRef = useMemoFirebase(() => query(
+    collection(firestore, 'events'),
+    where('date', '>=', now),
+    orderBy('date', 'asc')
+  ), [firestore, now]);
+
+  const pastEventsRef = useMemoFirebase(() => query(
+    collection(firestore, 'events'),
+    where('date', '<', now),
+    orderBy('date', 'desc')
+  ), [firestore, now]);
+
+  const { data: upcomingEvents, isLoading: upcomingEventsLoading } = useCollection<Event>(upcomingEventsRef);
+  const { data: pastEvents, isLoading: pastEventsLoading } = useCollection<Event>(pastEventsRef);
 
   return (
     <div className="flex flex-col">
@@ -218,22 +228,43 @@ export default function HomePage() {
       <section id="events" className="py-16 md:py-24">
         <div className="container py-12 md:py-20">
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-6xl font-headline font-bold">Upcoming Events</h1>
+            <h1 className="text-4xl md:text-6xl font-headline font-bold">Group Events</h1>
             <p className="mt-4 max-w-3xl mx-auto text-lg text-muted-foreground">
-              Join us for our upcoming events. Get involved, learn new skills, and connect with the community.
+              Get involved, learn new skills, and connect with the community.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {eventsLoading ? (
-              [...Array(3)].map((_, i) => <Skeleton key={i} className="h-96 w-full" />)
-            ) : events && events.length > 0 ? (
-              events.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))
-            ) : (
-                <p className="text-muted-foreground col-span-3 text-center">No upcoming events. Please check back later.</p>
-            )}
-          </div>
+          <Tabs defaultValue="upcoming" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="upcoming">Upcoming Events</TabsTrigger>
+              <TabsTrigger value="past">Past Events</TabsTrigger>
+            </TabsList>
+            <TabsContent value="upcoming">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
+                {upcomingEventsLoading ? (
+                  [...Array(3)].map((_, i) => <Skeleton key={i} className="h-96 w-full" />)
+                ) : upcomingEvents && upcomingEvents.length > 0 ? (
+                  upcomingEvents.map((event) => (
+                    <EventCard key={event.id} event={event} />
+                  ))
+                ) : (
+                    <p className="text-muted-foreground col-span-3 text-center py-10">No upcoming events. Please check back later.</p>
+                )}
+              </div>
+            </TabsContent>
+            <TabsContent value="past">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
+                {pastEventsLoading ? (
+                  [...Array(3)].map((_, i) => <Skeleton key={i} className="h-96 w-full" />)
+                ) : pastEvents && pastEvents.length > 0 ? (
+                  pastEvents.map((event) => (
+                    <EventCard key={event.id} event={event} />
+                  ))
+                ) : (
+                    <p className="text-muted-foreground col-span-3 text-center py-10">No past events found.</p>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </section>
       
@@ -252,3 +283,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+    

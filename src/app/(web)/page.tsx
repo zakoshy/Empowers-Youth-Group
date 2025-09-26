@@ -64,19 +64,6 @@ export default function HomePage() {
                       priority={heroImages.indexOf(heroImage) === 0}
                     />
                     <div className="absolute inset-0 bg-black/50" />
-                    <div className="relative container mx-auto h-full flex flex-col items-center justify-center text-center text-white">
-                      <h1 className="text-4xl md:text-7xl font-headline font-bold">
-                        Empowering Youth, Building Community
-                      </h1>
-                      <p className="mt-4 max-w-2xl text-lg md:text-xl">
-                        From shared hardship to a beacon of hope, The Empowers youth group is a youth-led initiative dedicated to giving back and uplifting our society.
-                      </p>
-                      <div className="mt-8">
-                        <Button size="lg" asChild style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
-                          <Link href="/register">Join Us</Link>
-                        </Button>
-                      </div>
-                    </div>
                   </div>
                 </CarouselItem>
               )
@@ -85,6 +72,21 @@ export default function HomePage() {
           <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/20 hover:bg-black/50 border-none" />
           <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/20 hover:bg-black/50 border-none" />
         </Carousel>
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white">
+            <div className="relative container mx-auto h-full flex flex-col items-center justify-center text-center text-white">
+                <h1 className="text-4xl md:text-7xl font-headline font-bold">
+                    Empowering Youth, Building Community
+                </h1>
+                <p className="mt-4 max-w-2xl text-lg md:text-xl">
+                    From shared hardship to a beacon of hope, The Empowers youth group is a youth-led initiative dedicated to giving back and uplifting our society.
+                </p>
+                <div className="mt-8">
+                    <Button size="lg" asChild style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
+                        <Link href="/register">Join Us</Link>
+                    </Button>
+                </div>
+            </div>
+        </div>
       </section>
 
       {/* What We Do Section */}
@@ -299,6 +301,8 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
 
     
 

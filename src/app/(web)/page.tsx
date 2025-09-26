@@ -128,7 +128,7 @@ export default function HomePage() {
               A journey of resilience, unity, and the drive to create lasting change.
             </p>
           </div>
-          <div className="max-w-4xl mx-auto">
+          <div className="prose dark:prose-invert max-w-none text-center">
             <h2 className="text-2xl font-headline font-semibold">From Hardship to Hope</h2>
             <p className="mt-4 text-muted-foreground">
               EmpowerHub began not as an organization, but as a conversation among friends. We were a group of youths from the same village, each of us having navigated the challenges of limited opportunities and economic hardship. We had seen firsthand how talent and ambition could be stifled by circumstance. But we had also seen the power of community, of neighbors helping neighbors, and of shared determination.
@@ -282,10 +282,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
-
-    
-
-    
-

@@ -61,12 +61,9 @@ export default function HomePage() {
           <p className="mt-4 max-w-2xl text-lg md:text-xl">
             From shared hardship to a beacon of hope, The Empowers youth group is a youth-led initiative dedicated to giving back and uplifting our society.
           </p>
-          <div className="mt-8 flex gap-4">
+          <div className="mt-8">
             <Button size="lg" asChild style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
               <Link href="/register">Join Us</Link>
-            </Button>
-            <Button size="lg" variant="secondary" asChild>
-              <Link href="#about">Learn More</Link>
             </Button>
           </div>
         </div>
@@ -284,5 +281,7 @@ export default function HomePage() {
     </div>
   );
 }
+
+    
 
     

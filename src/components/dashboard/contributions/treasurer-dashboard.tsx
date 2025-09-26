@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -12,11 +11,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { MONTHS } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2 } from 'lucide-react';
+import { Loader2, PlusCircle } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { AddSpecialContributionForm } from './add-special-contribution-form';
-import { SpecialContributionsList } from './special-contributions-list';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AddSpecialContributionDialog } from './add-special-contribution-dialog';
 
 
 interface UserProfile {
@@ -46,6 +43,10 @@ export default function TreasurerDashboard() {
   const [contributions, setContributions] = useState<Record<string, Record<string, number>>>({});
   const [loadingContributions, setLoadingContributions] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+
+  const [isSpecialContributionDialogOpen, setIsSpecialContributionDialogOpen] = useState(false);
+  const [specialContributionData, setSpecialContributionData] = useState<{member: UserProfile; month: number; year: number} | null>(null);
+
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName?.charAt(0) ?? ''}${lastName?.charAt(0) ?? ''}`.toUpperCase();
@@ -134,6 +135,11 @@ export default function TreasurerDashboard() {
       setIsSaving(false);
     }
   };
+
+  const handleOpenSpecialContributionDialog = (member: UserProfile, monthIndex: number) => {
+    setSpecialContributionData({member, month: monthIndex, year: currentYear});
+    setIsSpecialContributionDialogOpen(true);
+  }
   
   const isLoading = usersLoading || loadingContributions;
 
@@ -146,134 +152,135 @@ export default function TreasurerDashboard() {
   }
 
   return (
-    <Tabs defaultValue="monthly">
-        <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="monthly">Monthly Contributions</TabsTrigger>
-            <TabsTrigger value="special">Miniharambees</TabsTrigger>
-        </TabsList>
-        <TabsContent value="monthly">
-            <Card>
-            <CardHeader>
-                <CardTitle>Manage Member Contributions - {currentYear}</CardTitle>
-                <CardDescription>
-                    Enter and update the monthly contributions for each member. Click "Update Contributions" to save all changes.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                {isLoading ? (
-                <div className="space-y-2">
-                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-                </div>
-                ) : (
-                <>
-                    {/* Desktop View: Table */}
-                    <div className="hidden md:block">
-                    <div className="relative w-full overflow-auto">
-                        <Table>
-                            <TableHeader>
-                            <TableRow>
-                                <TableHead className="sticky left-0 bg-card z-10 min-w-[200px] whitespace-nowrap">Member</TableHead>
-                                {MONTHS.map(month => (
-                                <TableHead key={month} className="min-w-[120px] whitespace-nowrap">{month}</TableHead>
-                                ))}
-                            </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                            {members && members.map(member => (
-                                <TableRow key={member.id}>
-                                <TableCell className="font-medium sticky left-0 bg-card z-10 whitespace-nowrap">
-                                    <div className="flex items-center gap-3">
-                                    <Avatar>
-                                        <AvatarImage src={member.photoURL} />
-                                        <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
-                                    </Avatar>
-                                    <span>{member.firstName} {member.lastName}</span>
-                                    </div>
-                                </TableCell>
-                                {MONTHS.map((month, index) => {
-                                    const monthKey = month.toLowerCase();
-                                    const value = contributions[member.id]?.[monthKey] || '';
-                                    return (
-                                    <TableCell key={month}>
-                                        <Input
-                                        type="number"
-                                        placeholder="0"
-                                        value={value}
-                                        onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
-                                        className="w-24"
-                                        />
-                                    </TableCell>
-                                    );
-                                })}
-                                </TableRow>
-                            ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                    </div>
+    <>
+      <Card>
+      <CardHeader>
+          <CardTitle>Manage Member Contributions - {currentYear}</CardTitle>
+          <CardDescription>
+              Enter and update the monthly contributions for each member. Click the '+' icon to add a special contribution (miniharambee).
+          </CardDescription>
+      </CardHeader>
+      <CardContent>
+          {isLoading ? (
+          <div className="space-y-2">
+              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+          </div>
+          ) : (
+          <>
+              {/* Desktop View: Table */}
+              <div className="hidden md:block">
+              <div className="relative w-full overflow-auto">
+                  <Table>
+                      <TableHeader>
+                      <TableRow>
+                          <TableHead className="sticky left-0 bg-card z-10 min-w-[200px] whitespace-nowrap">Member</TableHead>
+                          {MONTHS.map(month => (
+                          <TableHead key={month} className="min-w-[150px] whitespace-nowrap text-center">{month}</TableHead>
+                          ))}
+                      </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                      {members && members.map(member => (
+                          <TableRow key={member.id}>
+                          <TableCell className="font-medium sticky left-0 bg-card z-10 whitespace-nowrap">
+                              <div className="flex items-center gap-3">
+                              <Avatar>
+                                  <AvatarImage src={member.photoURL} />
+                                  <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
+                              </Avatar>
+                              <span>{member.firstName} {member.lastName}</span>
+                              </div>
+                          </TableCell>
+                          {MONTHS.map((month, index) => {
+                              const monthKey = month.toLowerCase();
+                              const value = contributions[member.id]?.[monthKey] || '';
+                              return (
+                              <TableCell key={month} className="text-center">
+                                  <div className="flex items-center gap-1 justify-center">
+                                      <Input
+                                      type="number"
+                                      placeholder="0"
+                                      value={value}
+                                      onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
+                                      className="w-24"
+                                      />
+                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenSpecialContributionDialog(member, index)}>
+                                          <PlusCircle className="h-4 w-4 text-green-500" />
+                                      </Button>
+                                  </div>
+                              </TableCell>
+                              );
+                          })}
+                          </TableRow>
+                      ))}
+                      </TableBody>
+                  </Table>
+              </div>
+              </div>
 
-                    {/* Mobile View: Accordion */}
-                    <div className="md:hidden">
-                    <Accordion type="multiple" className="w-full">
-                        {members && members.map(member => (
-                        <AccordionItem value={member.id} key={member.id}>
-                            <AccordionTrigger>
-                            <div className="flex items-center gap-3">
-                                <Avatar>
-                                <AvatarImage src={member.photoURL} />
-                                <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
-                                </Avatar>
-                                <span>{member.firstName} {member.lastName}</span>
-                            </div>
-                            </AccordionTrigger>
-                            <AccordionContent>
-                            <div className="space-y-4 p-2">
-                                {MONTHS.map((month, index) => {
-                                const monthKey = month.toLowerCase();
-                                const value = contributions[member.id]?.[monthKey] || '';
-                                return (
-                                    <div key={month} className="flex items-center justify-between gap-4">
-                                    <label htmlFor={`${member.id}-${month}`}>{month}</label>
-                                    <Input
-                                        id={`${member.id}-${month}`}
-                                        type="number"
-                                        placeholder="0"
-                                        value={value}
-                                        onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
-                                        className="w-32 text-right"
-                                    />
-                                    </div>
-                                )
-                                })}
-                            </div>
-                            </AccordionContent>
-                        </AccordionItem>
-                        ))}
-                    </Accordion>
-                    </div>
-                </>
-                )}
-            </CardContent>
-            <CardFooter className="justify-end">
-                <Button onClick={handleUpdateContributions} disabled={isSaving}>
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSaving ? 'Updating...' : 'Update Contributions'}
-                </Button>
-            </CardFooter>
-            </Card>
-        </TabsContent>
-        <TabsContent value="special">
-            <div className="grid gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-1">
-                    <AddSpecialContributionForm members={members} />
-                </div>
-                <div className="lg:col-span-2">
-                    <SpecialContributionsList />
-                </div>
-            </div>
-        </TabsContent>
-    </Tabs>
+              {/* Mobile View: Accordion */}
+              <div className="md:hidden">
+              <Accordion type="multiple" className="w-full">
+                  {members && members.map(member => (
+                  <AccordionItem value={member.id} key={member.id}>
+                      <AccordionTrigger>
+                      <div className="flex items-center gap-3">
+                          <Avatar>
+                          <AvatarImage src={member.photoURL} />
+                          <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
+                          </Avatar>
+                          <span>{member.firstName} {member.lastName}</span>
+                      </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                      <div className="space-y-4 p-2">
+                          {MONTHS.map((month, index) => {
+                          const monthKey = month.toLowerCase();
+                          const value = contributions[member.id]?.[monthKey] || '';
+                          return (
+                              <div key={month}>
+                                  <label htmlFor={`${member.id}-${month}`} className="block text-sm font-medium mb-1">{month}</label>
+                                  <div className="flex items-center justify-between gap-2">
+                                      <Input
+                                          id={`${member.id}-${month}`}
+                                          type="number"
+                                          placeholder="0"
+                                          value={value}
+                                          onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
+                                          className="flex-grow"
+                                      />
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleOpenSpecialContributionDialog(member, index)}>
+                                          <PlusCircle className="h-5 w-5 text-green-500" />
+                                      </Button>
+                                  </div>
+                              </div>
+                          )
+                          })}
+                      </div>
+                      </AccordionContent>
+                  </AccordionItem>
+                  ))}
+              </Accordion>
+              </div>
+          </>
+          )}
+      </CardContent>
+      <CardFooter className="justify-end">
+          <Button onClick={handleUpdateContributions} disabled={isSaving}>
+          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isSaving ? 'Updating...' : 'Update Contributions'}
+          </Button>
+      </CardFooter>
+      </Card>
+      {specialContributionData && (
+          <AddSpecialContributionDialog
+              isOpen={isSpecialContributionDialogOpen}
+              onOpenChange={setIsSpecialContributionDialogOpen}
+              member={specialContributionData.member}
+              month={specialContributionData.month}
+              year={specialContributionData.year}
+          />
+      )}
+    </>
   );
 }
-
-    

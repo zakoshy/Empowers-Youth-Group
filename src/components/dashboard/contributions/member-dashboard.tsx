@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
@@ -25,6 +25,8 @@ interface SpecialContribution {
     date: string;
     amount: number;
     description: string;
+    month: number;
+    year: number;
 }
 
 interface MemberDashboardProps {
@@ -42,7 +44,7 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
     [firestore, userId]
   );
   const specialContributionsRef = useMemoFirebase(
-    () => collection(firestore, 'userProfiles', userId, 'specialContributions'),
+    () => query(collection(firestore, 'userProfiles', userId, 'specialContributions'), orderBy('date', 'desc')),
     [firestore, userId]
   );
 
@@ -74,6 +76,22 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
         const total = specialContributions.reduce((sum, sc) => sum + sc.amount, 0);
         setTotalSpecialContribution(total);
     }
+  }, [specialContributions]);
+  
+  const monthlySpecialContributions = useMemo(() => {
+    const monthly: Record<string, SpecialContribution[]> = {};
+    if (specialContributions) {
+      specialContributions.forEach(sc => {
+        if (sc.year === currentYear) {
+          const monthName = MONTHS[sc.month];
+          if (!monthly[monthName]) {
+            monthly[monthName] = [];
+          }
+          monthly[monthName].push(sc);
+        }
+      });
+    }
+    return monthly;
   }, [specialContributions]);
 
   const outstandingDebt = annualTarget - totalContribution;
@@ -133,7 +151,7 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">Ksh {totalSpecialContribution.toLocaleString()}</div>
-                     <p className="text-xs text-muted-foreground">total raised</p>
+                     <p className="text-xs text-muted-foreground">total raised this year</p>
                 </CardContent>
             </Card>
           </div>
@@ -145,78 +163,61 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
         </CardContent>
       </Card>
       
-      <div className="grid lg:grid-cols-2 gap-6">
-        <Card>
-            <CardHeader>
-                <CardTitle>Monthly Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-            <Table>
-                <TableHeader>
-                <TableRow>
-                    <TableHead>Month</TableHead>
-                    <TableHead className="text-right">Amount Paid</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                </TableRow>
-                </TableHeader>
-                <TableBody>
-                {MONTHS.map((month) => {
-                    const amount = yearlyData[month.toLowerCase()] || 0;
-                    const isPaid = amount >= FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION;
-                    const isPartial = amount > 0 && amount < FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION;
-                    
-                    return (
-                    <TableRow key={month}>
-                        <TableCell className="font-medium">{month}</TableCell>
-                        <TableCell className="text-right">Ksh {amount.toLocaleString()}</TableCell>
-                        <TableCell className="text-center">
-                        {isPaid ? (
-                            <Badge variant="default" className="bg-green-500">Paid</Badge>
-                        ) : isPartial ? (
-                            <Badge variant="secondary" className="bg-yellow-500">Partial</Badge>
-                        ) : (
-                            <Badge variant="destructive">Unpaid</Badge>
-                        )}
-                        </TableCell>
-                    </TableRow>
-                    );
-                })}
-                </TableBody>
-            </Table>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle>Miniharambee & Special Contributions</CardTitle>
-            </CardHeader>
-            <CardContent>
-                {specialContributions && specialContributions.length > 0 ? (
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Description</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {specialContributions.map((sc) => (
-                             <TableRow key={sc.id}>
-                                <TableCell>{format(new Date(sc.date), 'PP')}</TableCell>
-                                <TableCell className="font-medium">{sc.description}</TableCell>
-                                <TableCell className="text-right">Ksh {sc.amount.toLocaleString()}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-                ) : (
-                    <p className="text-muted-foreground text-center">No special contributions recorded this year.</p>
-                )}
-            </CardContent>
-        </Card>
-      </div>
+      <Card>
+          <CardHeader>
+              <CardTitle>Detailed Breakdown by Month</CardTitle>
+          </CardHeader>
+          <CardContent>
+          <Table>
+              <TableHeader>
+              <TableRow>
+                  <TableHead>Month</TableHead>
+                  <TableHead>Contribution Status</TableHead>
+                  <TableHead>Miniharambee Details</TableHead>
+              </TableRow>
+              </TableHeader>
+              <TableBody>
+              {MONTHS.map((month) => {
+                  const amount = yearlyData[month.toLowerCase()] || 0;
+                  const isPaid = amount >= FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION;
+                  const isPartial = amount > 0 && amount < FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION;
+                  const specialCons = monthlySpecialContributions[month] || [];
+                  
+                  return (
+                  <TableRow key={month}>
+                      <TableCell className="font-medium">{month}</TableCell>
+                      <TableCell>
+                          <div className="flex flex-col">
+                              <span>Ksh {amount.toLocaleString()}</span>
+                              {isPaid ? (
+                                  <Badge variant="default" className="bg-green-500 w-fit mt-1">Paid</Badge>
+                              ) : isPartial ? (
+                                  <Badge variant="secondary" className="bg-yellow-500 w-fit mt-1">Partial</Badge>
+                              ) : (
+                                  <Badge variant="destructive" className="w-fit mt-1">Unpaid</Badge>
+                              )}
+                          </div>
+                      </TableCell>
+                      <TableCell>
+                          {specialCons.length > 0 ? (
+                              <ul className="space-y-1 text-sm">
+                                  {specialCons.map(sc => (
+                                      <li key={sc.id}>
+                                          <span className="font-semibold">Ksh {sc.amount.toLocaleString()}</span> - <span className="text-muted-foreground">{sc.description}</span>
+                                      </li>
+                                  ))}
+                              </ul>
+                          ) : (
+                              <p className="text-sm text-muted-foreground">None</p>
+                          )}
+                      </TableCell>
+                  </TableRow>
+                  );
+              })}
+              </TableBody>
+          </Table>
+          </CardContent>
+      </Card>
     </div>
   );
 }
-
-    

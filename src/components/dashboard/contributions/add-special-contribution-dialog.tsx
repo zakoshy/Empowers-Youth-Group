@@ -1,33 +1,27 @@
-
 'use client';
 
 import { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useFirestore } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc } from 'firebase/firestore';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { MONTHS } from '@/lib/data';
 
 interface UserProfile {
   id: string;
@@ -35,17 +29,26 @@ interface UserProfile {
   lastName: string;
 }
 
-interface AddSpecialContributionFormProps {
-  members: UserProfile[];
+interface AddSpecialContributionDialogProps {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  member: UserProfile;
+  month: number;
+  year: number;
 }
 
 const formSchema = z.object({
-  memberId: z.string().min(1, 'Please select a member.'),
   amount: z.coerce.number().min(1, 'Amount must be greater than 0.'),
   description: z.string().min(3, 'Description is required.').max(100),
 });
 
-export function AddSpecialContributionForm({ members }: AddSpecialContributionFormProps) {
+export function AddSpecialContributionDialog({
+  isOpen,
+  onOpenChange,
+  member,
+  month,
+  year,
+}: AddSpecialContributionDialogProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,7 +56,6 @@ export function AddSpecialContributionForm({ members }: AddSpecialContributionFo
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      memberId: '',
       amount: 0,
       description: '',
     },
@@ -65,25 +67,28 @@ export function AddSpecialContributionForm({ members }: AddSpecialContributionFo
       const specialContributionsRef = collection(
         firestore,
         'userProfiles',
-        values.memberId,
+        member.id,
         'specialContributions'
       );
       
       const docData = {
-          userId: values.memberId,
-          financialYearId: new Date().getFullYear().toString(),
+          userId: member.id,
+          financialYearId: year.toString(),
           date: new Date().toISOString(),
           amount: values.amount,
-          description: values.description
+          description: values.description,
+          month: month,
+          year: year
       }
 
       await addDoc(specialContributionsRef, docData);
 
       toast({
         title: 'Success!',
-        description: 'Special contribution has been recorded.',
+        description: `Miniharambee for ${member.firstName} has been recorded.`,
       });
       form.reset();
+      onOpenChange(false);
     } catch (error) {
       console.error('Failed to add special contribution:', error);
       toast({
@@ -97,39 +102,17 @@ export function AddSpecialContributionForm({ members }: AddSpecialContributionFo
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Add Miniharambee</CardTitle>
-        <CardDescription>Record a new special contribution for a member.</CardDescription>
-      </CardHeader>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add Miniharambee</DialogTitle>
+          <DialogDescription>
+            Record a special contribution for {member.firstName} {member.lastName} for the month of {MONTHS[month]}.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
-              control={form.control}
-              name="memberId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Member</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a member" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {members.map((member) => (
-                        <SelectItem key={member.id} value={member.id}>
-                          {member.firstName} {member.lastName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
               control={form.control}
               name="amount"
               render={({ field }) => (
@@ -149,23 +132,26 @@ export function AddSpecialContributionForm({ members }: AddSpecialContributionFo
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="e.g., Contribution for fundraiser" {...field} />
+                    <Textarea placeholder="e.g., Guest of honor contribution" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" disabled={isSubmitting} className="w-full">
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSubmitting ? 'Recording...' : 'Record Contribution'}
-            </Button>
-          </CardFooter>
-        </form>
-      </Form>
-    </Card>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? 'Recording...' : 'Record Contribution'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
-
-    

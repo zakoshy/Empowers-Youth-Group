@@ -1,4 +1,5 @@
 
+
 export type Event = {
   id: string;
   title: string;
@@ -115,29 +116,32 @@ export const roles = ["Admin", "Chairperson", "Vice Chairperson", "Treasurer", "
 
 export const dashboardNavLinks = (userRole: string = "Member") => {
   const allLinks = [
-    // Common links
     { href: "/dashboard", label: "Dashboard", icon: "Home", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/profile", label: "Profile", icon: "Users", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
-    
-    // Role-specific links
     { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer"] },
     { href: "/dashboard/events", label: "Events", icon: "Calendar", roles: ["Member", "Coordinator", "Admin"] },
     { href: "/dashboard/reports", label: "Investments", icon: "TrendingUp", roles: ["Member", "Investment Lead", "Admin"] },
-    { href: "/dashboard/polls", label: "Polls", icon: "Vote", roles: ["Member", "Chairperson"] },
     { href: "/dashboard/constitution", label: "Constitution", icon: "FileText", roles: ["Member", "Chairperson", "Admin"] },
-
-    // Admin/privileged links
-    { href: "/dashboard/manage-users", label: "Manage Users", icon: "Users", roles: ["Admin", "Chairperson"] },
-    { href: "/dashboard/manage-finances", label: "Manage Finances", icon: "BookOpen", roles: ["Chairperson", "Treasurer"] },
+    { href: "/dashboard/manage-users", label: "Manage Users", icon: "Users", roles: ["Admin"] },
   ];
   
-  // Use a Map to ensure uniqueness based on 'href'.
+  const filteredLinks = allLinks.filter(link => link.roles.includes(userRole));
+
+  // Use a Map to ensure uniqueness based on 'href', which should be unique.
   const uniqueLinks = new Map();
-  allLinks.forEach(link => {
-    if(link.roles.includes(userRole)) {
-      uniqueLinks.set(link.label, link); // Use label as key to prevent duplicates like "Profile"
-    }
+  filteredLinks.forEach(link => {
+      uniqueLinks.set(link.href, link);
   });
 
   return Array.from(uniqueLinks.values());
+};
+
+export const MONTHS = [
+  "January", "February", "March", "April", "May", "June", 
+  "July", "August", "September", "October", "November", "December"
+];
+
+export const FINANCIAL_CONFIG = {
+  MONTHLY_CONTRIBUTION: 200,
+  FINANCIAL_YEAR_START_MONTH: 0, // January
 };

@@ -146,20 +146,20 @@ export default function TreasurerDashboard() {
             {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <Table className="min-w-full">
+          <div className="relative overflow-x-auto">
+            <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="sticky left-0 bg-card z-10 min-w-[200px]">Member</TableHead>
+                  <TableHead className="sticky left-0 bg-card z-10 min-w-[200px] whitespace-nowrap">Member</TableHead>
                   {MONTHS.map(month => (
-                    <TableHead key={month} className="min-w-[120px]">{month}</TableHead>
+                    <TableHead key={month} className="min-w-[120px] whitespace-nowrap">{month}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {members && members.map(member => (
                   <TableRow key={member.id}>
-                    <TableCell className="font-medium sticky left-0 bg-card z-10">
+                    <TableCell className="font-medium sticky left-0 bg-card z-10 whitespace-nowrap">
                        <div className="flex items-center gap-3">
                         <Avatar>
                           <AvatarImage src={member.photoURL} />

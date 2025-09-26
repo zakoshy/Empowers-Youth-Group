@@ -135,13 +135,13 @@ const getConstitutionInfo = ai.defineTool(
 
 
 // Define schemas for the main chat flow
-export const ChatInputSchema = z.object({
+const ChatInputSchema = z.object({
   userId: z.string(),
   message: z.string(),
 });
 export type ChatInput = z.infer<typeof ChatInputSchema>;
 
-export const ChatOutputSchema = z.object({
+const ChatOutputSchema = z.object({
   message: z.string(),
 });
 export type ChatOutput = z.infer<typeof ChatOutputSchema>;

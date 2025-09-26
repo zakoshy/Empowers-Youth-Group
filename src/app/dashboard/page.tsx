@@ -8,10 +8,10 @@ import { ReportsWidget } from "@/components/dashboard/reports-widget";
 import { PollsWidget } from "@/components/dashboard/polls-widget";
 import { PersonalizedSuggestions } from "@/components/dashboard/personalized-suggestions";
 import { constitution } from "@/lib/data";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { FileText } from "lucide-react";
+import { FileText, Phone } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { doc } from "firebase/firestore";
 
@@ -70,6 +70,23 @@ export default function DashboardPage() {
         <h1 className="text-3xl font-bold font-headline">Welcome, {welcomeName}!</h1>
         <p className="text-muted-foreground">Here's a summary of your activities and group updates.</p>
       </div>
+      
+      {!isAdmin && (
+        <Card className="bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Phone className="h-5 w-5" />
+              <span>M-Pesa Contribution Details</span>
+            </CardTitle>
+            <CardDescription>
+              Use the number below to send your monthly contributions.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold font-mono tracking-widest">0112263590</p>
+          </CardContent>
+        </Card>
+      )}
 
       {!isAdmin && <StatsCards />}
 

@@ -123,25 +123,21 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
     { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer"] },
     { href: "/dashboard/events", label: "Events", icon: "Calendar", roles: ["Member", "Coordinator", "Admin"] },
     { href: "/dashboard/reports", label: "Investments", icon: "TrendingUp", roles: ["Member", "Investment Lead", "Admin"] },
-    { href: "/dashboard/polls", label: "Polls", icon: "Vote", roles: ["Member", "Chairperson", "Admin"] },
+    { href: "/dashboard/polls", label: "Polls", icon: "Vote", roles: ["Member", "Chairperson"] },
     { href: "/dashboard/constitution", label: "Constitution", icon: "FileText", roles: ["Member", "Chairperson", "Admin"] },
 
     // Admin/privileged links
     { href: "/dashboard/manage-users", label: "Manage Users", icon: "Users", roles: ["Admin", "Chairperson"] },
-    { href: "/dashboard/manage-finances", label: "Manage Finances", icon: "BookOpen", roles: ["Admin", "Chairperson", "Treasurer"] },
+    { href: "/dashboard/manage-finances", label: "Manage Finances", icon: "BookOpen", roles: ["Chairperson", "Treasurer"] },
   ];
   
-  // Admins get all links. We use a Map to ensure uniqueness based on 'href'.
-  if (userRole === "Admin") {
-    const uniqueLinks = new Map();
-    allLinks.forEach(link => {
-      if(link.roles.includes(userRole)) {
-        uniqueLinks.set(link.href, link)
-      }
-    });
-    return Array.from(uniqueLinks.values());
-  }
+  // Use a Map to ensure uniqueness based on 'href'.
+  const uniqueLinks = new Map();
+  allLinks.forEach(link => {
+    if(link.roles.includes(userRole)) {
+      uniqueLinks.set(link.label, link); // Use label as key to prevent duplicates like "Profile"
+    }
+  });
 
-  // Filter links for other roles based on their permissions.
-  return allLinks.filter(link => link.roles.includes(userRole));
+  return Array.from(uniqueLinks.values());
 };

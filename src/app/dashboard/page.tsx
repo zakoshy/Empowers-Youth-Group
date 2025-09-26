@@ -80,7 +80,7 @@ export default function DashboardPage() {
         </div>
         <div className="lg:col-span-1 grid gap-6">
             <EventsWidget />
-            <PollsWidget />
+            {!isAdmin && <PollsWidget />}
         </div>
       </div>
 

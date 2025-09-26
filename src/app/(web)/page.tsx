@@ -1,17 +1,32 @@
+
+'use client'
+
 import Image from "next/image";
 import Link from "next/link";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Users, TrendingUp, Calendar, Target, Eye, Gem } from "lucide-react";
-import { events } from "@/lib/data";
 import { EventCard } from "@/components/event-card";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, orderBy, limit } from "firebase/firestore";
+import type { Event } from "@/lib/data";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function HomePage() {
   const heroImage = PlaceHolderImages.find((img) => img.id === "hero");
   const aboutImage = PlaceHolderImages.find((img) => img.id === "about-story");
   const missionVisionImage = PlaceHolderImages.find((img) => img.id === "mission-vision");
   const aboutStoryImage = PlaceHolderImages.find((img) => img.id === "about-story");
+
+  const firestore = useFirestore();
+  const eventsRef = useMemoFirebase(() => query(
+    collection(firestore, 'events'),
+    orderBy('date', 'asc'),
+    limit(3)
+  ), [firestore]);
+
+  const { data: events, isLoading: eventsLoading } = useCollection<Event>(eventsRef);
 
   return (
     <div className="flex flex-col">
@@ -80,7 +95,7 @@ export default function HomePage() {
             </Card>
             <Card className="text-center">
               <CardHeader>
-                <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
+                <div className="mx-auto bg_primary/10 p-4 rounded-full w-fit">
                   <Calendar className="h-8 w-8 text-primary" />
                 </div>
                 <CardTitle className="font-headline mt-4">Events &amp; Workshops</CardTitle>
@@ -209,9 +224,15 @@ export default function HomePage() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {events.map((event) => (
-              <EventCard key={event.id} event={event} />
-            ))}
+            {eventsLoading ? (
+              [...Array(3)].map((_, i) => <Skeleton key={i} className="h-96 w-full" />)
+            ) : events && events.length > 0 ? (
+              events.map((event) => (
+                <EventCard key={event.id} event={event} />
+              ))
+            ) : (
+                <p className="text-muted-foreground col-span-3 text-center">No upcoming events. Please check back later.</p>
+            )}
           </div>
         </div>
       </section>

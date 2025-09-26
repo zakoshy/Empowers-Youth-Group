@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -11,9 +12,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Wand2 } from "lucide-react";
 import { getPersonalizedSuggestions } from "@/ai/flows/personalized-community-suggestions";
-import { investmentReports, events } from "@/lib/data";
+import { investmentReports } from "@/lib/data";
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from "@/firebase";
-import { doc, collection } from "firebase/firestore";
+import { doc, collection, query, orderBy, limit } from "firebase/firestore";
+import type { Event } from "@/lib/data";
 
 interface UserProfile {
   id: string;
@@ -54,14 +56,21 @@ export function PersonalizedSuggestions() {
     if (!user) return null;
     return collection(firestore, 'userProfiles', user.uid, 'specialContributions');
   }, [firestore, user]);
+  
+  const eventsRef = useMemoFirebase(() => query(
+    collection(firestore, 'events'),
+    orderBy('date', 'asc'),
+    limit(5)
+  ), [firestore]);
 
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
   const { data: contributions } = useCollection<Contribution>(contributionsRef);
   const { data: specialContributions } = useCollection<SpecialContribution>(specialContributionsRef);
+  const { data: events, isLoading: eventsLoading } = useCollection<Event>(eventsRef);
 
   useEffect(() => {
     async function fetchSuggestions() {
-      if (!userProfile || contributions === null || specialContributions === null) return;
+      if (!userProfile || contributions === null || specialContributions === null || !events) return;
 
       try {
         setLoading(true);
@@ -91,10 +100,10 @@ export function PersonalizedSuggestions() {
       }
     }
 
-    if (userProfile && contributions !== null && specialContributions !== null) {
+    if (userProfile && contributions !== null && specialContributions !== null && events) {
       fetchSuggestions();
     }
-  }, [userProfile, contributions, specialContributions]);
+  }, [userProfile, contributions, specialContributions, events]);
 
   return (
     <Card className="bg-gradient-to-br from-primary/10 to-card">

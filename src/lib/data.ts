@@ -6,35 +6,8 @@ export type Event = {
   date: string;
   location: string;
   description: string;
-  image: string;
+  image?: string;
 };
-
-export const events: Event[] = [
-  {
-    id: "1",
-    title: "Annual Community Cleanup",
-    date: "2024-08-15",
-    location: "Village Center",
-    description: "Join us for our annual village cleanup day. Let's work together to make our community shine!",
-    image: "event-1",
-  },
-  {
-    id: "2",
-    title: "Financial Literacy Workshop",
-    date: "2024-09-05",
-    location: "Community Hall",
-    description: "Learn about saving, budgeting, and smart investments from industry experts.",
-    image: "event-2",
-  },
-  {
-    id: "3",
-    title: "Youth Sports Gala",
-    date: "2024-09-20",
-    location: "Village Sports Ground",
-    description: "A day of fun, games, and friendly competition. All are welcome to participate or cheer!",
-    image: "event-3",
-  },
-];
 
 export const memberData = {
   id: "user_123",
@@ -119,7 +92,7 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
     { href: "/dashboard", label: "Dashboard", icon: "Home", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/profile", label: "Profile", icon: "Users", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer"] },
-    { href: "/dashboard/events", label: "Events", icon: "Calendar", roles: ["Member", "Coordinator", "Admin"] },
+    { href: "/dashboard/events", label: "Manage Events", icon: "Calendar", roles: ["Coordinator", "Admin"] },
     { href: "/dashboard/reports", label: "Investments", icon: "TrendingUp", roles: ["Member", "Investment Lead", "Admin"] },
     { href: "/dashboard/constitution", label: "Constitution", icon: "FileText", roles: ["Member", "Chairperson", "Admin"] },
     { href: "/dashboard/manage-users", label: "Manage Users", icon: "Users", roles: ["Admin"] },

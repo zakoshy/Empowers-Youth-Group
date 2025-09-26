@@ -1,3 +1,4 @@
+
 import Image from "next/image";
 import { format } from "date-fns";
 import { Calendar, MapPin } from "lucide-react";
@@ -11,8 +12,16 @@ interface EventCardProps {
   event: Event;
 }
 
+const placeholderImages = [
+    'event-1',
+    'event-2',
+    'event-3',
+]
+
 export function EventCard({ event }: EventCardProps) {
-  const eventImage = PlaceHolderImages.find((img) => img.id === event.image);
+  // Use a simple hash function to pick a placeholder image based on the event id
+  const imageId = placeholderImages[event.id.charCodeAt(0) % placeholderImages.length];
+  const eventImage = PlaceHolderImages.find((img) => img.id === imageId);
 
   return (
     <Card className="flex flex-col">

@@ -62,6 +62,7 @@ export default function DashboardPage() {
   }
 
   const welcomeName = userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : user?.displayName || 'Member';
+  const isAdmin = userProfile?.role === 'Admin';
 
   return (
     <div className="flex flex-col gap-6">
@@ -70,7 +71,7 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">Here's a summary of your activities and group updates.</p>
       </div>
 
-      <StatsCards />
+      {!isAdmin && <StatsCards />}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 grid gap-6">

@@ -120,7 +120,7 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
     { href: "/dashboard/profile", label: "Profile", icon: "Users", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     
     // Role-specific links
-    { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer", "Admin"] },
+    { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer"] },
     { href: "/dashboard/events", label: "Events", icon: "Calendar", roles: ["Member", "Coordinator", "Admin"] },
     { href: "/dashboard/reports", label: "Investments", icon: "TrendingUp", roles: ["Member", "Investment Lead", "Admin"] },
     { href: "/dashboard/polls", label: "Polls", icon: "Vote", roles: ["Member", "Chairperson", "Admin"] },
@@ -134,7 +134,11 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
   // Admins get all links. We use a Map to ensure uniqueness based on 'href'.
   if (userRole === "Admin") {
     const uniqueLinks = new Map();
-    allLinks.forEach(link => uniqueLinks.set(link.href, link));
+    allLinks.forEach(link => {
+      if(link.roles.includes(userRole)) {
+        uniqueLinks.set(link.href, link)
+      }
+    });
     return Array.from(uniqueLinks.values());
   }
 

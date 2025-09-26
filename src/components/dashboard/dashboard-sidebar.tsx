@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/sidebar"
 import { EmpowerHubLogo } from "../icons";
 import { dashboardNavLinks } from "@/lib/data";
-import { Home, LineChart, Package, Package2, ShoppingCart, Users, Vote, FileText, DollarSign, TrendingUp, Calendar, Settings, BookOpen, LogOut } from "lucide-react";
+import { Home, LineChart, Package, Package2, ShoppingCart, Users, Vote, FileText, DollarSign, TrendingUp, Calendar, Settings, BookOpen, LogOut, Video } from "lucide-react";
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
@@ -31,6 +31,7 @@ const icons: { [key: string]: React.ElementType } = {
   Users,
   BookOpen,
   Settings,
+  Video,
 };
 
 interface UserProfile {
@@ -86,10 +87,16 @@ export function DashboardSidebar() {
                         {navItems.map(item => {
                             const Icon = icons[item.icon];
                             const isActive = pathname === item.href;
+                            const isExternal = item.href.startsWith('http');
+
+                            const linkProps = isExternal 
+                                ? { href: item.href, target: "_blank", rel: "noopener noreferrer" }
+                                : { href: item.href };
+
                             return (
                                 <SidebarMenuItem key={item.label}>
                                     <SidebarMenuButton asChild tooltip={item.label} isActive={isActive}>
-                                        <Link href={item.href}>
+                                        <Link {...linkProps}>
                                             {Icon && <Icon />}
                                             <span>{item.label}</span>
                                         </Link>

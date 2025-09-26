@@ -1,5 +1,4 @@
 
-
 export type Event = {
   id: string;
   title: string;
@@ -93,6 +92,7 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
     { href: "/dashboard/profile", label: "Profile", icon: "Users", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer"] },
     { href: "/dashboard/events", label: "Manage Events", icon: "Calendar", roles: ["Coordinator", "Admin"] },
+    { href: "https://meet.google.com/new", label: "Schedule Meeting", icon: "Video", roles: ["Coordinator", "Admin"] },
     { href: "/dashboard/reports", label: "Investments", icon: "TrendingUp", roles: ["Member", "Investment Lead", "Admin"] },
     { href: "/dashboard/constitution", label: "Constitution", icon: "FileText", roles: ["Member", "Chairperson", "Admin"] },
     { href: "/dashboard/manage-users", label: "Manage Users", icon: "Users", roles: ["Admin"] },

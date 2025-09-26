@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { MONTHS } from '@/lib/data';
+import { MONTHS, FINANCIAL_CONFIG } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -18,6 +18,7 @@ import { AddSpecialContributionDialog } from './add-special-contribution-dialog'
 import { EditSpecialContributionDialog } from './edit-special-contribution-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
+import { TreasurerInsights } from './treasurer-insights';
 
 
 interface UserProfile {
@@ -217,6 +218,16 @@ export default function TreasurerDashboard() {
   
   const isLoading = usersLoading || loadingData;
 
+  const allMembersDataForAI = useMemo(() => {
+    if (!members) return [];
+    return members.map(member => ({
+        name: `${member.firstName} ${member.lastName}`,
+        monthlyContributions: contributions[member.id] || {},
+        specialContributions: specialContributions[member.id] || [],
+    }));
+  }, [members, contributions, specialContributions]);
+
+
   if (isLoading) {
       return <Skeleton className="h-[500px] w-full" />
   }
@@ -227,180 +238,189 @@ export default function TreasurerDashboard() {
 
   return (
     <>
-      <Card>
-      <CardHeader>
-          <CardTitle>Manage Member Contributions - {currentYear}</CardTitle>
-          <CardDescription>
-              Enter and update monthly contributions. Click the '+' icon to add a miniharambee for a specific month.
-          </CardDescription>
-      </CardHeader>
-      <CardContent>
-          {isLoading ? (
-          <div className="space-y-2">
-              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-          </div>
-          ) : (
-          <>
-              {/* Desktop View: Table */}
-              <div className="hidden md:block">
-              <div className="relative w-full overflow-auto">
-                  <Table>
-                      <TableHeader>
-                      <TableRow>
-                          <TableHead className="sticky left-0 bg-card z-10 min-w-[200px] whitespace-nowrap">Member</TableHead>
-                          {MONTHS.map(month => (
-                          <TableHead key={month} className="min-w-[250px] whitespace-nowrap text-center">{month}</TableHead>
-                          ))}
-                      </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                      {members.map(member => (
-                          <TableRow key={member.id}>
-                          <TableCell className="font-medium sticky left-0 bg-card z-10 whitespace-nowrap">
-                              <div className="flex items-center gap-3">
-                              <Avatar>
-                                  <AvatarImage src={member.photoURL} />
-                                  <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
-                              </Avatar>
-                              <span>{member.firstName} {member.lastName}</span>
-                              </div>
-                          </TableCell>
-                          {MONTHS.map((month, index) => {
-                              const monthKey = month.toLowerCase();
-                              const value = contributions[member.id]?.[monthKey] || '';
-                              const monthlySpecialContributions = specialContributions[member.id]?.filter(sc => sc.month === index) || [];
-                              return (
-                              <TableCell key={month} className="text-center align-top">
-                                  <div className="flex items-center gap-1 justify-center">
-                                      <Input
-                                      type="number"
-                                      placeholder="0"
-                                      value={value}
-                                      onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
-                                      className="w-24"
-                                      />
-                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenAddSpecialDialog(member, index)}>
-                                          <PlusCircle className="h-4 w-4 text-green-500" />
-                                      </Button>
-                                  </div>
-                                  <div className="mt-2 space-y-1 text-xs text-left">
-                                      {monthlySpecialContributions.map(sc => (
-                                          <div key={sc.id} className="flex items-center justify-between gap-1 bg-muted/50 p-1 rounded">
-                                              <span className="truncate" title={format(new Date(sc.date), "PPP")}>Ksh {sc.amount} on {format(new Date(sc.date), "MMM d")}</span>
-                                              <div className="flex">
-                                                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenEditSpecialDialog(sc)}><Edit className="h-3 w-3" /></Button>
-                                                  <AlertDialog>
-                                                      <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive"><Trash2 className="h-3 w-3" /></Button>
-                                                      </AlertDialogTrigger>
-                                                      <AlertDialogContent>
-                                                          <AlertDialogHeader>
-                                                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                              <AlertDialogDescription>This action cannot be undone. This will permanently delete the special contribution.</AlertDialogDescription>
-                                                          </AlertDialogHeader>
-                                                          <AlertDialogFooter>
-                                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                              <AlertDialogAction onClick={() => handleDeleteSpecialContribution(sc)}>Delete</AlertDialogAction>
-                                                          </AlertDialogFooter>
-                                                      </AlertDialogContent>
-                                                  </AlertDialog>
-                                              </div>
-                                          </div>
-                                      ))}
-                                  </div>
-                              </TableCell>
-                              );
-                          })}
-                          </TableRow>
-                      ))}
-                      </TableBody>
-                  </Table>
-              </div>
-              </div>
+      <div className="space-y-6">
+        <TreasurerInsights 
+          allMembersData={allMembersDataForAI}
+          totalFunds={grandTotal}
+          monthlyTarget={FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION}
+        />
 
-              {/* Mobile View: Accordion */}
-              <div className="md:hidden">
-              <Accordion type="multiple" className="w-full">
-                  {members.map(member => (
-                  <AccordionItem value={member.id} key={member.id}>
-                      <AccordionTrigger>
-                      <div className="flex items-center gap-3">
-                          <Avatar>
-                          <AvatarImage src={member.photoURL} />
-                          <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
-                          </Avatar>
-                          <span>{member.firstName} {member.lastName}</span>
-                      </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                      <div className="space-y-4 p-2">
-                          {MONTHS.map((month, index) => {
-                          const monthKey = month.toLowerCase();
-                          const value = contributions[member.id]?.[monthKey] || '';
-                          const monthlySpecialContributions = specialContributions[member.id]?.filter(sc => sc.month === index) || [];
-                          return (
-                              <div key={month}>
-                                  <label htmlFor={`${member.id}-${month}`} className="block text-sm font-medium mb-1">{month}</label>
-                                  <div className="flex items-center justify-between gap-2">
-                                      <Input
-                                          id={`${member.id}-${month}`}
-                                          type="number"
-                                          placeholder="0"
-                                          value={value}
-                                          onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
-                                          className="flex-grow"
-                                      />
-                                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleOpenAddSpecialDialog(member, index)}>
-                                          <PlusCircle className="h-5 w-5 text-green-500" />
-                                      </Button>
-                                  </div>
-                                  <div className="mt-2 space-y-1 text-xs">
-                                      {monthlySpecialContributions.map(sc => (
-                                          <div key={sc.id} className="flex items-center justify-between gap-1 bg-muted/50 p-1 rounded">
-                                              <span className="truncate" title={format(new Date(sc.date), "PPP")}>Ksh {sc.amount} on {format(new Date(sc.date), "MMM d")}</span>
-                                              <div className="flex">
-                                                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenEditSpecialDialog(sc)}><Edit className="h-3 w-3" /></Button>
-                                                  <AlertDialog>
-                                                      <AlertDialogTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive"><Trash2 className="h-3 w-3" /></Button>
-                                                      </AlertDialogTrigger>
-                                                      <AlertDialogContent>
-                                                          <AlertDialogHeader>
-                                                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                              <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-                                                          </AlertDialogHeader>
-                                                          <AlertDialogFooter>
-                                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                              <AlertDialogAction onClick={() => handleDeleteSpecialContribution(sc)}>Delete</AlertDialogAction>
-                                                          </AlertDialogFooter>
-                                                      </AlertDialogContent>
-                                                  </AlertDialog>
-                                              </div>
-                                          </div>
-                                      ))}
-                                  </div>
-                              </div>
-                          )
-                          })}
-                      </div>
-                      </AccordionContent>
-                  </AccordionItem>
-                  ))}
-              </Accordion>
-              </div>
-          </>
-          )}
-      </CardContent>
-      <CardFooter className="justify-between items-center">
-          <div className="text-lg font-bold">
-            Total Collected: <span className="text-primary">Ksh {grandTotal.toLocaleString()}</span>
-          </div>
-          <Button onClick={handleUpdateContributions} disabled={isSaving}>
-          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isSaving ? 'Updating...' : 'Update Contributions'}
-          </Button>
-      </CardFooter>
-      </Card>
+        <Card>
+        <CardHeader>
+            <CardTitle>Manage Member Contributions - {currentYear}</CardTitle>
+            <CardDescription>
+                Enter and update monthly contributions. Click the '+' icon to add a miniharambee for a specific month.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            {isLoading ? (
+            <div className="space-y-2">
+                {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+            </div>
+            ) : (
+            <>
+                {/* Desktop View: Table */}
+                <div className="hidden md:block">
+                <div className="relative w-full overflow-auto">
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead className="sticky left-0 bg-card z-10 min-w-[200px] whitespace-nowrap">Member</TableHead>
+                            {MONTHS.map(month => (
+                            <TableHead key={month} className="min-w-[250px] whitespace-nowrap text-center">{month}</TableHead>
+                            ))}
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {members.map(member => (
+                            <TableRow key={member.id}>
+                            <TableCell className="font-medium sticky left-0 bg-card z-10 whitespace-nowrap">
+                                <div className="flex items-center gap-3">
+                                <Avatar>
+                                    <AvatarImage src={member.photoURL} />
+                                    <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
+                                </Avatar>
+                                <span>{member.firstName} {member.lastName}</span>
+                                </div>
+                            </TableCell>
+                            {MONTHS.map((month, index) => {
+                                const monthKey = month.toLowerCase();
+                                const value = contributions[member.id]?.[monthKey] || '';
+                                const monthlySpecialContributions = specialContributions[member.id]?.filter(sc => sc.month === index) || [];
+                                return (
+                                <TableCell key={month} className="text-center align-top">
+                                    <div className="flex items-center gap-1 justify-center">
+                                        <Input
+                                        type="number"
+                                        placeholder="0"
+                                        value={value}
+                                        onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
+                                        className="w-24"
+                                        />
+                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenAddSpecialDialog(member, index)}>
+                                            <PlusCircle className="h-4 w-4 text-green-500" />
+                                        </Button>
+                                    </div>
+                                    <div className="mt-2 space-y-1 text-xs text-left">
+                                        {monthlySpecialContributions.map(sc => (
+                                            <div key={sc.id} className="flex items-center justify-between gap-1 bg-muted/50 p-1 rounded">
+                                                <span className="truncate" title={format(new Date(sc.date), "PPP")}>Ksh {sc.amount} on {format(new Date(sc.date), "MMM d")}</span>
+                                                <div className="flex">
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenEditSpecialDialog(sc)}><Edit className="h-3 w-3" /></Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive"><Trash2 className="h-3 w-3" /></Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                                <AlertDialogDescription>This action cannot be undone. This will permanently delete the special contribution.</AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleDeleteSpecialContribution(sc)}>Delete</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </TableCell>
+                                );
+                            })}
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                </div>
+
+                {/* Mobile View: Accordion */}
+                <div className="md:hidden">
+                <Accordion type="multiple" className="w-full">
+                    {members.map(member => (
+                    <AccordionItem value={member.id} key={member.id}>
+                        <AccordionTrigger>
+                        <div className="flex items-center gap-3">
+                            <Avatar>
+                            <AvatarImage src={member.photoURL} />
+                            <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
+                            </Avatar>
+                            <span>{member.firstName} {member.lastName}</span>
+                        </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                        <div className="space-y-4 p-2">
+                            {MONTHS.map((month, index) => {
+                            const monthKey = month.toLowerCase();
+                            const value = contributions[member.id]?.[monthKey] || '';
+                            const monthlySpecialContributions = specialContributions[member.id]?.filter(sc => sc.month === index) || [];
+                            return (
+                                <div key={month}>
+                                    <label htmlFor={`${member.id}-${month}`} className="block text-sm font-medium mb-1">{month}</label>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <Input
+                                            id={`${member.id}-${month}`}
+                                            type="number"
+                                            placeholder="0"
+                                            value={value}
+                                            onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
+                                            className="flex-grow"
+                                        />
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleOpenAddSpecialDialog(member, index)}>
+                                            <PlusCircle className="h-5 w-5 text-green-500" />
+                                        </Button>
+                                    </div>
+                                    <div className="mt-2 space-y-1 text-xs">
+                                        {monthlySpecialContributions.map(sc => (
+                                            <div key={sc.id} className="flex items-center justify-between gap-1 bg-muted/50 p-1 rounded">
+                                                <span className="truncate" title={format(new Date(sc.date), "PPP")}>Ksh {sc.amount} on {format(new Date(sc.date), "MMM d")}</span>
+                                                <div className="flex">
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenEditSpecialDialog(sc)}><Edit className="h-3 w-3" /></Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive"><Trash2 className="h-3 w-3" /></Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                                <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleDeleteSpecialContribution(sc)}>Delete</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )
+                            })}
+                        </div>
+                        </AccordionContent>
+                    </AccordionItem>
+                    ))}
+                </Accordion>
+                </div>
+            </>
+            )}
+        </CardContent>
+        <CardFooter className="justify-between items-center">
+            <div className="text-lg font-bold">
+              Total Collected: <span className="text-primary">Ksh {grandTotal.toLocaleString()}</span>
+            </div>
+            <Button onClick={handleUpdateContributions} disabled={isSaving}>
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSaving ? 'Updating...' : 'Update Contributions'}
+            </Button>
+        </CardFooter>
+        </Card>
+      </div>
+
       {specialContributionData && (
           <AddSpecialContributionDialog
               isOpen={isAddSpecialOpen}
@@ -426,5 +446,3 @@ export default function TreasurerDashboard() {
     </>
   );
 }
-
-    

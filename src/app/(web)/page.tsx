@@ -3,6 +3,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from 'react';
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,7 +22,7 @@ export default function HomePage() {
   const aboutStoryImage = PlaceHolderImages.find((img) => img.id === "about-story");
 
   const firestore = useFirestore();
-  const now = new Date().toISOString();
+  const [now] = useState(() => new Date().toISOString());
 
   const upcomingEventsRef = useMemoFirebase(() => query(
     collection(firestore, 'events'),

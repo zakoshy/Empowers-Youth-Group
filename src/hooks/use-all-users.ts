@@ -14,10 +14,11 @@ interface UserProfile {
 
 export function useAllUsers() {
   const firestore = useFirestore();
-  const usersRef = useMemoFirebase(() => collection(firestore, 'userProfiles'), [firestore]);
+  const usersRef = useMemoFirebase(
+    () => (firestore ? collection(firestore, 'userProfiles') : null),
+    [firestore]
+  );
   const { data, isLoading, error } = useCollection<UserProfile>(usersRef);
 
   return { users: data || [], isLoading, error };
 }
-
-    

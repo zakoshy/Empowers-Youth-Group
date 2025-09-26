@@ -66,7 +66,9 @@ export default function DashboardPage() {
 
   const welcomeName = userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : user?.displayName || 'Member';
   const userRole = userProfile?.role;
-  const isMemberView = userRole && !['Admin', 'Investment Lead'].includes(userRole);
+  const isMemberView = userRole && !['Admin', 'Investment Lead', 'Treasurer'].includes(userRole);
+  const showPersonalizedSuggestions = userRole && !['Admin', 'Investment Lead'].includes(userRole);
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -96,7 +98,7 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 grid gap-6">
-            {userRole === 'Investment Lead' ? <InvestmentSuggestions /> : <PersonalizedSuggestions />}
+            {userRole === 'Investment Lead' ? <InvestmentSuggestions /> : (showPersonalizedSuggestions && <PersonalizedSuggestions />)}
             <ReportsWidget />
         </div>
         <div className="lg:col-span-1 grid gap-6">

@@ -297,6 +297,7 @@
             "$ref": "#/backend/entities/UserProfile"
           },
           "description": "Documents in this collection indicate admin status. Existence of a document for a given userId grants admin privileges.",
+          "rules": "allow get: if isSignedIn() && isAdmin();\nallow list: if false;\nallow create: if isSignedIn() && request.auth.uid == userId;\nallow update: if false;\nallow delete: if false;",
           "params": [
             {
               "name": "userId",
@@ -313,7 +314,7 @@
             "$ref": "#/backend/entities/UserProfile"
           },
           "description": "Stores user profile information. Path based ownership simplifies security rules.",
-          "rules": "allow get: if isSignedIn();\nallow list: if isSignedIn() && (isAdmin() || isChairperson());\nallow create: if isSignedIn() && isOwner(userId);\nallow update: if isSignedIn() && isOwner(userId);\nallow delete: if isExistingOwner(userId);",
+          "rules": "allow get: if isSignedIn() && isOwner(userId);\nallow list: if isSignedIn() && isAdmin();\nallow create: if isSignedIn() && isOwner(userId);\nallow update: if (isSignedIn() && isOwner(userId) && !('role' in request.resource.data && request.resource.data.role != resource.data.role)) || (isSignedIn() && isAdmin());\nallow delete: if isExistingOwner(userId);",
           "params": [
             {
               "name": "userId",
@@ -446,3 +447,4 @@
     "reasoning": "The Firestore structure is designed to manage user profiles, financial years, contributions, events, constitution, investment reports, polls, and votes for EmpowerHub. User roles (Admin, Chairperson, Treasurer, Coordinator, Secretary, Investment Lead, Member) are managed via the `roles_admin` collection and path-based ownership for `userProfiles` and subcollections to easily manage user owned data. This design adheres to the principles of Authorization Independence, Clarity of Intent, DBAC, QAPs, and Invariants.  Authorization Independence is achieved via path based ownership and avoiding `get()` calls in security rules. The structure also supports QAPs by using structural segregation: roles are managed via document existence, enabling secure list operations."
   }
 }
+    

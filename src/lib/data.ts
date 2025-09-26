@@ -1,4 +1,5 @@
 
+
 export type Event = {
   id: string;
   title: string;
@@ -49,29 +50,6 @@ export const investmentReports = [
   },
 ];
 
-export const polls = [
-  {
-    id: "poll-001",
-    question: "What should be the theme for our next community outreach program?",
-    options: [
-      { id: "opt1", text: "Environmental Conservation" },
-      { id: "opt2", text: "Digital Skills Training" },
-      { id: "opt3", text: "Health and Wellness" },
-    ],
-    voted: false,
-  },
-  {
-    id: "poll-002",
-    question: "Where should we allocate the surplus funds from this year?",
-    options: [
-      { id: "opt1", text: "Expand the Agro-Investment Project" },
-      { id: "opt2", text: "Start a Scholarship Fund" },
-      { id: "opt3", text: "Invest in a community transport vehicle" },
-    ],
-    voted: true,
-  }
-];
-
 export const constitution = {
   url: "/placeholder-constitution.pdf",
   lastUpdated: "2024-01-10",
@@ -117,6 +95,7 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
     { href: "/dashboard", label: "Dashboard", icon: "Home", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/profile", label: "Profile", icon: "Users", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer"] },
+    { href: "/dashboard/polls", label: "Polls", icon: "Vote", roles: ["Member", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/events", label: "Manage Events", icon: "Calendar", roles: ["Coordinator", "Admin"] },
     { href: "https://meet.google.com/new", label: "Schedule Meeting", icon: "Video", roles: ["Coordinator", "Admin"] },
     { href: "/dashboard/reports", label: "Investments", icon: "TrendingUp", roles: ["Member", "Investment Lead", "Admin"] },

@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collectionGroup, query, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -26,17 +26,19 @@ interface SpecialContribution {
 
 export function SpecialContributionsList() {
   const firestore = useFirestore();
-  const { users, isLoading: usersLoading } = useAllUsers();
+  const { users, isLoading: usersLoading, userRole } = useAllUsers();
+
+  const shouldFetchData = userRole === 'Treasurer';
 
   const specialContributionsRef = useMemoFirebase(
-    () => query(collectionGroup(firestore, 'specialContributions'), orderBy('date', 'desc')),
-    [firestore]
+    () => (shouldFetchData ? query(collectionGroup(firestore, 'specialContributions'), orderBy('date', 'desc')) : null),
+    [firestore, shouldFetchData]
   );
 
   const { data: contributions, isLoading: contributionsLoading } =
     useCollection<SpecialContribution>(specialContributionsRef);
 
-  const isLoading = usersLoading || contributionsLoading;
+  const isLoading = (usersLoading || contributionsLoading) && shouldFetchData;
 
   const getUserName = (userId: string) => {
     const user = users.find((u) => u.id === userId);
@@ -79,7 +81,7 @@ export function SpecialContributionsList() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center">
-                    No special contributions found.
+                    {shouldFetchData ? 'No special contributions found.' : 'You do not have permission to view this data.'}
                   </TableCell>
                 </TableRow>
               )}
@@ -90,5 +92,3 @@ export function SpecialContributionsList() {
     </Card>
   );
 }
-
-    

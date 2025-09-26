@@ -11,12 +11,17 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Skeleton } from '@/components/ui/skeleton';
-import { DollarSign, TrendingUp, TrendingDown, Scale, Calendar } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Scale, Calendar, Gift, Banknote } from "lucide-react";
 import { FINANCIAL_CONFIG } from "@/lib/data";
 
 interface Contribution {
   year: number;
   amount: number;
+}
+
+interface SpecialContribution {
+    year: number;
+    amount: number;
 }
 
 export function StatsCards() {
@@ -30,10 +35,17 @@ export function StatsCards() {
     () => user ? collection(firestore, 'userProfiles', user.uid, 'contributions') : null,
     [firestore, user]
   );
+
+  const specialContributionsRef = useMemoFirebase(
+    () => user ? collection(firestore, 'userProfiles', user.uid, 'specialContributions') : null,
+    [firestore, user]
+  );
   
-  const { data: contributions, isLoading } = useCollection<Contribution>(contributionsRef);
+  const { data: contributions, isLoading: contributionsLoading } = useCollection<Contribution>(contributionsRef);
+  const { data: specialContributions, isLoading: specialContributionsLoading } = useCollection<SpecialContribution>(specialContributionsRef);
   
   const [totalContribution, setTotalContribution] = useState(0);
+  const [totalSpecialContribution, setTotalSpecialContribution] = useState(0);
   const [outstandingDebt, setOutstandingDebt] = useState(annualTarget);
 
   useEffect(() => {
@@ -48,9 +60,22 @@ export function StatsCards() {
     }
   }, [contributions, annualTarget]);
 
+  useEffect(() => {
+    if (specialContributions) {
+        const currentYearSpecialContributions = specialContributions.filter(sc => sc.year === currentYear);
+        const total = currentYearSpecialContributions.reduce((sum, sc) => sum + sc.amount, 0);
+        setTotalSpecialContribution(total);
+    }
+  }, [specialContributions]);
+
+  const isLoading = contributionsLoading || specialContributionsLoading;
+  const grandTotal = totalContribution + totalSpecialContribution;
+
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Skeleton className="h-28" />
+        <Skeleton className="h-28" />
         <Skeleton className="h-28" />
         <Skeleton className="h-28" />
         <Skeleton className="h-28" />
@@ -75,11 +100,11 @@ export function StatsCards() {
   };
   
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
-            Total Contribution ({currentYear})
+            Monthly Contribution ({currentYear})
           </CardTitle>
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -88,7 +113,7 @@ export function StatsCards() {
             Ksh {totalContribution.toLocaleString()}
           </div>
           <p className="text-xs text-muted-foreground">
-            Your total contribution for the year
+            out of Ksh {annualTarget.toLocaleString()}
           </p>
         </CardContent>
       </Card>
@@ -104,13 +129,13 @@ export function StatsCards() {
             Ksh {outstandingDebt.toLocaleString()}
           </div>
           <p className="text-xs text-muted-foreground">
-            Remaining amount for the year
+            Remaining for monthly goal
           </p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Monthly Contribution</CardTitle>
+          <CardTitle className="text-sm font-medium">Monthly Amount</CardTitle>
           <Scale className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -122,7 +147,19 @@ export function StatsCards() {
           </p>
         </CardContent>
       </Card>
-       <Card>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Miniharambees ({currentYear})</CardTitle>
+          <Gift className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">
+            Ksh {totalSpecialContribution.toLocaleString()}
+          </div>
+           <p className="text-xs text-muted-foreground">Total special contributions</p>
+        </CardContent>
+      </Card>
+      <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Next Due Date</CardTitle>
           <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -136,6 +173,16 @@ export function StatsCards() {
           </p>
         </CardContent>
       </Card>
+        <Card className="bg-primary/10">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Grand Total ({currentYear})</CardTitle>
+                <Banknote className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">Ksh {grandTotal.toLocaleString()}</div>
+                    <p className="text-xs text-muted-foreground">monthly + miniharambees</p>
+            </CardContent>
+        </Card>
     </div>
   )
 }

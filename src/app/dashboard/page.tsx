@@ -41,7 +41,9 @@ export default function DashboardPage() {
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-4 w-1/2" />
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <Skeleton className="h-28" />
+          <Skeleton className="h-28" />
           <Skeleton className="h-28" />
           <Skeleton className="h-28" />
           <Skeleton className="h-28" />

@@ -297,6 +297,7 @@
     ]
   },
   "firestore": {
+    "rules": "rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n\n    // === Helper Functions ===\n\n    function isSignedIn() {\n      return request.auth != null;\n    }\n\n    function isOwner(userId) {\n      return request.auth.uid == userId;\n    }\n\n    function isExistingOwner(userId) {\n      return isSignedIn() && isOwner(userId) && exists(/databases/$(database)/documents/userProfiles/$(userId));\n    }\n\n    function isChairperson() {\n      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Chairperson';\n    }\n\n    function isCoordinator() {\n      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Coordinator';\n    }\n\n    function isInvestmentLead() {\n      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Investment Lead';\n    }\n    \n    function isTreasurer() {\n      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Treasurer';\n    }\n\n    function isAdmin() {\n      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));\n    }\n\n    // === Roles Admin Collection ===\n    match /roles_admin/{userId} {\n      allow get: if isSignedIn() && isAdmin();\n      allow list: if false;\n      allow create: if isSignedIn() && request.auth.uid == userId;\n      allow update: if false;\n      allow delete: if false;\n    }\n\n    // === User Profiles ===\n    match /userProfiles/{userId} {\n      // Users can read their own profile\n      allow get: if isSignedIn() && isOwner(userId);\n\n      // Admins and Treasurers can list all profiles\n      allow list: if isSignedIn() && (isAdmin() || isTreasurer());\n\n      // Users can create their own profile\n      allow create: if isSignedIn() && isOwner(userId);\n\n      // Users can update their own profile but NOT the role field\n      allow update: if isSignedIn() && isOwner(userId) &&\n                    !((\"role\" in request.resource.data) && \n                      request.resource.data.role != resource.data.role);\n\n      // Admins can update any profile (assign roles, edit info, etc.)\n      allow update: if isSignedIn() && isAdmin();\n\n      // Users can delete their own profile\n      allow delete: if isExistingOwner(userId);\n    }\n\n    // === Financial Years ===\n    match /financialYears/{financialYearId} {\n      allow get, list: if isSignedIn();\n      allow create, update: if isSignedIn() && (isChairperson() || isTreasurer());\n      allow delete: if false;\n    }\n\n    // === User Contributions ===\n    match /userProfiles/{userId}/contributions/{contributionId} {\n      allow get, list: if isSignedIn() && (isOwner(userId) || isTreasurer());\n      allow create, update, delete: if isSignedIn() && isTreasurer();\n    }\n\n    // === Events ===\n    match /events/{eventId} {\n      allow get, list: if isSignedIn();\n      allow create, update: if isSignedIn() && isCoordinator();\n      allow delete: if false;\n    }\n\n    // === Constitution ===\n    match /constitution/{constitutionId} {\n      allow get, list: if isSignedIn();\n      allow create, update: if isSignedIn() && isChairperson();\n      allow delete: if false;\n    }\n\n    // === Investment Reports ===\n    match /investmentReports/{investmentReportId} {\n      allow get, list: if isSignedIn();\n      allow create, update: if isSignedIn() && isInvestmentLead();\n      allow delete: if false;\n    }\n\n    // === Polls ===\n    match /polls/{pollId} {\n      allow get, list: if isSignedIn();\n      allow create, update: if isSignedIn() && isChairperson();\n      allow delete: if false;\n    }\n\n    // === Votes ===\n    match /polls/{pollId}/votes/{voteId} {\n      allow get: if isSignedIn();\n      allow list: if false;\n      allow create: if isSignedIn() && request.auth.uid == resource.data.userId;\n      allow update, delete: if isSignedIn() && isOwner(resource.data.userId);\n    }\n  }\n}\n",
     "structure": [
       {
         "path": "/roles_admin/{userId}",
@@ -323,7 +324,7 @@
             "$ref": "#/backend/entities/UserProfile"
           },
           "description": "Stores user profile information. Path based ownership simplifies security rules.",
-          "rules": "allow get: if isSignedIn() && isOwner(userId);\nallow list: if isSignedIn() && isAdmin();\nallow create: if isSignedIn() && isOwner(userId);\nallow update: if (isSignedIn() && isOwner(userId) && !('role' in request.resource.data && request.resource.data.role != resource.data.role)) || (isSignedIn() && isAdmin());\nallow delete: if isExistingOwner(userId);",
+          "rules": "allow get: if isSignedIn() && isOwner(userId);\nallow list: if isSignedIn() && (isAdmin() || isTreasurer());\nallow create: if isSignedIn() && isOwner(userId);\nallow update: if (isSignedIn() && isOwner(userId) && !('role' in request.resource.data && request.resource.data.role != resource.data.role)) || (isSignedIn() && isAdmin());\nallow delete: if isExistingOwner(userId);",
           "params": [
             {
               "name": "userId",
@@ -340,6 +341,7 @@
             "$ref": "#/backend/entities/FinancialYear"
           },
           "description": "Stores financial year information. Accessible to all members but create/update restricted to Chairperson.",
+          "rules": "allow get, list: if isSignedIn();\nallow create, update: if isSignedIn() && (isChairperson() || isTreasurer());\nallow delete: if false;",
           "params": [
             {
               "name": "financialYearId",
@@ -356,6 +358,7 @@
             "$ref": "#/backend/entities/Contribution"
           },
           "description": "Stores contribution records for each user, organized by financial year. Path based ownership simplifies access control and authorization.",
+          "rules": "allow get, list: if isSignedIn() && (isOwner(userId) || isTreasurer());\nallow create, update, delete: if isSignedIn() && isTreasurer();",
           "params": [
             {
               "name": "userId",
@@ -376,6 +379,7 @@
             "$ref": "#/backend/entities/Event"
           },
           "description": "Stores event information. Create/update restricted to Coordinator.",
+          "rules": "allow get, list: if isSignedIn();\nallow create, update: if isSignedIn() && isCoordinator();\nallow delete: if false;",
           "params": [
             {
               "name": "eventId",
@@ -392,6 +396,7 @@
             "$ref": "#/backend/entities/Constitution"
           },
           "description": "Stores the group's constitution document.  Create/update restricted to Chairperson.",
+          "rules": "allow get, list: if isSignedIn();\nallow create, update: if isSignedIn() && isChairperson();\nallow delete: if false;",
           "params": [
             {
               "name": "constitutionId",
@@ -408,6 +413,7 @@
             "$ref": "#/backend/entities/InvestmentReport"
           },
           "description": "Stores investment reports. Create/update restricted to Investment Lead.",
+          "rules": "allow get, list: if isSignedIn();\nallow create, update: if isSignedIn() && isInvestmentLead();\nallow delete: if false;",
           "params": [
             {
               "name": "investmentReportId",
@@ -424,6 +430,7 @@
             "$ref": "#/backend/entities/Poll"
           },
           "description": "Stores poll information. Create/update restricted to Chairperson.",
+          "rules": "allow get, list: if isSignedIn();\nallow create, update: if isSignedIn() && isChairperson();\nallow delete: if false;",
           "params": [
             {
               "name": "pollId",
@@ -440,6 +447,7 @@
             "$ref": "#/backend/entities/Vote"
           },
           "description": "Stores votes for each poll. Each user can only vote once per poll. Path based ownership ensures only the user can modify or delete their vote.",
+          "rules": "allow get: if isSignedIn();\nallow list: if false;\nallow create: if isSignedIn() && request.auth.uid == resource.data.userId;\nallow update, delete: if isSignedIn() && isOwner(resource.data.userId);",
           "params": [
             {
               "name": "pollId",
@@ -453,6 +461,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to manage user profiles, financial years, contributions, events, constitution, investment reports, polls, and votes for EmpowerHub. User roles (Admin, Chairperson, Treasurer, Coordinator, Secretary, Investment Lead, Member) are managed via the `roles_admin` collection and path-based ownership for `userProfiles` and subcollections to easily manage user owned data. This design adheres to the principles of Authorization Independence, Clarity of Intent, DBAC, QAPs, and Invariants.  Authorization Independence is achieved via path based ownership and avoiding `get()` calls in security rules. The structure also supports QAPs by using structural segregation: roles are managed via document existence, enabling secure list operations."
+    "reasoning": "The Firestore structure is designed to manage user profiles, financial years, contributions, events, constitution, investment reports, polls, and votes for EmpowerHub. User roles (Admin, Chairperson, Treasurer, Coordinator, Secretary, Investment Lead, Member) are managed via role-based access control rules defined for each collection. This ensures that only authorized users can perform specific actions (e.g., only a Treasurer can update contributions, only an Admin can manage users). This design adheres to the principles of Authorization Independence, Clarity of Intent, and least privilege."
   }
 }

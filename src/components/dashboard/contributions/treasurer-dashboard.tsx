@@ -152,6 +152,8 @@ export default function TreasurerDashboard() {
             year: currentYear,
             month: monthIndex,
             amount: amount,
+            userId: userId,
+            financialYearId: currentYear.toString(),
           }, { merge: true });
         }
       });

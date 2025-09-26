@@ -37,7 +37,7 @@ export default function ContributionsPage() {
     return <div>Could not load user profile.</div>;
   }
 
-  if (userProfile.role === 'Treasurer') {
+  if (userProfile.role === 'Treasurer' || userProfile.role === 'Chairperson') {
     return <TreasurerDashboard />;
   }
   

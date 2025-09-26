@@ -9,6 +9,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Wand2 } from 'lucide-react';
 import { getTreasurerInsights } from '@/ai/flows/treasurer-insights';
@@ -63,31 +69,37 @@ export function TreasurerInsights({
 
   return (
     <Card className="bg-gradient-to-br from-primary/10 to-card">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Wand2 className="h-6 w-6 text-primary" />
-          <CardTitle>AI-Powered Treasurer Insights</CardTitle>
-        </div>
-        <CardDescription>
-          Analytics and actionable recommendations based on the group's financial data.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {loading && (
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-[80%]" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-[90%]" />
-          </div>
-        )}
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        {!loading && !error && (
-          <div className="prose prose-sm max-w-none text-foreground/80 dark:prose-invert prose-headings:font-headline prose-headings:text-foreground">
-            <div dangerouslySetInnerHTML={{ __html: insights.replace(/\\n/g, '<br />') }} />
-          </div>
-        )}
-      </CardContent>
+        <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="item-1" className="border-none">
+                <AccordionTrigger className="p-6 hover:no-underline">
+                    <div className='text-left'>
+                        <div className="flex items-center gap-2">
+                            <Wand2 className="h-6 w-6 text-primary" />
+                            <CardTitle>AI-Powered Treasurer Insights</CardTitle>
+                        </div>
+                        <CardDescription className="mt-2">
+                            Click to view analytics and actionable recommendations based on the group's financial data.
+                        </CardDescription>
+                    </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-6">
+                    {loading && (
+                    <div className="space-y-2">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-[80%]" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-[90%]" />
+                    </div>
+                    )}
+                    {error && <p className="text-sm text-destructive">{error}</p>}
+                    {!loading && !error && (
+                    <div className="prose prose-sm max-w-none text-foreground/80 dark:prose-invert prose-headings:font-headline prose-headings:text-foreground"
+                        dangerouslySetInnerHTML={{ __html: insights }}
+                    />
+                    )}
+                </AccordionContent>
+            </AccordionItem>
+        </Accordion>
     </Card>
   );
 }

@@ -168,12 +168,21 @@ const chatAssistantFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await chatAssistantPrompt({
-      prompt: input.message,
-      context: [
-          {
-            role: 'user',
-            content: `My user ID is ${input.userId}. Please use this ID when fetching my data.`,
-          }
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { text: input.message },
+            {
+              // Provide the user ID in a separate context block
+              // so it's available to the model but not displayed as chat history.
+              data: {
+                userId: input.userId,
+                note: 'Use this user ID to fetch the current user\'s data.',
+              },
+            },
+          ],
+        },
       ],
     });
     return output?.message ?? "I'm sorry, I couldn't process that request.";

@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useFirestore, useUser } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, writeBatch, getDocs } from 'firebase/firestore';
 import {
   Dialog,
   DialogContent,
@@ -25,10 +25,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import type { Poll } from './polls-widget';
 
 interface PollFormDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  poll?: Poll | null;
 }
 
 const formSchema = z.object({
@@ -42,6 +44,7 @@ const formSchema = z.object({
 export function PollFormDialog({
   isOpen,
   onOpenChange,
+  poll,
 }: PollFormDialogProps) {
   const firestore = useFirestore();
   const { user } = useUser();
@@ -50,12 +53,33 @@ export function PollFormDialog({
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      question: '',
-      options: [{ text: '' }, { text: '' }],
-      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to 1 week from now
-    },
+    defaultValues: poll
+      ? { ...poll, options: poll.options.map(o => ({text: o.text})), endDate: new Date(poll.endDate) }
+      : {
+          question: '',
+          options: [{ text: '' }, { text: '' }],
+          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to 1 week from now
+        },
   });
+  
+  useEffect(() => {
+    if (isOpen) {
+        if (poll) {
+            form.reset({
+                question: poll.question,
+                options: poll.options.map(o => ({ text: o.text })),
+                endDate: new Date(poll.endDate),
+            });
+        } else {
+            form.reset({
+                question: '',
+                options: [{ text: '' }, { text: '' }],
+                endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            });
+        }
+    }
+  }, [poll, isOpen, form]);
+
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -64,26 +88,40 @@ export function PollFormDialog({
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) {
-        toast({ variant: 'destructive', title: 'You must be logged in to create a poll.'});
+        toast({ variant: 'destructive', title: 'You must be logged in to manage polls.'});
         return;
     }
     setIsSubmitting(true);
     try {
-      const pollData = {
-        question: values.question,
-        options: values.options.map((opt, index) => ({ id: `opt${index + 1}`, text: opt.text, votes: 0 })),
-        startDate: new Date().toISOString(),
-        endDate: values.endDate.toISOString(),
-        creatorId: user.uid,
-      };
+        if (poll) {
+            // Update existing poll
+            const pollRef = doc(firestore, 'polls', poll.id);
+            const newOptions = values.options.map((opt, index) => ({
+                id: poll.options[index]?.id || `opt${Date.now()}${index}`,
+                text: opt.text,
+                votes: poll.options[index]?.votes || 0,
+            }));
+            await updateDoc(pollRef, {
+                question: values.question,
+                options: newOptions,
+                endDate: values.endDate.toISOString(),
+            });
+            toast({ title: 'Success!', description: 'Poll has been updated.'});
 
-      await addDoc(collection(firestore, 'polls'), pollData);
-      toast({
-        title: 'Success!',
-        description: 'New poll has been created.',
-      });
+        } else {
+            // Create new poll
+            const pollData = {
+                question: values.question,
+                options: values.options.map((opt, index) => ({ id: `opt${index + 1}`, text: opt.text, votes: 0 })),
+                startDate: new Date().toISOString(),
+                endDate: values.endDate.toISOString(),
+                creatorId: user.uid,
+                voted: [],
+            };
+            await addDoc(collection(firestore, 'polls'), pollData);
+            toast({ title: 'Success!', description: 'New poll has been created.' });
+        }
       
-      form.reset();
       onOpenChange(false);
     } catch (error) {
       console.error('Failed to save poll:', error);
@@ -101,9 +139,9 @@ export function PollFormDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
-          <DialogTitle>Create a New Poll</DialogTitle>
+          <DialogTitle>{poll ? 'Edit Poll' : 'Create a New Poll'}</DialogTitle>
           <DialogDescription>
-            Ask a question to the group and gather opinions.
+            {poll ? 'Update the details for your poll.' : 'Ask a question to the group and gather opinions.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -200,7 +238,7 @@ export function PollFormDialog({
               </DialogClose>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Creating...' : 'Create Poll'}
+                {isSubmitting ? (poll ? 'Saving...' : 'Creating...') : (poll ? 'Save Changes' : 'Create Poll')}
               </Button>
             </DialogFooter>
           </form>
@@ -209,3 +247,5 @@ export function PollFormDialog({
     </Dialog>
   );
 }
+
+    

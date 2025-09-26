@@ -16,7 +16,7 @@ export default function ManagePollsPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle>Group Polls</CardTitle>
-            <CardDescription>Create a new poll or vote on existing ones.</CardDescription>
+            <CardDescription>Create a new poll, vote on active ones, or view results.</CardDescription>
           </div>
           <Button onClick={() => setIsFormOpen(true)}>Create New Poll</Button>
         </CardHeader>
@@ -32,3 +32,5 @@ export default function ManagePollsPage() {
     </div>
   );
 }
+
+    

@@ -128,35 +128,35 @@ export default function HomePage() {
               A journey of resilience, unity, and the drive to create lasting change.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-center">
-            <div className="flex justify-center">
-                {aboutStoryImage && (
-                  <Image
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-2xl font-headline font-semibold">From Hardship to Hope</h2>
+            <p className="mt-4 text-muted-foreground">
+              EmpowerHub began not as an organization, but as a conversation among friends. We were a group of youths from the same village, each of us having navigated the challenges of limited opportunities and economic hardship. We had seen firsthand how talent and ambition could be stifled by circumstance. But we had also seen the power of community, of neighbors helping neighbors, and of shared determination.
+            </p>
+            <p className="mt-4 text-muted-foreground">
+              Having found our own paths to stability, we felt a collective responsibility to return to our roots and build the support system we wished we'd had. We decided to pool our resources, knowledge, and energy to create a platform for the next generation.
+            </p>
+
+            {aboutStoryImage && (
+              <div className="my-12 flex justify-center">
+                <Image
                     src={aboutStoryImage.imageUrl}
                     alt={aboutStoryImage.description}
                     width={800}
                     height={600}
                     className="rounded-lg shadow-2xl object-cover"
                     data-ai-hint={aboutStoryImage.imageHint}
-                  />
-                )}
-            </div>
-            <div className="flex flex-col justify-center">
-                <h2 className="text-2xl font-headline font-semibold">From Hardship to Hope</h2>
-                <p className="mt-4 text-muted-foreground">
-                  EmpowerHub began not as an organization, but as a conversation among friends. We were a group of youths from the same village, each of us having navigated the challenges of limited opportunities and economic hardship. We had seen firsthand how talent and ambition could be stifled by circumstance. But we had also seen the power of community, of neighbors helping neighbors, and of shared determination.
-                </p>
-                <p className="mt-4 text-muted-foreground">
-                  Having found our own paths to stability, we felt a collective responsibility to return to our roots and build the support system we wished we'd had. We decided to pool our resources, knowledge, and energy to create a platform for the next generation.
-                </p>
-                <h2 className="mt-8 text-2xl font-headline font-semibold">The Birth of EmpowerHub</h2>
-                <p className="mt-4 text-muted-foreground">
-                  In 2022, we formalized our efforts and established EmpowerHub. Our founding principle was simple: to create a self-sustaining cycle of empowerment. By investing together in small-scale ventures, we could generate funds to support community projects, educational scholarships, and skills training workshops.
-                </p>
-                <p className="mt-4 text-muted-foreground">
-                  Today, EmpowerHub is more than just a group; it's a movement. It's a testament to the idea that with unity and a shared vision, a small community can achieve extraordinary things. We are run by the youth, for the youth, and we are committed to writing a new story for our village—one of prosperity, opportunity, and empowerment.
-                </p>
-            </div>
+                />
+              </div>
+            )}
+
+            <h2 className="mt-8 text-2xl font-headline font-semibold">The Birth of EmpowerHub</h2>
+            <p className="mt-4 text-muted-foreground">
+              In 2022, we formalized our efforts and established EmpowerHub. Our founding principle was simple: to create a self-sustaining cycle of empowerment. By investing together in small-scale ventures, we could generate funds to support community projects, educational scholarships, and skills training workshops.
+            </p>
+            <p className="mt-4 text-muted-foreground">
+              Today, EmpowerHub is more than just a group; it's a movement. It's a testament to the idea that with unity and a shared vision, a small community can achieve extraordinary things. We are run by the youth, for the youth, and we are committed to writing a new story for our village—one of prosperity, opportunity, and empowerment.
+            </p>
           </div>
         </div>
       </section>
@@ -288,3 +288,4 @@ export default function HomePage() {
     
 
     
+

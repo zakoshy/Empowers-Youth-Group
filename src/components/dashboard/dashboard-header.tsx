@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "../ui/sidebar";
-import { EmpowerHubLogo } from "../icons";
+import { TheEmpowersYouthGroupLogo } from "../icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 
@@ -64,7 +64,7 @@ export function DashboardHeader() {
     <header className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6">
       <SidebarTrigger className="md:hidden" />
       <Link href="/dashboard" className="md:hidden">
-        <EmpowerHubLogo className="h-6 w-6 text-primary" />
+        <TheEmpowersYouthGroupLogo className="h-6 w-6 text-primary" />
         <span className="sr-only">The Empowers youth group</span>
       </Link>
       <div className="w-full flex-1">

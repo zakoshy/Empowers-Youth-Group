@@ -17,6 +17,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { AddSpecialContributionDialog } from './add-special-contribution-dialog';
 import { EditSpecialContributionDialog } from './edit-special-contribution-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { format } from 'date-fns';
 
 
 interface UserProfile {
@@ -40,7 +41,6 @@ export interface SpecialContribution {
     financialYearId: string;
     date: string;
     amount: number;
-    description: string;
     month: number;
     year: number;
 }
@@ -274,7 +274,7 @@ export default function TreasurerDashboard() {
                                   <div className="mt-2 space-y-1 text-xs text-left">
                                       {monthlySpecialContributions.map(sc => (
                                           <div key={sc.id} className="flex items-center justify-between gap-1 bg-muted/50 p-1 rounded">
-                                              <span className="truncate" title={sc.description}>{sc.description}: Ksh {sc.amount}</span>
+                                              <span className="truncate" title={format(new Date(sc.date), "PPP")}>Ksh {sc.amount} on {format(new Date(sc.date), "MMM d")}</span>
                                               <div className="flex">
                                                   <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenEditSpecialDialog(sc)}><Edit className="h-3 w-3" /></Button>
                                                   <AlertDialog>
@@ -345,7 +345,7 @@ export default function TreasurerDashboard() {
                                   <div className="mt-2 space-y-1 text-xs">
                                       {monthlySpecialContributions.map(sc => (
                                           <div key={sc.id} className="flex items-center justify-between gap-1 bg-muted/50 p-1 rounded">
-                                              <span className="truncate" title={sc.description}>{sc.description}: Ksh {sc.amount}</span>
+                                              <span className="truncate" title={format(new Date(sc.date), "PPP")}>Ksh {sc.amount} on {format(new Date(sc.date), "MMM d")}</span>
                                               <div className="flex">
                                                   <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenEditSpecialDialog(sc)}><Edit className="h-3 w-3" /></Button>
                                                   <AlertDialog>
@@ -411,3 +411,5 @@ export default function TreasurerDashboard() {
     </>
   );
 }
+
+    

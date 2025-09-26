@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MONTHS, FINANCIAL_CONFIG } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Gift, Banknote } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface Contribution {
   id: string; 
@@ -23,7 +24,6 @@ interface SpecialContribution {
     id: string;
     date: string;
     amount: number;
-    description: string;
     month: number;
     year: number;
 }
@@ -216,7 +216,7 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
                                       <li key={sc.id} className="flex items-center gap-2">
                                           <Gift className="h-4 w-4 text-primary" />
                                           <div>
-                                            <span className="font-semibold">Ksh {sc.amount.toLocaleString()}</span> - <span className="text-muted-foreground">{sc.description}</span>
+                                            <span className="font-semibold">Ksh {sc.amount.toLocaleString()}</span> - <span className="text-muted-foreground">on {format(new Date(sc.date), "MMM d, yyyy")}</span>
                                           </div>
                                       </li>
                                   ))}
@@ -235,3 +235,5 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
     </div>
   );
 }
+
+    

@@ -17,12 +17,16 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { SpecialContribution } from './treasurer-dashboard';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface EditSpecialContributionDialogProps {
   isOpen: boolean;
@@ -32,7 +36,9 @@ interface EditSpecialContributionDialogProps {
 
 const formSchema = z.object({
   amount: z.coerce.number().min(1, 'Amount must be greater than 0.'),
-  description: z.string().min(3, 'Description is required.').max(100),
+  date: z.date({
+    required_error: 'A date is required.',
+  }),
 });
 
 export function EditSpecialContributionDialog({
@@ -48,14 +54,14 @@ export function EditSpecialContributionDialog({
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: contribution.amount,
-      description: contribution.description,
+      date: new Date(contribution.date),
     },
   });
 
   useEffect(() => {
     form.reset({
         amount: contribution.amount,
-        description: contribution.description,
+        date: new Date(contribution.date),
     })
   }, [contribution, form])
 
@@ -66,7 +72,9 @@ export function EditSpecialContributionDialog({
         
         await updateDoc(docRef, {
             amount: values.amount,
-            description: values.description
+            date: values.date.toISOString(),
+            month: values.date.getMonth(),
+            year: values.date.getFullYear(),
         });
 
       toast({
@@ -92,7 +100,7 @@ export function EditSpecialContributionDialog({
         <DialogHeader>
           <DialogTitle>Edit Miniharambee</DialogTitle>
           <DialogDescription>
-            Update the amount or description for this special contribution.
+            Update the amount or date for this special contribution.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -110,19 +118,44 @@ export function EditSpecialContributionDialog({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+             <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                    <FormLabel>Date of Miniharambee</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <FormControl>
+                            <Button
+                            variant={"outline"}
+                            className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                            )}
+                            >
+                            {field.value ? (
+                                format(field.value, "PPP")
+                            ) : (
+                                <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                        </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            initialFocus
+                        />
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="secondary">
@@ -140,3 +173,5 @@ export function EditSpecialContributionDialog({
     </Dialog>
   );
 }
+
+    

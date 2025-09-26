@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useFirestore } from '@/firebase';
@@ -17,12 +17,16 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { MONTHS } from '@/lib/data';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface UserProfile {
   id: string;
@@ -40,7 +44,9 @@ interface AddSpecialContributionDialogProps {
 
 const formSchema = z.object({
   amount: z.coerce.number().min(1, 'Amount must be greater than 0.'),
-  description: z.string().min(3, 'Description is required.').max(100),
+  date: z.date({
+    required_error: 'A date is required.',
+  }),
 });
 
 export function AddSpecialContributionDialog({
@@ -58,7 +64,7 @@ export function AddSpecialContributionDialog({
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: 0,
-      description: '',
+      date: new Date(year, month),
     },
   });
 
@@ -75,11 +81,10 @@ export function AddSpecialContributionDialog({
       const docData = {
           userId: member.id,
           financialYearId: year.toString(),
-          date: new Date().toISOString(),
+          date: values.date.toISOString(),
           amount: values.amount,
-          description: values.description,
-          month: month,
-          year: year
+          month: values.date.getMonth(),
+          year: values.date.getFullYear()
       }
 
       await addDoc(specialContributionsRef, docData);
@@ -126,19 +131,44 @@ export function AddSpecialContributionDialog({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="e.g., Guest of honor contribution" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+             <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                    <FormLabel>Date of Miniharambee</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <FormControl>
+                            <Button
+                            variant={"outline"}
+                            className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                            )}
+                            >
+                            {field.value ? (
+                                format(field.value, "PPP")
+                            ) : (
+                                <span>Pick a date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                        </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            initialFocus
+                        />
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="secondary">
@@ -156,3 +186,5 @@ export function AddSpecialContributionDialog({
     </Dialog>
   );
 }
+
+    

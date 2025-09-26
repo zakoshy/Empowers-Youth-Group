@@ -123,7 +123,7 @@ export default function HomePage() {
       <section id="about" className="py-16 md:py-24">
         <div className="container py-12 md:py-20">
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-6xl font-headline font-bold">Our Story</h1>
+            <h1 className="text-4xl md:text-6xl font-headline font-bold">About Us</h1>
             <p className="mt-4 max-w-3xl mx-auto text-lg text-muted-foreground">
               A journey of resilience, unity, and the drive to create lasting change.
             </p>
@@ -131,7 +131,7 @@ export default function HomePage() {
           <div className="prose dark:prose-invert max-w-none text-center">
             <h2 className="text-2xl font-headline font-semibold">From Hardship to Hope</h2>
             <p className="mt-4 text-muted-foreground">
-              EmpowerHub began not as an organization, but as a conversation among friends. We were a group of youths from the same village, each of us having navigated the challenges of limited opportunities and economic hardship. We had seen firsthand how talent and ambition could be stifled by circumstance. But we had also seen the power of community, of neighbors helping neighbors, and of shared determination.
+              The Empowers youth group began not as an organization, but as a conversation among friends. We were a group of youths from the same village, each of us having navigated the challenges of limited opportunities and economic hardship. We had seen firsthand how talent and ambition could be stifled by circumstance. But we had also seen the power of community, of neighbors helping neighbors, and of shared determination.
             </p>
             <p className="mt-4 text-muted-foreground">
               Having found our own paths to stability, we felt a collective responsibility to return to our roots and build the support system we wished we'd had. We decided to pool our resources, knowledge, and energy to create a platform for the next generation.
@@ -142,20 +142,20 @@ export default function HomePage() {
                 <Image
                     src={aboutStoryImage.imageUrl}
                     alt={aboutStoryImage.description}
-                    width={800}
-                    height={600}
+                    width={600}
+                    height={400}
                     className="rounded-lg shadow-2xl object-cover"
                     data-ai-hint={aboutStoryImage.imageHint}
                 />
               </div>
             )}
 
-            <h2 className="mt-8 text-2xl font-headline font-semibold">The Birth of EmpowerHub</h2>
+            <h2 className="mt-8 text-2xl font-headline font-semibold">The Birth of The Empowers youth group</h2>
             <p className="mt-4 text-muted-foreground">
-              In 2022, we formalized our efforts and established EmpowerHub. Our founding principle was simple: to create a self-sustaining cycle of empowerment. By investing together in small-scale ventures, we could generate funds to support community projects, educational scholarships, and skills training workshops.
+              In 2022, we formalized our efforts and established The Empowers youth group. Our founding principle was simple: to create a self-sustaining cycle of empowerment. By investing together in small-scale ventures, we could generate funds to support community projects, educational scholarships, and skills training workshops.
             </p>
             <p className="mt-4 text-muted-foreground">
-              Today, EmpowerHub is more than just a group; it's a movement. It's a testament to the idea that with unity and a shared vision, a small community can achieve extraordinary things. We are run by the youth, for the youth, and we are committed to writing a new story for our village—one of prosperity, opportunity, and empowerment.
+              Today, The Empowers youth group is more than just a group; it's a movement. It's a testament to the idea that with unity and a shared vision, a small community can achieve extraordinary things. We are run by the youth, for the youth, and we are committed to writing a new story for our village—one of prosperity, opportunity, and empowerment.
             </p>
           </div>
         </div>

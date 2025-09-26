@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { EmpowerHubLogo } from "@/components/icons";
+import { TheEmpowersYouthGroupLogo } from "@/components/icons";
 
 export default function AuthLayout({
   children,
@@ -16,7 +16,7 @@ export default function AuthLayout({
         <div className="mx-auto grid w-[350px] gap-6">
           <div className="grid gap-2 text-center">
             <Link href="/" className="flex items-center justify-center space-x-2 mb-4">
-              <EmpowerHubLogo className="h-8 w-8 text-primary" />
+              <TheEmpowersYouthGroupLogo className="h-8 w-8 text-primary" />
               <h1 className="text-3xl font-bold font-headline">The Empowers youth group</h1>
             </Link>
           </div>

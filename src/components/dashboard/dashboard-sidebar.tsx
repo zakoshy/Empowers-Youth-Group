@@ -11,7 +11,7 @@ import {
     SidebarMenuButton,
     SidebarFooter,
 } from "@/components/ui/sidebar"
-import { EmpowerHubLogo } from "../icons";
+import { TheEmpowersYouthGroupLogo } from "../icons";
 import { dashboardNavLinks } from "@/lib/data";
 import { Home, LineChart, Package, Package2, ShoppingCart, Users, Vote, FileText, DollarSign, TrendingUp, Calendar, Settings, BookOpen, LogOut, Video } from "lucide-react";
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth } from "@/firebase";
@@ -78,7 +78,7 @@ export function DashboardSidebar() {
             <Sidebar>
                 <SidebarHeader>
                     <Link href="/dashboard" className="flex items-center gap-2 font-semibold font-headline text-lg">
-                        <EmpowerHubLogo className="h-6 w-6 text-primary" />
+                        <TheEmpowersYouthGroupLogo className="h-6 w-6 text-primary" />
                         <span>The Empowers youth group</span>
                     </Link>
                 </SidebarHeader>

@@ -1,5 +1,7 @@
+
 'use client';
 import Link from "next/link";
+import React, { useState } from 'react';
 import {
     Sidebar,
     SidebarContent,
@@ -11,13 +13,14 @@ import {
 } from "@/components/ui/sidebar"
 import { EmpowerHubLogo } from "../icons";
 import { dashboardNavLinks } from "@/lib/data";
-import { Home, LineChart, Package, Package2, ShoppingCart, Users, Vote, FileText, DollarSign, TrendingUp, Calendar, Settings, BookOpen, LogOut } from "lucide-react";
+import { Home, LineChart, Package, Package2, ShoppingCart, Users, Vote, FileText, DollarSign, TrendingUp, Calendar, Settings, BookOpen, LogOut, MessageSquare } from "lucide-react";
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { ChatDialog } from "../chat-dialog";
 
 const icons: { [key: string]: React.ElementType } = {
   Home,
@@ -28,7 +31,8 @@ const icons: { [key: string]: React.ElementType } = {
   Calendar,
   Users,
   BookOpen,
-  Settings
+  Settings,
+  MessageSquare
 };
 
 interface UserProfile {
@@ -41,6 +45,7 @@ export function DashboardSidebar() {
     const auth = useAuth();
     const { toast } = useToast();
     const pathname = usePathname();
+    const [isChatOpen, setIsChatOpen] = useState(false);
     
     const userProfileRef = useMemoFirebase(() => {
         if (!user) return null;
@@ -71,41 +76,52 @@ export function DashboardSidebar() {
     };
 
     return (
-        <Sidebar>
-            <SidebarHeader>
-                 <Link href="/dashboard" className="flex items-center gap-2 font-semibold font-headline text-lg">
-                    <EmpowerHubLogo className="h-6 w-6 text-primary" />
-                    <span>The Empowers youth group</span>
-                </Link>
-            </SidebarHeader>
-            <SidebarContent>
-                <SidebarMenu>
-                    {navItems.map(item => {
-                        const Icon = icons[item.icon];
-                        const isActive = pathname === item.href;
-                        return (
-                            <SidebarMenuItem key={item.label}>
-                                <SidebarMenuButton asChild tooltip={item.label} isActive={isActive}>
-                                    <Link href={item.href}>
-                                        {Icon && <Icon />}
-                                        <span>{item.label}</span>
-                                    </Link>
+        <>
+            <Sidebar>
+                <SidebarHeader>
+                    <Link href="/dashboard" className="flex items-center gap-2 font-semibold font-headline text-lg">
+                        <EmpowerHubLogo className="h-6 w-6 text-primary" />
+                        <span>The Empowers youth group</span>
+                    </Link>
+                </SidebarHeader>
+                <SidebarContent>
+                    <SidebarMenu>
+                        {navItems.map(item => {
+                            const Icon = icons[item.icon];
+                            const isActive = pathname === item.href;
+                            return (
+                                <SidebarMenuItem key={item.label}>
+                                    <SidebarMenuButton asChild tooltip={item.label} isActive={isActive}>
+                                        <Link href={item.href}>
+                                            {Icon && <Icon />}
+                                            <span>{item.label}</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            )
+                        })}
+                    </SidebarMenu>
+                </SidebarContent>
+                <SidebarFooter>
+                    <SidebarMenu>
+                        {userRole !== 'Admin' && (
+                             <SidebarMenuItem>
+                                <SidebarMenuButton onClick={() => setIsChatOpen(true)} tooltip="AI Assistant">
+                                    <MessageSquare />
+                                    <span>AI Assistant</span>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
-                        )
-                    })}
-                </SidebarMenu>
-            </SidebarContent>
-            <SidebarFooter>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
-                            <LogOut />
-                            <span>Logout</span>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
-            </SidebarFooter>
-        </Sidebar>
+                        )}
+                        <SidebarMenuItem>
+                            <SidebarMenuButton onClick={handleLogout} tooltip="Logout">
+                                <LogOut />
+                                <span>Logout</span>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </SidebarFooter>
+            </Sidebar>
+            {user && <ChatDialog isOpen={isChatOpen} onOpenChange={setIsChatOpen} userId={user.uid} />}
+        </>
     )
 }

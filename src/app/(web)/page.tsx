@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function HomePage() {
-  const heroImage = PlaceHolderImages.find((img) => img.id === "empower4");
+  const heroImage = PlaceHolderImages.find((img) => img.id === "hero-background");
 
   const aboutImage = PlaceHolderImages.find((img) => img.id === "about-story");
   const missionVisionImage = PlaceHolderImages.find((img) => img.id === "mission-vision");

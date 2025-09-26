@@ -1,10 +1,10 @@
 {
   "placeholderImages": [
     {
-      "id": "empower4",
-      "description": "A group of diverse young people collaborating on a project.",
-      "imageUrl": "/empower4.jpg",
-      "imageHint": "youth collaboration"
+      "id": "hero-background",
+      "description": "A young person smiling confidently at the camera.",
+      "imageUrl": "/youth5.jpg",
+      "imageHint": "empowered youth"
     },
     {
       "id": "empower1",

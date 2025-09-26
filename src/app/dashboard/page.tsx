@@ -7,6 +7,7 @@ import { EventsWidget } from "@/components/dashboard/events-widget";
 import { ReportsWidget } from "@/components/dashboard/reports-widget";
 import { PollsWidget } from "@/components/dashboard/polls-widget";
 import { PersonalizedSuggestions } from "@/components/dashboard/personalized-suggestions";
+import { InvestmentSuggestions } from "@/components/dashboard/investment-suggestions";
 import { constitution } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,7 +65,8 @@ export default function DashboardPage() {
   }
 
   const welcomeName = userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : user?.displayName || 'Member';
-  const isAdmin = userProfile?.role === 'Admin';
+  const userRole = userProfile?.role;
+  const isMemberView = userRole && !['Admin', 'Investment Lead'].includes(userRole);
 
   return (
     <div className="flex flex-col gap-6">
@@ -73,7 +75,7 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">Here's a summary of your activities and group updates.</p>
       </div>
       
-      {!isAdmin && (
+      {isMemberView && (
         <Card className="bg-primary/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -90,16 +92,16 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {!isAdmin && <StatsCards />}
+      {isMemberView && <StatsCards />}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 grid gap-6">
-            <PersonalizedSuggestions />
+            {userRole === 'Investment Lead' ? <InvestmentSuggestions /> : <PersonalizedSuggestions />}
             <ReportsWidget />
         </div>
         <div className="lg:col-span-1 grid gap-6">
             <EventsWidget />
-            {!isAdmin && <PollsWidget />}
+            {isMemberView && <PollsWidget />}
         </div>
       </div>
 

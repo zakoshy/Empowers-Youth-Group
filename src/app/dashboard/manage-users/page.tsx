@@ -89,22 +89,25 @@ export default function ManageUsersPage() {
                   </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
-                    <Select
-                      defaultValue={user.role}
-                      onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
-                      disabled={user.role === 'Admin'}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {roles.map((role) => (
-                          <SelectItem key={role} value={role}>
-                            {role}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {user.role === 'Admin' ? (
+                        <span className="font-medium text-muted-foreground">Admin</span>
+                    ) : (
+                        <Select
+                            defaultValue={user.role}
+                            onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
+                        >
+                            <SelectTrigger className="w-[180px]">
+                            <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                            {roles.map((role) => (
+                                <SelectItem key={role} value={role} disabled={role === 'Admin'}>
+                                {role}
+                                </SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

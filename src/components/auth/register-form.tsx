@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useAuth, useFirestore } from "@/firebase";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -34,6 +34,9 @@ const formSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email address.",
   }),
+  phone: z.string().min(10, {
+    message: "Please enter a valid phone number.",
+  }),
   password: z.string().min(6, {
     message: "Password must be at least 6 characters.",
   }),
@@ -51,6 +54,7 @@ export function RegisterForm() {
       firstName: "",
       lastName: "",
       email: "",
+      phone: "",
       password: "",
     },
   });
@@ -72,17 +76,18 @@ export function RegisterForm() {
         email: values.email,
         firstName: values.firstName,
         lastName: values.lastName,
+        phone: values.phone,
         role: userRole,
-        photoURL: user.photoURL,
+        photoURL: null,
       };
 
       const userDocRef = doc(firestore, "userProfiles", user.uid);
-      setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+      await setDoc(userDocRef, userProfile);
 
       if (isAdmin) {
         const adminRoleRef = doc(firestore, "roles_admin", user.uid);
         // This document grants admin privileges according to security rules.
-        setDocumentNonBlocking(adminRoleRef, { email: values.email, role: 'Admin' }, { merge: true });
+        await setDoc(adminRoleRef, { email: values.email, role: 'Admin' });
       }
 
       toast({
@@ -154,6 +159,19 @@ export function RegisterForm() {
         />
         <FormField
           control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Phone Number</FormLabel>
+              <FormControl>
+                <Input placeholder="+1 234 567 890" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="password"
           render={({ field }) => (
             <FormItem>
@@ -191,5 +209,3 @@ export function RegisterForm() {
     </Form>
   );
 }
-
-    

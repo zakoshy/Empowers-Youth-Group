@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -23,12 +24,19 @@
           "type": "string",
           "description": "User's last name."
         },
+        "phone": {
+          "type": "string",
+          "description": "User's phone number."
+        },
         "role": {
           "type": "string",
           "description": "The user's role within the organization (e.g., Chairperson, Treasurer, Coordinator, Investment Lead, Member)."
         },
         "photoURL": {
-          "type": "string",
+          "type": [
+            "string",
+            "null"
+          ],
           "description": "URL of the user's profile picture."
         }
       },
@@ -36,7 +44,8 @@
         "id",
         "email",
         "firstName",
-        "lastName"
+        "lastName",
+        "phone"
       ]
     },
     "FinancialYear": {
@@ -447,4 +456,3 @@
     "reasoning": "The Firestore structure is designed to manage user profiles, financial years, contributions, events, constitution, investment reports, polls, and votes for EmpowerHub. User roles (Admin, Chairperson, Treasurer, Coordinator, Secretary, Investment Lead, Member) are managed via the `roles_admin` collection and path-based ownership for `userProfiles` and subcollections to easily manage user owned data. This design adheres to the principles of Authorization Independence, Clarity of Intent, DBAC, QAPs, and Invariants.  Authorization Independence is achieved via path based ownership and avoiding `get()` calls in security rules. The structure also supports QAPs by using structural segregation: roles are managed via document existence, enabling secure list operations."
   }
 }
-    

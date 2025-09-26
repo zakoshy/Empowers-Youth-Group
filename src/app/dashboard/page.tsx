@@ -17,6 +17,7 @@ import { doc } from "firebase/firestore";
 
 interface UserProfile {
   firstName: string;
+  lastName: string;
   role: string;
 }
 
@@ -60,10 +61,12 @@ export default function DashboardPage() {
     );
   }
 
+  const welcomeName = userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : user?.displayName || 'Member';
+
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-3xl font-bold font-headline">Welcome, {userProfile?.firstName || user?.displayName?.split(' ')[0] || 'Member'}!</h1>
+        <h1 className="text-3xl font-bold font-headline">Welcome, {welcomeName}!</h1>
         <p className="text-muted-foreground">Here's a summary of your activities and group updates.</p>
       </div>
 

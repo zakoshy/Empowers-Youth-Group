@@ -1,22 +1,34 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { updateProfile, Auth } from 'firebase/auth';
+import { updateProfile } from 'firebase/auth';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Camera } from 'lucide-react';
+import { Camera, Pencil } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
 
 interface UserProfile {
   firstName: string;
   lastName: string;
   email: string;
+  phone?: string;
   photoURL?: string | null;
 }
 
@@ -35,12 +47,17 @@ export default function ProfilePage() {
 
   const [isUploading, setIsUploading] = useState(false);
   const [optimisticPhotoURL, setOptimisticPhotoURL] = useState<string | null>(null);
+  const [isPhoneDialogOpen, setIsPhoneDialogOpen] = useState(false);
+  const [newPhoneNumber, setNewPhoneNumber] = useState('');
 
   useEffect(() => {
     if (userProfile?.photoURL) {
       setOptimisticPhotoURL(userProfile.photoURL);
     } else if (user?.photoURL) {
       setOptimisticPhotoURL(user.photoURL);
+    }
+    if (userProfile?.phone) {
+      setNewPhoneNumber(userProfile.phone);
     }
   }, [userProfile, user]);
 
@@ -74,13 +91,10 @@ export default function ProfilePage() {
       const snapshot = await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(snapshot.ref);
 
-      // This is a critical step, update the auth profile
       await updateProfile(user, { photoURL: downloadURL });
-      
-      // Update the document in Firestore
       await setDoc(userProfileRef, { photoURL: downloadURL }, { merge: true });
 
-      setOptimisticPhotoURL(downloadURL); // Set the final URL
+      setOptimisticPhotoURL(downloadURL); 
 
       toast({
         title: 'Success!',
@@ -88,20 +102,11 @@ export default function ProfilePage() {
       });
     } catch (uploadError: any) {
       console.error('Error uploading file:', uploadError);
-      let description = 'There was an error uploading your picture. Please try again.';
-      if (uploadError.code === 'storage/unauthorized') {
-        description = 'Permission denied. Please check your storage rules in the Firebase console.';
-      } else if (uploadError.code === 'storage/canceled') {
-        description = 'Upload was canceled.';
-      }
-
       toast({
         variant: 'destructive',
         title: 'Upload Failed',
-        description: description,
+        description: uploadError.message || 'There was an error uploading your picture.',
       });
-
-      // Revert to original photo on failure
       setOptimisticPhotoURL(userProfile?.photoURL || user?.photoURL || null);
     } finally {
       setIsUploading(false);
@@ -109,6 +114,25 @@ export default function ProfilePage() {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  const handlePhoneUpdate = async () => {
+    if (!userProfileRef || !newPhoneNumber) return;
+    try {
+      await updateDoc(userProfileRef, { phone: newPhoneNumber });
+      toast({
+        title: 'Success!',
+        description: 'Your phone number has been updated.',
+      });
+      setIsPhoneDialogOpen(false);
+    } catch (error: any) {
+      console.error('Error updating phone number:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: 'Could not update your phone number. Please try again.',
+      });
     }
   };
 
@@ -136,44 +160,79 @@ export default function ProfilePage() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>My Profile</CardTitle>
-        <CardDescription>View and edit your personal information.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-center gap-6">
-          <div className="relative">
-            <Avatar className="h-32 w-32">
-              <AvatarImage src={displayPhoto || undefined} alt="Profile picture" />
-              <AvatarFallback className="text-4xl">{getInitials()}</AvatarFallback>
-            </Avatar>
-            <Input
-              id="picture"
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="hidden"
-              accept="image/png, image/jpeg, image/gif"
-              disabled={isUploading}
-            />
-            <button
-              onClick={handleCameraClick}
-              disabled={isUploading}
-              className="absolute bottom-1 right-1 bg-secondary text-secondary-foreground rounded-full p-2 cursor-pointer hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Change profile picture"
-            >
-              <Camera className="h-5 w-5" />
-            </button>
-          </div>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>My Profile</CardTitle>
+          <CardDescription>View and edit your personal information.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <div className="relative">
+              <Avatar className="h-32 w-32">
+                <AvatarImage src={displayPhoto || undefined} alt="Profile picture" />
+                <AvatarFallback className="text-4xl">{getInitials()}</AvatarFallback>
+              </Avatar>
+              <Input
+                id="picture"
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept="image/png, image/jpeg, image/gif"
+                disabled={isUploading}
+              />
+              <button
+                onClick={handleCameraClick}
+                disabled={isUploading}
+                className="absolute bottom-1 right-1 bg-secondary text-secondary-foreground rounded-full p-2 cursor-pointer hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Change profile picture"
+              >
+                <Camera className="h-5 w-5" />
+              </button>
+            </div>
 
-          <div className="flex-1 w-full text-center sm:text-left">
-            <h2 className="text-2xl font-bold">{userProfile?.firstName} {userProfile?.lastName}</h2>
-            <p className="text-muted-foreground">{userProfile?.email}</p>
-            {isUploading && <p className="text-sm text-primary mt-2">Updating photo...</p>}
+            <div className="flex-1 w-full text-center sm:text-left">
+              <h2 className="text-2xl font-bold">{userProfile?.firstName} {userProfile?.lastName}</h2>
+              <p className="text-muted-foreground">{userProfile?.email}</p>
+              <div className="flex items-center gap-2 justify-center sm:justify-start mt-2">
+                <p className="text-muted-foreground">{userProfile?.phone || 'No phone number'}</p>
+                <button onClick={() => setIsPhoneDialogOpen(true)} aria-label="Edit phone number">
+                  <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                </button>
+              </div>
+              {isUploading && <p className="text-sm text-primary mt-2">Updating photo...</p>}
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <Dialog open={isPhoneDialogOpen} onOpenChange={setIsPhoneDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Phone Number</DialogTitle>
+            <DialogDescription>
+              Enter your new phone number below.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Input
+              id="phone"
+              value={newPhoneNumber}
+              onChange={(e) => setNewPhoneNumber(e.target.value)}
+              placeholder="Phone Number"
+            />
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button onClick={handlePhoneUpdate}>Save changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

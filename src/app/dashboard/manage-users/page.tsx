@@ -22,6 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { roles } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useUser } from '@/firebase';
 
 interface UserProfile {
   id: string;
@@ -33,6 +34,7 @@ interface UserProfile {
 }
 
 export default function ManageUsersPage() {
+  const { user: currentUser } = useUser();
   const firestore = useFirestore();
   const usersRef = useMemoFirebase(() => collection(firestore, 'userProfiles'), [firestore]);
   const { data: users, isLoading } = useCollection<UserProfile>(usersRef);
@@ -90,6 +92,7 @@ export default function ManageUsersPage() {
                     <Select
                       defaultValue={user.role}
                       onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
+                      disabled={user.role === 'Admin'}
                     >
                       <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Select role" />

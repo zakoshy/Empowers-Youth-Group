@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 import {
@@ -22,7 +23,7 @@ interface Event {
 
 export function EventsWidget() {
   const firestore = useFirestore();
-  const now = new Date().toISOString();
+  const [now] = useState(() => new Date().toISOString());
 
   const eventsRef = useMemoFirebase(() => query(
     collection(firestore, 'events'),

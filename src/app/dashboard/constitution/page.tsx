@@ -32,8 +32,9 @@ import { summarizeConstitution } from "@/ai/flows/summarize-constitution";
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Set workerSrc to avoid issues with pdf.js worker.
-// The path is relative to the public directory.
+// This is the standard and recommended way for web projects.
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
 
 interface Constitution {
     content: string; // URL from Cloudinary
@@ -86,6 +87,7 @@ export default function ConstitutionPage() {
 
 
   const handleUploadSuccess = async (result: any) => {
+    setIsProcessing(true);
     const fileUrl = result?.info?.secure_url;
     const originalFilename = result?.info?.original_filename;
     
@@ -103,7 +105,7 @@ export default function ConstitutionPage() {
       await setDoc(constitutionRef, {
         content: fileUrl,
         title: originalFilename || "The Empowers Constitution",
-        fileName: originalFilename ? `${originalFilename}.pdf` : "The Empowers Constitution.pdf",
+        fileName: originalFilename ? `${originalFilename}` : "The Empowers Constitution",
         uploadDate: new Date().toISOString(),
       }, { merge: true });
 
@@ -150,7 +152,7 @@ export default function ConstitutionPage() {
   }
 
   const handleSummarize = async () => {
-    if (!constitutionData) {
+    if (!constitutionData?.content) {
         setSummary("The constitution document has not been uploaded yet.");
         setIsSummaryOpen(true);
         return;
@@ -161,13 +163,14 @@ export default function ConstitutionPage() {
 
     setIsSummaryLoading(true);
     try {
-      // Check if the content URL ends with .pdf, otherwise it's not a parsable file for pdf-parse
       if (!constitutionData.content.toLowerCase().endsWith('.pdf')) {
         throw new Error("The uploaded file is not a PDF and cannot be summarized.");
       }
+      
       const constitutionText = await extractTextFromPdfClient(constitutionData.content);
-      if (!constitutionText) {
-        throw new Error("Could not extract text from the PDF.");
+
+      if (!constitutionText.trim()) {
+        throw new Error("Could not extract any text from the PDF. It might be empty or scanned as an image.");
       }
       
       const result = await summarizeConstitution({ constitutionText });
@@ -206,7 +209,7 @@ export default function ConstitutionPage() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {constitutionData ? (
+        {constitutionData && constitutionData.content ? (
             <div className="p-4 border rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4">
                 <div className='flex items-center gap-4'>
                     <FileText className="h-8 w-8 text-primary" />
@@ -242,20 +245,18 @@ export default function ConstitutionPage() {
                                       title: "Invalid File Type",
                                       description: "Please upload a PDF file only.",
                                     });
-                                    // In a real scenario, you'd want to stop the upload process here.
-                                    // Cloudinary's widget doesn't offer a simple way to abort after onUploadAdded.
-                                    // The `acceptedFiles` option is the primary enforcement.
+                                    // This check is a safeguard. The `acceptedFiles` option is the primary enforcement.
                                     return;
                                   }
                                   setIsProcessing(true);
                                   toast({ title: "Uploading...", description: "Your file is being uploaded." });
                                 }}
                             >
-                                <Button variant="secondary" asChild disabled={isProcessing}>
-                                   <span>
+                                <Button variant="secondary" disabled={isProcessing}>
+                                   <div className="flex items-center">
                                      {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Replace className="h-4 w-4" />}
                                      <span className="ml-2 hidden sm:inline">Replace</span>
-                                   </span>
+                                   </div>
                                 </Button>
                             </CldUploadButton>
 
@@ -298,19 +299,17 @@ export default function ConstitutionPage() {
                                 title: "Invalid File Type",
                                 description: "Please upload a PDF file only.",
                                 });
-                                // This is a check, but acceptedFiles should prevent non-PDFs from being selected.
-                                // It's good to have as a fallback.
                                 return;
                             }
                             setIsProcessing(true);
                             toast({ title: "Uploading...", description: "Your file is being uploaded." });
                          }}
                     >
-                        <Button asChild disabled={isProcessing}>
-                           <span>
+                        <Button disabled={isProcessing}>
+                           <div className="flex items-center">
                                 {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                                 {isProcessing ? 'Uploading...' : 'Upload Constitution (PDF)'}
-                           </span>
+                           </div>
                         </Button>
                     </CldUploadButton>
                 ) : (
@@ -343,7 +342,7 @@ export default function ConstitutionPage() {
             </div>
           ) : (
               <div className="prose prose-sm max-w-none text-foreground/80 dark:prose-invert prose-headings:font-headline prose-headings:text-foreground"
-                  dangerouslySetInnerHTML={{ __html: summary }}
+                  dangerouslySetInnerHTML={{ __html: summary.replace(/\n/g, '<br />') }}
               />
           )}
         </div>
@@ -352,3 +351,5 @@ export default function ConstitutionPage() {
     </>
   );
 }
+
+    

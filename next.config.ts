@@ -31,20 +31,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-   webpack: (config, { isServer }) => {
-    // Exclude canvas from being bundled on the client
-    if (!isServer) {
-        config.externals.push('canvas');
-    }
-    // Aliases for client-side libraries
-    config.resolve.alias = {
-        ...config.resolve.alias,
-        'pdf-parse': false, // Don't bundle server-side pdf-parse on the client
-        'fs': false, // fs is a server-side module
-    };
-
-    return config;
-  },
 };
 
 export default nextConfig;
+
+    

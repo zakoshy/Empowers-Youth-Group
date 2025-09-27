@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Card,
   CardContent,
@@ -14,9 +14,9 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { CheckCircle, Vote, Edit, Trash2 } from "lucide-react"
+import { CheckCircle, Vote, Edit, Trash2, UserCheck } from "lucide-react"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import { collection, query, where, orderBy, addDoc, doc, updateDoc, getDoc, deleteDoc, getDocs, writeBatch, setDoc } from "firebase/firestore";
+import { collection, query, where, orderBy, addDoc, doc, updateDoc, getDoc, deleteDoc, getDocs, writeBatch, setDoc, onSnapshot } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton"
 import { PollFormDialog } from "./poll-form";
 import {
@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { cn } from "@/lib/utils"
 
 export type Poll = {
   id: string;
@@ -38,6 +39,10 @@ export type Poll = {
   endDate: string;
   creatorId: string;
   votedUserIds?: string[]; // Array of user IDs who voted
+}
+
+type VoteRecord = {
+    selectedOption: string;
 }
 
 interface UserProfile {
@@ -66,6 +71,25 @@ export function PollsWidget() {
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [userVotes, setUserVotes] = useState<Record<string, string>>({});
+
+
+  useEffect(() => {
+    if (!user || !polls) return;
+
+    const unsubscribes = polls.map(poll => {
+        const voteRef = doc(firestore, 'polls', poll.id, 'votes', user.uid);
+        return onSnapshot(voteRef, (doc) => {
+            if (doc.exists()) {
+                const voteData = doc.data() as VoteRecord;
+                setUserVotes(prev => ({...prev, [poll.id]: voteData.selectedOption}))
+            }
+        });
+    });
+
+    return () => unsubscribes.forEach(unsub => unsub());
+  }, [user, polls, firestore])
+
 
   const handleVote = async (poll: Poll) => {
     if (!user) {
@@ -168,7 +192,7 @@ export function PollsWidget() {
     return poll.creatorId === user.uid || userProfile.role === 'Chairperson' || userProfile.role === 'Admin';
   }
 
-  const userHasVoted = (poll: Poll) => poll.votedUserIds?.includes(user?.uid || '');
+  const userHasVoted = (pollId: string) => !!userVotes[pollId];
   
   const totalVotes = (poll: Poll) => poll.options.reduce((acc, option) => acc + (option.votes || 0), 0);
 
@@ -177,8 +201,9 @@ export function PollsWidget() {
         {polls && polls.length > 0 ? (
             polls.map(poll => {
                 const isPollActive = new Date(poll.endDate) >= new Date(now);
-                const hasVoted = userHasVoted(poll);
+                const hasVoted = userHasVoted(poll.id);
                 const pollTotalVotes = totalVotes(poll);
+                const userVoteOptionId = userVotes[poll.id];
 
                 return (
                 <Card key={poll.id}>
@@ -229,18 +254,28 @@ export function PollsWidget() {
                             ))}
                             </RadioGroup>
                         ) : (
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                                 {poll.options.map(option => {
                                     const percentage = pollTotalVotes > 0 ? ((option.votes || 0) / pollTotalVotes) * 100 : 0;
+                                    const isUserChoice = option.id === userVoteOptionId;
+                                    const othersCount = (option.votes || 0) - 1;
+
                                     return (
                                         <div key={option.id} className="space-y-1">
                                             <div className="flex justify-between items-center text-sm">
-                                                <span className="font-medium">{option.text}</span>
+                                                <span className={cn("font-medium", isUserChoice && "text-primary")}>{option.text}</span>
                                                 <span className="text-muted-foreground">{percentage.toFixed(0)}% ({option.votes || 0} votes)</span>
                                             </div>
                                             <div className="w-full bg-muted rounded-full h-2.5">
-                                                <div className="bg-primary h-2.5 rounded-full" style={{ width: `${percentage}%` }}></div>
+                                                <div className={cn("h-2.5 rounded-full", isUserChoice ? "bg-primary" : "bg-primary/50" )} style={{ width: `${percentage}%` }}></div>
                                             </div>
+                                            {isUserChoice && (
+                                                <div className="flex items-center gap-1 text-xs text-primary pt-1">
+                                                    <UserCheck className="h-3 w-3" />
+                                                    <span>You voted here</span>
+                                                    {othersCount > 0 && <span> (+ {othersCount} other{othersCount > 1 ? 's' : ''})</span>}
+                                                </div>
+                                            )}
                                         </div>
                                     )
                                 })}

@@ -23,6 +23,7 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
+import { cn } from "@/lib/utils";
 
 interface UserProfile {
   firstName: string;

@@ -3,9 +3,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
-import { CldUploadButton, CldUploadWidget } from 'next-cloudinary';
+import { CldUploadWidget } from 'next-cloudinary';
 import type { CldUploadWidgetResults } from 'next-cloudinary';
 
 
@@ -93,7 +93,7 @@ export default function ProfilePage() {
     
     try {
       await updateProfile(user, { photoURL: secureUrl });
-      await setDoc(userProfileRef, { photoURL: secureUrl }, { merge: true });
+      await updateDoc(userProfileRef, { photoURL: secureUrl });
 
       toast({
         title: 'Success!',
@@ -133,10 +133,10 @@ export default function ProfilePage() {
   
   const handleRemovePhoto = async () => {
       if (!user || !userProfileRef) return;
+      setOptimisticPhotoURL(null);
       try {
           await updateProfile(user, { photoURL: null });
-          await setDoc(userProfileRef, { photoURL: null }, { merge: true });
-          setOptimisticPhotoURL(null);
+          await updateDoc(userProfileRef, { photoURL: null });
           toast({
               title: "Profile Picture Removed",
               description: "Your profile picture has been removed successfully.",
@@ -148,6 +148,8 @@ export default function ProfilePage() {
               title: "Removal Failed",
               description: "Could not remove your profile picture. Please try again.",
           });
+           // Revert optimistic update
+          setOptimisticPhotoURL(userProfile?.photoURL || user?.photoURL || null);
       }
   };
 
@@ -189,7 +191,6 @@ export default function ProfilePage() {
                 <AvatarImage src={displayPhoto || undefined} alt="Profile picture" />
                 <AvatarFallback className="text-4xl">{getInitials()}</AvatarFallback>
               </Avatar>
-
               <CldUploadWidget
                   options={{ multiple: false, sources: ['local'] }}
                   uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
@@ -278,3 +279,5 @@ export default function ProfilePage() {
     </>
   );
 }
+
+    

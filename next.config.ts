@@ -31,8 +31,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  webpack: (config) => {
+    // This is the correct way to handle the 'canvas' issue with pdfjs-dist.
+    // It prevents Webpack from trying to bundle the 'canvas' module on the client side.
+    config.externals.push('canvas');
+    return config;
+  },
 };
 
 export default nextConfig;
-
-    

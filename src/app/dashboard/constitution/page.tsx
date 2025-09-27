@@ -30,10 +30,9 @@ import {
 } from '@/components/ui/dialog';
 import { summarizeConstitution } from "@/ai/flows/summarize-constitution";
 import * as pdfjsLib from 'pdfjs-dist';
+import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 
-// Set workerSrc to avoid issues with pdf.js worker.
-// This is the standard and recommended way for web projects.
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 
 interface Constitution {
@@ -351,5 +350,3 @@ export default function ConstitutionPage() {
     </>
   );
 }
-
-    

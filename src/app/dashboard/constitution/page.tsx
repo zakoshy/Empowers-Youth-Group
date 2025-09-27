@@ -1,13 +1,13 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, FileText, Trash2, Replace, Lock } from 'lucide-react';
+import { Loader2, Upload, FileText, Trash2, Replace, Lock, Wand2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CldUploadButton } from 'next-cloudinary';
 import {
@@ -21,6 +21,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { summarizeConstitution } from "@/ai/flows/summarize-constitution";
+import { extractTextFromPdf } from "@/lib/pdf-utils";
 
 interface Constitution {
     content: string; // URL from Cloudinary
@@ -39,6 +48,9 @@ export default function ConstitutionPage() {
   const { toast } = useToast();
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [summary, setSummary] = useState("");
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
 
   const constitutionRef = useMemoFirebase(() => doc(firestore, 'constitution', 'main'), [firestore]);
   const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'userProfiles', user.uid) : null, [firestore, user]);
@@ -113,6 +125,33 @@ export default function ConstitutionPage() {
           setIsProcessing(false);
       }
   }
+
+  const handleSummarize = async () => {
+    if (!constitutionData) {
+        setSummary("The constitution document has not been uploaded yet.");
+        setIsSummaryOpen(true);
+        return;
+    };
+    
+    setIsSummaryOpen(true);
+    if (summary) return; // Don't re-fetch if summary is already loaded
+
+    setIsSummaryLoading(true);
+    try {
+      const constitutionText = await extractTextFromPdf(constitutionData.content);
+      if (!constitutionText) {
+        throw new Error("Could not extract text from the PDF.");
+      }
+      
+      const result = await summarizeConstitution({ constitutionText });
+      setSummary(result.summary);
+    } catch (error) {
+      console.error("Failed to get summary:", error);
+      setSummary("Sorry, the summary could not be generated at this time. The document might be inaccessible or corrupted.");
+    } finally {
+      setIsSummaryLoading(false);
+    }
+  };
   
   if (isLoading) {
     return (
@@ -129,13 +168,14 @@ export default function ConstitutionPage() {
   }
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle>Manage Constitution</CardTitle>
         <CardDescription>
           {isChairperson 
-            ? "Upload, view, or delete the group's official constitution document."
-            : "View the group's official constitution document. Only the Chairperson can make changes."}
+            ? "Upload, view, summarize or delete the group's official constitution document."
+            : "View or summarize the group's official constitution document. Only the Chairperson can make changes."}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -148,9 +188,18 @@ export default function ConstitutionPage() {
                         <p className="text-sm text-muted-foreground">Uploaded on: {new Date(constitutionData.uploadDate).toLocaleDateString()}</p>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 justify-center">
                     <Button variant="outline" asChild>
                         <a href={constitutionData.content} target="_blank" rel="noopener noreferrer">View</a>
+                    </Button>
+
+                     <Button onClick={handleSummarize} disabled={isSummaryLoading}>
+                        {isSummaryLoading ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Wand2 className="mr-2 h-4 w-4" />
+                        )}
+                        {isSummaryLoading ? 'Analyzing...' : 'Summarize with AI'}
                     </Button>
                     
                     {isChairperson && (
@@ -164,7 +213,7 @@ export default function ConstitutionPage() {
                                     toast({ title: "Uploading...", description: "Your file is being uploaded." });
                                 }}
                             >
-                                <Button variant="secondary" asChild>
+                                <Button variant="secondary" asChild disabled={isProcessing}>
                                    <span>
                                      {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Replace className="h-4 w-4" />}
                                      <span className="ml-2 hidden sm:inline">Replace</span>
@@ -227,5 +276,31 @@ export default function ConstitutionPage() {
         )}
       </CardContent>
     </Card>
+
+    <Dialog open={isSummaryOpen} onOpenChange={setIsSummaryOpen}>
+      <DialogContent className="sm:max-w-[625px]">
+        <DialogHeader>
+          <DialogTitle>AI Constitution Summary</DialogTitle>
+          <DialogDescription>
+            Here's a quick overview of the group's constitution. For full details, please refer to the complete document.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+          {isSummaryLoading ? (
+            <div className="flex items-center justify-center h-40">
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-muted-foreground">Generating summary...</p>
+              </div>
+            </div>
+          ) : (
+              <div className="prose prose-sm max-w-none text-foreground/80 dark:prose-invert prose-headings:font-headline prose-headings:text-foreground"
+                  dangerouslySetInnerHTML={{ __html: summary }}
+              />
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

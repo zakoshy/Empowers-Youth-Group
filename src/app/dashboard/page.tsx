@@ -22,8 +22,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { summarizeConstitution } from "@/ai/flows/summarize-constitution";
-import { extractTextFromPdf } from "@/lib/pdf-utils";
 
 interface UserProfile {
   firstName: string;
@@ -31,61 +29,18 @@ interface UserProfile {
   role: string;
 }
 
-interface Constitution {
-    id: string;
-    title: string;
-    content: string; // URL to the file
-    uploadDate: string;
-    fileName: string;
-}
-
 export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-
-  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
-  const [isViewerOpen, setIsViewerOpen] = useState(false);
-  const [summary, setSummary] = useState("");
-  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
 
   const userProfileRef = useMemoFirebase(() => {
     if (!user) return null;
     return doc(firestore, 'userProfiles', user.uid);
   }, [firestore, user]);
 
-  const constitutionRef = useMemoFirebase(() => doc(firestore, 'constitution', 'main'), [firestore]);
-  const { data: constitutionData, isLoading: isConstitutionLoading } = useDoc<Constitution>(constitutionRef);
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
-  const handleSummarize = async () => {
-    if (!constitutionData) {
-        setSummary("The constitution document has not been uploaded yet.");
-        setIsSummaryOpen(true);
-        return;
-    };
-    
-    setIsSummaryOpen(true);
-    if (summary) return; // Don't re-fetch if summary is already loaded
-
-    setIsSummaryLoading(true);
-    try {
-      // Fetch the PDF and extract text on the client
-      const constitutionText = await extractTextFromPdf(constitutionData.content);
-      if (!constitutionText) {
-        throw new Error("Could not extract text from the PDF.");
-      }
-      
-      const result = await summarizeConstitution({ constitutionText });
-      setSummary(result.summary);
-    } catch (error) {
-      console.error("Failed to get summary:", error);
-      setSummary("Sorry, the summary could not be generated at this time. The document might be inaccessible or corrupted.");
-    } finally {
-      setIsSummaryLoading(false);
-    }
-  };
-
-  const isLoading = isUserLoading || isProfileLoading || isConstitutionLoading;
+  const isLoading = isUserLoading || isProfileLoading;
 
   if (isLoading) {
     return (
@@ -159,93 +114,7 @@ export default function DashboardPage() {
               {isMemberView && <PollsWidget />}
           </div>
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Group Constitution</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col sm:flex-row gap-4 items-start">
-            <div>
-              <p className="text-muted-foreground mb-4">
-                {constitutionData 
-                    ? `The guiding document for our group. Last updated: ${new Date(constitutionData.uploadDate).toLocaleDateString()}`
-                    : "The group constitution has not been uploaded yet."
-                }
-              </p>
-              <div className="flex gap-2">
-                {constitutionData ? (
-                    <Button variant="outline" onClick={() => setIsViewerOpen(true)}>
-                        <FileText className="mr-2 h-4 w-4" />
-                        View Constitution
-                    </Button>
-                ) : (
-                    <Button variant="outline" disabled>
-                        <FileText className="mr-2 h-4 w-4" />
-                        View Constitution
-                    </Button>
-                )}
-                <Button onClick={handleSummarize} disabled={!constitutionData || isSummaryLoading}>
-                    {isSummaryLoading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <Wand2 className="mr-2 h-4 w-4" />
-                    )}
-                    {isSummaryLoading ? 'Analyzing...' : 'Summarize with AI'}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
-
-      <Dialog open={isSummaryOpen} onOpenChange={setIsSummaryOpen}>
-        <DialogContent className="sm:max-w-[625px]">
-          <DialogHeader>
-            <DialogTitle>AI Constitution Summary</DialogTitle>
-            <DialogDescription>
-              Here's a quick overview of the group's constitution. For full details, please refer to the complete document.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            {isSummaryLoading ? (
-              <div className="flex items-center justify-center h-40">
-                <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-muted-foreground">Generating summary...</p>
-                </div>
-              </div>
-            ) : (
-                <div className="prose prose-sm max-w-none text-foreground/80 dark:prose-invert prose-headings:font-headline prose-headings:text-foreground"
-                    dangerouslySetInnerHTML={{ __html: summary }}
-                />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
-        <DialogContent className="max-w-4xl h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>{constitutionData?.fileName || 'Group Constitution'}</DialogTitle>
-            <DialogDescription>
-              You can scroll to view the document. Use your browser's print functionality (Ctrl/Cmd+P) to print or save as PDF.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="h-full w-full py-4 -mx-6 px-6">
-            {constitutionData?.content ? (
-              <iframe
-                src={constitutionData.content}
-                className="w-full h-full border rounded-md"
-                title="Constitution Document"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-muted-foreground">Document could not be loaded.</p>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

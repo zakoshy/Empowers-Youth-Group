@@ -11,9 +11,10 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { extractTextFromPdf } from '@/lib/pdf-utils';
 
 const SummarizeConstitutionInputSchema = z.object({
-  constitutionText: z.string().describe('The full text of the group constitution document.'),
+  constitutionUrl: z.string().url().describe('The URL of the constitution PDF document.'),
 });
 export type SummarizeConstitutionInput = z.infer<typeof SummarizeConstitutionInputSchema>;
 
@@ -30,7 +31,7 @@ export async function summarizeConstitution(
 
 const prompt = ai.definePrompt({
   name: 'summarizeConstitutionPrompt',
-  input: {schema: SummarizeConstitutionInputSchema},
+  input: {schema: z.object({ constitutionText: z.string() })},
   output: {schema: SummarizeConstitutionOutputSchema},
   prompt: `You are an expert legal analyst specializing in simplifying complex documents for community groups.
 
@@ -53,8 +54,12 @@ const summarizeConstitutionFlow = ai.defineFlow(
     inputSchema: SummarizeConstitutionInputSchema,
     outputSchema: SummarizeConstitutionOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async ({ constitutionUrl }) => {
+    // Extract text from the PDF URL
+    const constitutionText = await extractTextFromPdf(constitutionUrl);
+    
+    // Pass the extracted text to the prompt
+    const {output} = await prompt({ constitutionText });
     return output!;
   }
 );

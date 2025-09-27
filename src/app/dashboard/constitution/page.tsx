@@ -47,7 +47,6 @@ export default function ConstitutionPage() {
 
   const handleUploadSuccess = async (result: any) => {
     const fileUrl = result?.info?.secure_url;
-    const originalFilename = result?.info?.original_filename;
     
     if (!fileUrl) {
         toast({
@@ -62,10 +61,10 @@ export default function ConstitutionPage() {
     try {
       await setDoc(constitutionRef, {
         content: fileUrl,
-        title: "Group Constitution",
-        fileName: originalFilename,
+        title: "The Empowers Constitution",
+        fileName: "The Empowers Constitution.pdf",
         uploadDate: new Date().toISOString(),
-      });
+      }, { merge: true });
 
       toast({
         title: "Success!",
@@ -150,7 +149,7 @@ export default function ConstitutionPage() {
                         <a href={constitutionData.content} target="_blank" rel="noopener noreferrer">View</a>
                     </Button>
                     <CldUploadButton
-                        options={{ multiple: false, sources: ['local'], accepted_file_types: ['pdf', 'doc', 'docx'] }}
+                        options={{ multiple: false, sources: ['local'], accepted_files: '.pdf' }}
                         uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
                         onSuccess={handleUploadSuccess}
                         onUploadAdded={() => {
@@ -192,7 +191,7 @@ export default function ConstitutionPage() {
             <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
                 <p className="mb-4 text-muted-foreground">No constitution has been uploaded yet.</p>
                 <CldUploadButton
-                    options={{ multiple: false, sources: ['local'], accepted_file_types: ['pdf', 'doc', 'docx'] }}
+                    options={{ multiple: false, sources: ['local'], accepted_files: '.pdf' }}
                     uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
                     onSuccess={handleUploadSuccess}
                     onUploadAdded={() => {

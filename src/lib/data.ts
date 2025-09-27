@@ -1,5 +1,6 @@
 
 
+
 export type Event = {
   id: string;
   title: string;
@@ -50,11 +51,6 @@ export const investmentReports = [
   },
 ];
 
-export const constitution = {
-  url: "/placeholder-constitution.pdf",
-  lastUpdated: "2024-01-10",
-};
-
 export const DUMMY_CONSTITUTION_TEXT = `
 The Constitution of The Empowers Youth Group
 
@@ -86,6 +82,7 @@ export type Constitution = {
   title: string;
   content: string; // This will be the URL to the file in Firebase Storage
   uploadDate: string;
+  fileName: string;
 };
 
 export const navLinks = [

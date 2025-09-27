@@ -9,7 +9,6 @@ import { ReportsWidget } from "@/components/dashboard/reports-widget";
 import { PollsWidget } from "@/components/dashboard/polls-widget";
 import { PersonalizedSuggestions } from "@/components/dashboard/personalized-suggestions";
 import { InvestmentSuggestions } from "@/components/dashboard/investment-suggestions";
-import { constitution } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -24,12 +23,19 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { summarizeConstitution } from "@/ai/flows/summarize-constitution";
-import { DUMMY_CONSTITUTION_TEXT } from "@/lib/data";
 
 interface UserProfile {
   firstName: string;
   lastName: string;
   role: string;
+}
+
+interface Constitution {
+    id: string;
+    title: string;
+    content: string; // URL to the file
+    uploadDate: string;
+    fileName: string;
 }
 
 export default function DashboardPage() {
@@ -45,25 +51,33 @@ export default function DashboardPage() {
     return doc(firestore, 'userProfiles', user.uid);
   }, [firestore, user]);
 
+  const constitutionRef = useMemoFirebase(() => doc(firestore, 'constitution', 'main'), [firestore]);
+  const { data: constitutionData, isLoading: isConstitutionLoading } = useDoc<Constitution>(constitutionRef);
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   const handleSummarize = async () => {
+    if (!constitutionData) {
+        setSummary("The constitution document has not been uploaded yet.");
+        setIsSummaryOpen(true);
+        return;
+    };
+    
     setIsSummaryOpen(true);
     if (summary) return; // Don't re-fetch if summary is already loaded
 
     setIsSummaryLoading(true);
     try {
-      const result = await summarizeConstitution({ constitutionText: DUMMY_CONSTITUTION_TEXT });
+      const result = await summarizeConstitution({ constitutionUrl: constitutionData.content });
       setSummary(result.summary);
     } catch (error) {
       console.error("Failed to get summary:", error);
-      setSummary("Sorry, the summary could not be generated at this time.");
+      setSummary("Sorry, the summary could not be generated at this time. The document might be inaccessible or corrupted.");
     } finally {
       setIsSummaryLoading(false);
     }
   };
 
-  const isLoading = isUserLoading || isProfileLoading;
+  const isLoading = isUserLoading || isProfileLoading || isConstitutionLoading;
 
   if (isLoading) {
     return (
@@ -145,16 +159,26 @@ export default function DashboardPage() {
           <CardContent className="flex flex-col sm:flex-row gap-4 items-start">
             <div>
               <p className="text-muted-foreground mb-4">
-                The guiding document for our group. Last updated: {constitution.lastUpdated}
+                {constitutionData 
+                    ? `The guiding document for our group. Last updated: ${new Date(constitutionData.uploadDate).toLocaleDateString()}`
+                    : "The group constitution has not been uploaded yet."
+                }
               </p>
               <div className="flex gap-2">
-                <Button asChild variant="outline">
-                  <Link href={constitution.url} target="_blank">
-                      <FileText className="mr-2 h-4 w-4" />
-                      View Constitution
-                  </Link>
-                </Button>
-                <Button onClick={handleSummarize}>
+                {constitutionData ? (
+                    <Button asChild variant="outline">
+                        <a href={constitutionData.content} target="_blank" rel="noopener noreferrer">
+                            <FileText className="mr-2 h-4 w-4" />
+                            View Constitution
+                        </a>
+                    </Button>
+                ) : (
+                    <Button variant="outline" disabled>
+                        <FileText className="mr-2 h-4 w-4" />
+                        View Constitution
+                    </Button>
+                )}
+                <Button onClick={handleSummarize} disabled={!constitutionData}>
                     <Wand2 className="mr-2 h-4 w-4" />
                     Summarize with AI
                 </Button>

@@ -23,6 +23,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { summarizeConstitution } from "@/ai/flows/summarize-constitution";
+import { extractTextFromPdf } from "@/lib/pdf-utils";
 
 interface UserProfile {
   firstName: string;
@@ -67,7 +68,13 @@ export default function DashboardPage() {
 
     setIsSummaryLoading(true);
     try {
-      const result = await summarizeConstitution({ constitutionUrl: constitutionData.content });
+      // Fetch the PDF and extract text on the client
+      const constitutionText = await extractTextFromPdf(constitutionData.content);
+      if (!constitutionText) {
+        throw new Error("Could not extract text from the PDF.");
+      }
+      
+      const result = await summarizeConstitution({ constitutionText });
       setSummary(result.summary);
     } catch (error) {
       console.error("Failed to get summary:", error);
@@ -178,9 +185,13 @@ export default function DashboardPage() {
                         View Constitution
                     </Button>
                 )}
-                <Button onClick={handleSummarize} disabled={!constitutionData}>
-                    <Wand2 className="mr-2 h-4 w-4" />
-                    Summarize with AI
+                <Button onClick={handleSummarize} disabled={!constitutionData || isSummaryLoading}>
+                    {isSummaryLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <Wand2 className="mr-2 h-4 w-4" />
+                    )}
+                    {isSummaryLoading ? 'Analyzing...' : 'Summarize with AI'}
                 </Button>
               </div>
             </div>

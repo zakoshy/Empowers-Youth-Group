@@ -4,15 +4,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
+import { CldUploadButton } from 'next-cloudinary';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Camera, Pencil } from 'lucide-react';
+import { Camera, Pencil, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -36,7 +36,6 @@ export default function ProfilePage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const userProfileRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -66,54 +65,30 @@ export default function ProfilePage() {
     return `${userProfile.firstName?.charAt(0) ?? ''}${userProfile.lastName?.charAt(0) ?? ''}`.toUpperCase();
   };
 
-  const handleCameraClick = () => {
-    if (isUploading) return;
-    fileInputRef.current?.click();
-  };
+  const handleUploadSuccess = async (result: any) => {
+    const secureUrl = result?.info?.secure_url;
+    if (!secureUrl || !user || !userProfileRef) return;
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user || !userProfileRef) return;
-
-    setIsUploading(true);
-    const tempLocalUrl = URL.createObjectURL(file);
-    setOptimisticPhotoURL(tempLocalUrl);
-
-    toast({
-      title: 'Uploading...',
-      description: 'Your new profile picture is being updated.',
-    });
-
+    setOptimisticPhotoURL(secureUrl);
+    
     try {
-      const storage = getStorage();
-      const storageRef = ref(storage, `profilePictures/${user.uid}/${Date.now()}_${file.name}`);
-      
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-
-      await updateProfile(user, { photoURL: downloadURL });
-      await setDoc(userProfileRef, { photoURL: downloadURL }, { merge: true });
-
-      setOptimisticPhotoURL(downloadURL); 
+      await updateProfile(user, { photoURL: secureUrl });
+      await setDoc(userProfileRef, { photoURL: secureUrl }, { merge: true });
 
       toast({
         title: 'Success!',
         description: 'Your profile picture has been updated.',
       });
-    } catch (uploadError: any) {
-      console.error('Error uploading file:', uploadError);
+    } catch (updateError: any) {
+      console.error('Error updating profile:', updateError);
       toast({
         variant: 'destructive',
-        title: 'Upload Failed',
-        description: uploadError.message || 'There was an error uploading your picture.',
+        title: 'Update Failed',
+        description: updateError.message || 'There was an error updating your picture.',
       });
       setOptimisticPhotoURL(userProfile?.photoURL || user?.photoURL || null);
     } finally {
       setIsUploading(false);
-      URL.revokeObjectURL(tempLocalUrl);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
     }
   };
 
@@ -173,23 +148,20 @@ export default function ProfilePage() {
                 <AvatarImage src={displayPhoto || undefined} alt="Profile picture" />
                 <AvatarFallback className="text-4xl">{getInitials()}</AvatarFallback>
               </Avatar>
-              <Input
-                id="picture"
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                accept="image/png, image/jpeg, image/gif"
-                disabled={isUploading}
-              />
-              <button
-                onClick={handleCameraClick}
-                disabled={isUploading}
-                className="absolute bottom-1 right-1 bg-secondary text-secondary-foreground rounded-full p-2 cursor-pointer hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Change profile picture"
-              >
-                <Camera className="h-5 w-5" />
-              </button>
+              <CldUploadButton
+                  options={{ multiple: false, sources: ['local'] }}
+                  uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+                  onSuccess={handleUploadSuccess}
+                  onUploadAdded={() => setIsUploading(true)}
+                  className={cn(
+                      "absolute bottom-1 right-1 bg-secondary text-secondary-foreground rounded-full p-2 cursor-pointer hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                      isUploading && "pointer-events-none"
+                  )}
+                  aria-label="Change profile picture"
+                  disabled={isUploading}
+                >
+                  {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+                </CldUploadButton>
             </div>
 
             <div className="flex-1 w-full text-center sm:text-left">
@@ -201,7 +173,6 @@ export default function ProfilePage() {
                   <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
                 </button>
               </div>
-              {isUploading && <p className="text-sm text-primary mt-2">Updating photo...</p>}
             </div>
           </div>
         </CardContent>

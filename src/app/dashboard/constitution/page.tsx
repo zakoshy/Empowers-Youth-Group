@@ -2,12 +2,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, FileText, Trash2, Replace } from 'lucide-react';
+import { Loader2, Upload, FileText, Trash2, Replace, Lock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CldUploadButton } from 'next-cloudinary';
 import {
@@ -29,21 +29,26 @@ interface Constitution {
     fileName: string;
 }
 
+interface UserProfile {
+    role: string;
+}
+
 export default function ConstitutionPage() {
   const firestore = useFirestore();
+  const { user } = useUser();
   const { toast } = useToast();
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   const constitutionRef = useMemoFirebase(() => doc(firestore, 'constitution', 'main'), [firestore]);
+  const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'userProfiles', user.uid) : null, [firestore, user]);
+  
   const { data: constitutionData, isLoading: isDocLoading } = useDoc<Constitution>(constitutionRef);
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+  
+  const isLoading = isDocLoading || isProfileLoading;
+  const isChairperson = userProfile?.role === 'Chairperson' || userProfile?.role === 'Admin';
 
-  useEffect(() => {
-    if(!isDocLoading) {
-        setIsLoading(false)
-    }
-  }, [isDocLoading]);
 
   const handleUploadSuccess = async (result: any) => {
     const fileUrl = result?.info?.secure_url;
@@ -90,10 +95,6 @@ export default function ConstitutionPage() {
       toast({ title: "Deleting...", description: "Removing the constitution record." });
 
       try {
-          // In this model, we just delete the Firestore document.
-          // The file remains on Cloudinary, but is no longer linked in the app.
-          // For a full implementation, you might want to delete from Cloudinary as well
-          // using their Admin API on a backend function.
           await deleteDoc(constitutionRef);
           
           toast({
@@ -105,7 +106,7 @@ export default function ConstitutionPage() {
         toast({
             variant: "destructive",
             title: "Delete Failed",
-            description: "Could not delete the constitution record. Please try again.",
+            description: "Could not delete the constitution record. Check your permissions.",
         });
       } finally {
           setIsProcessing(false);
@@ -131,7 +132,9 @@ export default function ConstitutionPage() {
       <CardHeader>
         <CardTitle>Manage Constitution</CardTitle>
         <CardDescription>
-          Upload, view, or delete the group's official constitution document.
+          {isChairperson 
+            ? "Upload, view, or delete the group's official constitution document."
+            : "View the group's official constitution document. Only the Chairperson can make changes."}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -148,6 +151,54 @@ export default function ConstitutionPage() {
                     <Button variant="outline" asChild>
                         <a href={constitutionData.content} target="_blank" rel="noopener noreferrer">View</a>
                     </Button>
+                    
+                    {isChairperson && (
+                        <>
+                            <CldUploadButton
+                                options={{ multiple: false, sources: ['local'], accepted_files: '.pdf' }}
+                                uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+                                onSuccess={handleUploadSuccess}
+                                onUploadAdded={() => {
+                                    setIsProcessing(true);
+                                    toast({ title: "Uploading...", description: "Your file is being uploaded." });
+                                }}
+                            >
+                                <Button variant="secondary" asChild>
+                                   <span>
+                                     {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Replace className="h-4 w-4" />}
+                                     <span className="ml-2 hidden sm:inline">Replace</span>
+                                   </span>
+                                </Button>
+                            </CldUploadButton>
+
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" disabled={isProcessing}>
+                                        <Trash2 className="h-4 w-4" />
+                                        <span className="ml-2 hidden sm:inline">Delete</span>
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete the constitution record.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </>
+                    )}
+                </div>
+            </div>
+        ) : (
+            <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
+                <p className="mb-4 text-muted-foreground">No constitution has been uploaded yet.</p>
+                {isChairperson ? (
                     <CldUploadButton
                         options={{ multiple: false, sources: ['local'], accepted_files: '.pdf' }}
                         uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
@@ -157,55 +208,19 @@ export default function ConstitutionPage() {
                             toast({ title: "Uploading...", description: "Your file is being uploaded." });
                         }}
                     >
-                        <Button variant="secondary" asChild>
+                        <Button asChild disabled={isProcessing}>
                            <span>
-                             {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : <Replace className="h-4 w-4" />}
-                             <span className="ml-2 hidden sm:inline">Replace</span>
+                                {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                                {isProcessing ? 'Uploading...' : 'Upload Constitution'}
                            </span>
                         </Button>
                     </CldUploadButton>
-
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive" disabled={isProcessing}>
-                                <Trash2 className="h-4 w-4" />
-                                <span className="ml-2 hidden sm:inline">Delete</span>
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete the constitution record.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
-            </div>
-        ) : (
-            <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
-                <p className="mb-4 text-muted-foreground">No constitution has been uploaded yet.</p>
-                <CldUploadButton
-                    options={{ multiple: false, sources: ['local'], accepted_files: '.pdf' }}
-                    uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
-                    onSuccess={handleUploadSuccess}
-                    onUploadAdded={() => {
-                        setIsProcessing(true);
-                        toast({ title: "Uploading...", description: "Your file is being uploaded." });
-                    }}
-                >
-                    <Button asChild disabled={isProcessing}>
-                       <span>
-                            {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                            {isProcessing ? 'Uploading...' : 'Upload Constitution'}
-                       </span>
-                    </Button>
-                </CldUploadButton>
+                ) : (
+                    <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                        <Lock className="h-4 w-4" />
+                        <span>Only the Chairperson can upload a document.</span>
+                    </div>
+                )}
 
             </div>
         )}

@@ -38,7 +38,7 @@ export function EventCard({ event }: EventCardProps) {
       </div>
       <CardHeader>
         <CardTitle className="font-headline text-2xl">{event.title}</CardTitle>
-        <CardDescription className="pt-2">
+        <div className="pt-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             <span>{format(new Date(event.date), "MMMM d, yyyy")}</span>
@@ -47,7 +47,7 @@ export function EventCard({ event }: EventCardProps) {
             <MapPin className="h-4 w-4" />
             <span>{event.location}</span>
           </div>
-        </CardDescription>
+        </div>
       </CardHeader>
       <CardContent className="flex-grow">
         <p className="text-muted-foreground">{event.description}</p>

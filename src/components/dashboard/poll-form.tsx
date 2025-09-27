@@ -116,7 +116,7 @@ export function PollFormDialog({
                 startDate: new Date().toISOString(),
                 endDate: values.endDate.toISOString(),
                 creatorId: user.uid,
-                voted: [],
+                votedUserIds: [],
             };
             await addDoc(collection(firestore, 'polls'), pollData);
             toast({ title: 'Success!', description: 'New poll has been created.' });
@@ -247,5 +247,3 @@ export function PollFormDialog({
     </Dialog>
   );
 }
-
-    

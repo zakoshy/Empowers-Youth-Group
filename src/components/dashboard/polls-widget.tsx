@@ -37,7 +37,7 @@ export type Poll = {
   options: { id: string; text: string; votes: number }[];
   endDate: string;
   creatorId: string;
-  voted?: string[]; // Array of user IDs who voted
+  votedUserIds?: string[]; // Array of user IDs who voted
 }
 
 interface UserProfile {
@@ -104,9 +104,9 @@ export function PollsWidget() {
                 opt.id === selectedOptionId ? { ...opt, votes: (opt.votes || 0) + 1 } : opt
             );
             // Track who has voted to update the UI
-            const voted = pollData.voted ? [...pollData.voted, user.uid] : [user.uid];
+            const votedUserIds = pollData.votedUserIds ? [...pollData.votedUserIds, user.uid] : [user.uid];
 
-            await updateDoc(pollRef, { options: updatedOptions, voted: voted });
+            await updateDoc(pollRef, { options: updatedOptions, votedUserIds: votedUserIds });
         }
         
       toast({
@@ -168,10 +168,7 @@ export function PollsWidget() {
     return poll.creatorId === user.uid || userProfile.role === 'Chairperson' || userProfile.role === 'Admin';
   }
 
-  const activePolls = polls?.filter(p => new Date(p.endDate) >= new Date(now));
-  const pastPolls = polls?.filter(p => new Date(p.endDate) < new Date(now));
-
-  const userHasVoted = (poll: Poll) => poll.voted?.includes(user?.uid || '');
+  const userHasVoted = (poll: Poll) => poll.votedUserIds?.includes(user?.uid || '');
   
   const totalVotes = (poll: Poll) => poll.options.reduce((acc, option) => acc + (option.votes || 0), 0);
 

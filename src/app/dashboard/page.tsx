@@ -44,6 +44,7 @@ export default function DashboardPage() {
   const firestore = useFirestore();
 
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [summary, setSummary] = useState("");
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
 
@@ -173,11 +174,9 @@ export default function DashboardPage() {
               </p>
               <div className="flex gap-2">
                 {constitutionData ? (
-                    <Button asChild variant="outline">
-                        <a href={constitutionData.content} target="_blank" rel="noopener noreferrer">
-                            <FileText className="mr-2 h-4 w-4" />
-                            View Constitution
-                        </a>
+                    <Button variant="outline" onClick={() => setIsViewerOpen(true)}>
+                        <FileText className="mr-2 h-4 w-4" />
+                        View Constitution
                     </Button>
                 ) : (
                     <Button variant="outline" disabled>
@@ -219,6 +218,30 @@ export default function DashboardPage() {
                 <div className="prose prose-sm max-w-none text-foreground/80 dark:prose-invert prose-headings:font-headline prose-headings:text-foreground"
                     dangerouslySetInnerHTML={{ __html: summary }}
                 />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
+        <DialogContent className="max-w-4xl h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>{constitutionData?.fileName || 'Group Constitution'}</DialogTitle>
+            <DialogDescription>
+              You can scroll to view the document. Use your browser's print functionality (Ctrl/Cmd+P) to print or save as PDF.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="h-full w-full py-4 -mx-6 px-6">
+            {constitutionData?.content ? (
+              <iframe
+                src={constitutionData.content}
+                className="w-full h-full border rounded-md"
+                title="Constitution Document"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground">Document could not be loaded.</p>
+              </div>
             )}
           </div>
         </DialogContent>

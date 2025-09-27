@@ -31,8 +31,19 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack: (config) => {
-    config.resolve.alias.canvas = false;
+  webpack: (config, { isServer }) => {
+    // Aliases for client-side libraries
+    config.resolve.alias = {
+        ...config.resolve.alias,
+        'pdf-parse': false, // Don't bundle server-side pdf-parse on the client
+        'fs': false, // fs is a server-side module
+    };
+
+    // Keep canvas as an external module on the server
+    if (!isServer) {
+        config.resolve.alias.canvas = false;
+    }
+
     return config;
   },
 };

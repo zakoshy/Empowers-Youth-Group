@@ -29,10 +29,11 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { summarizeConstitution } from "@/ai/flows/summarize-constitution";
-import pdf from 'pdf-parse/lib/pdf.js/v1.10.100/build/pdf.js';
+import * as pdfjsLib from 'pdfjs-dist';
+
 // Set workerSrc to avoid issues with pdf.js worker.
 // The path is relative to the public directory.
-pdf.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 interface Constitution {
     content: string; // URL from Cloudinary
@@ -47,7 +48,7 @@ interface UserProfile {
 
 async function extractTextFromPdfClient(url: string): Promise<string> {
   try {
-    const loadingTask = pdf.getDocument(url);
+    const loadingTask = pdfjsLib.getDocument(url);
     const pdfDoc = await loadingTask.promise;
     let text = '';
     for (let i = 1; i <= pdfDoc.numPages; i++) {
@@ -160,6 +161,10 @@ export default function ConstitutionPage() {
 
     setIsSummaryLoading(true);
     try {
+      // Check if the content URL ends with .pdf, otherwise it's not a parsable file for pdf-parse
+      if (!constitutionData.content.toLowerCase().endsWith('.pdf')) {
+        throw new Error("The uploaded file is not a PDF and cannot be summarized.");
+      }
       const constitutionText = await extractTextFromPdfClient(constitutionData.content);
       if (!constitutionText) {
         throw new Error("Could not extract text from the PDF.");
@@ -167,9 +172,9 @@ export default function ConstitutionPage() {
       
       const result = await summarizeConstitution({ constitutionText });
       setSummary(result.summary);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to get summary:", error);
-      setSummary("Sorry, the summary could not be generated at this time. The document might be inaccessible or corrupted.");
+      setSummary(`Sorry, the summary could not be generated at this time. ${error.message}`);
     } finally {
       setIsSummaryLoading(false);
     }
@@ -196,7 +201,7 @@ export default function ConstitutionPage() {
         <CardTitle>Manage Constitution</CardTitle>
         <CardDescription>
           {isChairperson 
-            ? "Upload, view, summarize or delete the group's official constitution document."
+            ? "Upload, view, summarize or delete the group's official constitution document (PDF format only)."
             : "View or summarize the group's official constitution document. Only the Chairperson can make changes."}
         </CardDescription>
       </CardHeader>
@@ -227,12 +232,23 @@ export default function ConstitutionPage() {
                     {isChairperson && (
                         <>
                             <CldUploadButton
-                                options={{ multiple: false, sources: ['local'], accepted_files: '.pdf' }}
+                                options={{ multiple: false, sources: ['local'], acceptedFiles: 'application/pdf' }}
                                 uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
                                 onSuccess={handleUploadSuccess}
-                                onUploadAdded={() => {
-                                    setIsProcessing(true);
-                                    toast({ title: "Uploading...", description: "Your file is being uploaded." });
+                                onUploadAdded={(result: any) => {
+                                  if (result.file.type !== 'application/pdf') {
+                                    toast({
+                                      variant: "destructive",
+                                      title: "Invalid File Type",
+                                      description: "Please upload a PDF file only.",
+                                    });
+                                    // In a real scenario, you'd want to stop the upload process here.
+                                    // Cloudinary's widget doesn't offer a simple way to abort after onUploadAdded.
+                                    // The `acceptedFiles` option is the primary enforcement.
+                                    return;
+                                  }
+                                  setIsProcessing(true);
+                                  toast({ title: "Uploading...", description: "Your file is being uploaded." });
                                 }}
                             >
                                 <Button variant="secondary" asChild disabled={isProcessing}>
@@ -272,18 +288,28 @@ export default function ConstitutionPage() {
                 <p className="mb-4 text-muted-foreground">No constitution has been uploaded yet.</p>
                 {isChairperson ? (
                     <CldUploadButton
-                        options={{ multiple: false, sources: ['local'], accepted_files: '.pdf' }}
-                        uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
-                        onSuccess={handleUploadSuccess}
-                        onUploadAdded={() => {
+                         options={{ multiple: false, sources: ['local'], acceptedFiles: 'application/pdf' }}
+                         uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+                         onSuccess={handleUploadSuccess}
+                         onUploadAdded={(result: any) => {
+                            if (result.file.type !== 'application/pdf') {
+                                toast({
+                                variant: "destructive",
+                                title: "Invalid File Type",
+                                description: "Please upload a PDF file only.",
+                                });
+                                // This is a check, but acceptedFiles should prevent non-PDFs from being selected.
+                                // It's good to have as a fallback.
+                                return;
+                            }
                             setIsProcessing(true);
                             toast({ title: "Uploading...", description: "Your file is being uploaded." });
-                        }}
+                         }}
                     >
                         <Button asChild disabled={isProcessing}>
                            <span>
                                 {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                                {isProcessing ? 'Uploading...' : 'Upload Constitution'}
+                                {isProcessing ? 'Uploading...' : 'Upload Constitution (PDF)'}
                            </span>
                         </Button>
                     </CldUploadButton>

@@ -52,6 +52,7 @@ export default function ConstitutionPage() {
 
   const handleUploadSuccess = async (result: any) => {
     const fileUrl = result?.info?.secure_url;
+    const originalFilename = result?.info?.original_filename;
     
     if (!fileUrl) {
         toast({
@@ -66,8 +67,8 @@ export default function ConstitutionPage() {
     try {
       await setDoc(constitutionRef, {
         content: fileUrl,
-        title: "The Empowers Constitution",
-        fileName: "The Empowers Constitution.pdf",
+        title: originalFilename || "The Empowers Constitution",
+        fileName: originalFilename ? `${originalFilename}.pdf` : "The Empowers Constitution.pdf",
         uploadDate: new Date().toISOString(),
       }, { merge: true });
 

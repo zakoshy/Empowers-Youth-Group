@@ -46,10 +46,14 @@ export interface SpecialContribution {
     year: number;
 }
 
+interface TreasurerDashboardProps {
+  isReadOnly: boolean;
+}
+
 
 const currentYear = new Date().getFullYear();
 
-export default function TreasurerDashboard() {
+export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   
@@ -241,17 +245,22 @@ export default function TreasurerDashboard() {
   return (
     <>
       <div className="space-y-6">
-        <TreasurerInsights 
-          allMembersData={allMembersDataForAI}
-          totalFunds={grandTotal}
-          monthlyTarget={FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION}
-        />
+        {!isReadOnly && (
+          <TreasurerInsights 
+            allMembersData={allMembersDataForAI}
+            totalFunds={grandTotal}
+            monthlyTarget={FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION}
+          />
+        )}
 
         <Card>
         <CardHeader>
             <CardTitle>Manage Member Contributions - {currentYear}</CardTitle>
             <CardDescription>
-                Enter and update monthly contributions. Click the '+' icon to add a miniharambee for a specific month.
+                {isReadOnly 
+                    ? "Viewing all member contributions for the current year. Only the Treasurer can make changes."
+                    : "Enter and update monthly contributions. Click the '+' icon to add a miniharambee for a specific month."
+                }
             </CardDescription>
         </CardHeader>
         <CardContent>
@@ -293,38 +302,43 @@ export default function TreasurerDashboard() {
                                 <TableCell key={month} className="text-center align-top">
                                     <div className="flex items-center gap-1 justify-center">
                                         <Input
-                                        type="number"
-                                        placeholder="0"
-                                        value={value}
-                                        onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
-                                        className="w-24"
+                                          type="number"
+                                          placeholder="0"
+                                          value={value}
+                                          onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
+                                          className="w-24"
+                                          disabled={isReadOnly}
                                         />
-                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenAddSpecialDialog(member, index)}>
-                                            <PlusCircle className="h-4 w-4 text-green-500" />
-                                        </Button>
+                                        {!isReadOnly && (
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenAddSpecialDialog(member, index)}>
+                                                <PlusCircle className="h-4 w-4 text-green-500" />
+                                            </Button>
+                                        )}
                                     </div>
                                     <div className="mt-2 space-y-1 text-xs text-left">
                                         {monthlySpecialContributions.map(sc => (
                                             <div key={sc.id} className="flex items-center justify-between gap-1 bg-muted/50 p-1 rounded">
                                                 <span className="truncate" title={format(new Date(sc.date), "PPP")}>Ksh {sc.amount} on {format(new Date(sc.date), "MMM d")}</span>
-                                                <div className="flex">
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenEditSpecialDialog(sc)}><Edit className="h-3 w-3" /></Button>
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive"><Trash2 className="h-3 w-3" /></Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                                <AlertDialogDescription>This action cannot be undone. This will permanently delete the special contribution.</AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDeleteSpecialContribution(sc)}>Delete</AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </div>
+                                                {!isReadOnly && (
+                                                    <div className="flex">
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenEditSpecialDialog(sc)}><Edit className="h-3 w-3" /></Button>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                              <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive"><Trash2 className="h-3 w-3" /></Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                                    <AlertDialogDescription>This action cannot be undone. This will permanently delete the special contribution.</AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                    <AlertDialogAction onClick={() => handleDeleteSpecialContribution(sc)}>Delete</AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -369,33 +383,38 @@ export default function TreasurerDashboard() {
                                             value={value}
                                             onChange={(e) => handleAmountChange(member.id, index, e.target.value)}
                                             className="flex-grow"
+                                            disabled={isReadOnly}
                                         />
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleOpenAddSpecialDialog(member, index)}>
-                                            <PlusCircle className="h-5 w-5 text-green-500" />
-                                        </Button>
+                                        {!isReadOnly && (
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleOpenAddSpecialDialog(member, index)}>
+                                                <PlusCircle className="h-5 w-5 text-green-500" />
+                                            </Button>
+                                        )}
                                     </div>
                                     <div className="mt-2 space-y-1 text-xs">
                                         {monthlySpecialContributions.map(sc => (
                                             <div key={sc.id} className="flex items-center justify-between gap-1 bg-muted/50 p-1 rounded">
                                                 <span className="truncate" title={format(new Date(sc.date), "PPP")}>Ksh {sc.amount} on {format(new Date(sc.date), "MMM d")}</span>
-                                                <div className="flex">
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenEditSpecialDialog(sc)}><Edit className="h-3 w-3" /></Button>
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive"><Trash2 className="h-3 w-3" /></Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                                <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDeleteSpecialContribution(sc)}>Delete</AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </div>
+                                                {!isReadOnly && (
+                                                    <div className="flex">
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleOpenEditSpecialDialog(sc)}><Edit className="h-3 w-3" /></Button>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                              <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:text-destructive"><Trash2 className="h-3 w-3" /></Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                                    <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                    <AlertDialogAction onClick={() => handleDeleteSpecialContribution(sc)}>Delete</AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -415,10 +434,12 @@ export default function TreasurerDashboard() {
             <div className="text-lg font-bold">
               Total Collected: <span className="text-primary">Ksh {grandTotal.toLocaleString()}</span>
             </div>
-            <Button onClick={handleUpdateContributions} disabled={isSaving}>
-            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isSaving ? 'Updating...' : 'Update Contributions'}
-            </Button>
+            {!isReadOnly && (
+                <Button onClick={handleUpdateContributions} disabled={isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isSaving ? 'Updating...' : 'Update Contributions'}
+                </Button>
+            )}
         </CardFooter>
         </Card>
       </div>

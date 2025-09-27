@@ -36,9 +36,13 @@ export default function ContributionsPage() {
   if (!userProfile) {
     return <div>Could not load user profile.</div>;
   }
+  
+  if (userProfile.role === 'Treasurer') {
+    return <TreasurerDashboard isReadOnly={false} />;
+  }
 
-  if (userProfile.role === 'Treasurer' || userProfile.role === 'Chairperson') {
-    return <TreasurerDashboard />;
+  if (userProfile.role === 'Chairperson') {
+    return <TreasurerDashboard isReadOnly={true} />;
   }
   
   return <MemberDashboard userId={user!.uid} />;

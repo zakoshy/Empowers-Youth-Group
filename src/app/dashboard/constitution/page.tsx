@@ -33,7 +33,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 
 // Set workerSrc to avoid issues with pdf.js worker.
 // The path is relative to the public directory.
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface Constitution {
     content: string; // URL from Cloudinary

@@ -133,10 +133,13 @@ export default function ProfilePage() {
   
   const handleRemovePhoto = async () => {
       if (!user || !userProfileRef) return;
+      
+      const previousPhotoURL = optimisticPhotoURL;
       setOptimisticPhotoURL(null);
+
       try {
-          await updateProfile(user, { photoURL: null });
-          await updateDoc(userProfileRef, { photoURL: null });
+          await updateProfile(user, { photoURL: "" }); // Use empty string for auth
+          await updateDoc(userProfileRef, { photoURL: null }); // Use null for Firestore
           toast({
               title: "Profile Picture Removed",
               description: "Your profile picture has been removed successfully.",
@@ -149,7 +152,7 @@ export default function ProfilePage() {
               description: "Could not remove your profile picture. Please try again.",
           });
            // Revert optimistic update
-          setOptimisticPhotoURL(userProfile?.photoURL || user?.photoURL || null);
+          setOptimisticPhotoURL(previousPhotoURL);
       }
   };
 
@@ -279,5 +282,3 @@ export default function ProfilePage() {
     </>
   );
 }
-
-    

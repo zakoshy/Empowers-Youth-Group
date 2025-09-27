@@ -29,7 +29,10 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { summarizeConstitution } from "@/ai/flows/summarize-constitution";
-import { extractTextFromPdf } from "@/lib/pdf-utils";
+import pdf from 'pdf-parse/lib/pdf.js/v1.10.100/build/pdf.js';
+// Set workerSrc to avoid issues with pdf.js worker.
+// The path is relative to the public directory.
+pdf.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 interface Constitution {
     content: string; // URL from Cloudinary
@@ -41,6 +44,25 @@ interface Constitution {
 interface UserProfile {
     role: string;
 }
+
+async function extractTextFromPdfClient(url: string): Promise<string> {
+  try {
+    const loadingTask = pdf.getDocument(url);
+    const pdfDoc = await loadingTask.promise;
+    let text = '';
+    for (let i = 1; i <= pdfDoc.numPages; i++) {
+      const page = await pdfDoc.getPage(i);
+      const content = await page.getTextContent();
+      const strings = content.items.map((item: any) => item.str);
+      text += strings.join(' ') + '\n';
+    }
+    return text;
+  } catch (error) {
+    console.error('Error extracting text from PDF on client:', error);
+    throw new Error('Could not process the PDF file on the client.');
+  }
+}
+
 
 export default function ConstitutionPage() {
   const firestore = useFirestore();
@@ -138,7 +160,7 @@ export default function ConstitutionPage() {
 
     setIsSummaryLoading(true);
     try {
-      const constitutionText = await extractTextFromPdf(constitutionData.content);
+      const constitutionText = await extractTextFromPdfClient(constitutionData.content);
       if (!constitutionText) {
         throw new Error("Could not extract text from the PDF.");
       }

@@ -31,11 +31,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      config.externals = [...config.externals, 'pdf-parse'];
-    }
-    return config;
+  experimental: {
+    serverComponentsExternalPackages: ['pdf-parse'],
   },
 };
 

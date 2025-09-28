@@ -30,9 +30,9 @@ import {
 } from '@/components/ui/dialog';
 import { summarizeConstitution } from "@/ai/flows/summarize-constitution";
 import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorker from "pdfjs-dist/build/pdf.worker.entry";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+// Set the worker source to the one provided by jsDelivr CDN
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 
 interface Constitution {

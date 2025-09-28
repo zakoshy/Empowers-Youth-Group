@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { CheckCircle, Vote, Edit, Trash2, UserCheck } from "lucide-react"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import { collection, query, where, orderBy, addDoc, doc, updateDoc, getDoc, deleteDoc, getDocs, writeBatch, setDoc, onSnapshot, runTransaction } from "firebase/firestore";
+import { collection, query, where, orderBy, addDoc, doc, updateDoc, getDoc, deleteDoc, getDocs, writeBatch, setDoc, onSnapshot, runTransaction, collectionGroup } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton"
 import { PollFormDialog } from "./poll-form";
 import {
@@ -30,7 +30,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
+import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+
 
 export type Poll = {
   id: string;
@@ -42,12 +45,22 @@ export type Poll = {
 }
 
 type VoteRecord = {
+    id: string;
+    userId: string;
     selectedOption: string;
 }
 
 interface UserProfile {
+    id: string;
+    firstName: string;
+    lastName: string;
+    photoURL?: string;
     role: string;
 }
+
+const getInitials = (firstName: string = '', lastName: string = '') => {
+    return `${firstName?.charAt(0) ?? ''}${lastName?.charAt(0) ?? ''}`.toUpperCase();
+};
 
 export function PollsWidget() {
   const { user } = useUser();
@@ -65,13 +78,17 @@ export function PollsWidget() {
     return doc(firestore, 'userProfiles', user.uid);
   }, [firestore, user]);
 
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+  const allUsersRef = useMemoFirebase(() => collection(firestore, 'userProfiles'), [firestore]);
 
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
   const { data: polls, isLoading: isLoadingPolls, error } = useCollection<Poll>(pollsRef);
+  const { data: allUsers, isLoading: isLoadingUsers } = useCollection<UserProfile>(allUsersRef);
+
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [userVotes, setUserVotes] = useState<Record<string, string>>({});
+  const [pollVoters, setPollVoters] = useState<Record<string, VoteRecord[]>>({});
 
 
   useEffect(() => {
@@ -79,17 +96,29 @@ export function PollsWidget() {
 
     const unsubscribes = polls.map(poll => {
         const voteRef = doc(firestore, 'polls', poll.id, 'votes', user.uid);
-        return onSnapshot(voteRef, (doc) => {
+        // Subscribe to current user's vote
+        const unsubUserVote = onSnapshot(voteRef, (doc) => {
             if (doc.exists()) {
                 const voteData = doc.data() as VoteRecord;
                 setUserVotes(prev => ({...prev, [poll.id]: voteData.selectedOption}))
-                // Pre-select the user's current vote in the UI
                 setSelectedOptions(prev => ({...prev, [poll.id]: voteData.selectedOption}));
             }
         });
+
+        // Subscribe to all votes for this poll
+        const allVotesRef = collection(firestore, 'polls', poll.id, 'votes');
+        const unsubAllVotes = onSnapshot(allVotesRef, (snapshot) => {
+            const voters = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VoteRecord));
+            setPollVoters(prev => ({ ...prev, [poll.id]: voters }));
+        }, (error) => {
+            // This will fail if the user hasn't voted yet, which is expected.
+            // We only need to fetch all votes once the user has voted.
+        });
+        
+        return [unsubUserVote, unsubAllVotes];
     });
 
-    return () => unsubscribes.forEach(unsub => unsub());
+    return () => unsubscribes.flat().forEach(unsub => unsub());
   }, [user, polls, firestore])
 
 
@@ -192,7 +221,7 @@ export function PollsWidget() {
     }
   };
 
-  const isLoading = isLoadingPolls || isProfileLoading;
+  const isLoading = isLoadingPolls || isProfileLoading || isLoadingUsers;
 
   if (isLoading) {
       return (
@@ -209,6 +238,8 @@ export function PollsWidget() {
   }
   
   const totalVotes = (poll: Poll) => poll.options.reduce((acc, option) => acc + (option.votes || 0), 0);
+  
+  const allUsersMap = new Map(allUsers?.map(u => [u.id, u]));
 
   return (
     <div className="space-y-6">
@@ -217,6 +248,8 @@ export function PollsWidget() {
                 const isPollActive = new Date(poll.endDate) >= new Date(now);
                 const pollTotalVotes = totalVotes(poll);
                 const userVoteOptionId = userVotes[poll.id];
+                const votersForPoll = pollVoters[poll.id] || [];
+                const hasVoted = !!userVoteOptionId;
 
                 return (
                 <Card key={poll.id}>
@@ -253,7 +286,7 @@ export function PollsWidget() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        {isPollActive ? (
+                        {(isPollActive || !hasVoted) ? (
                              <RadioGroup 
                                 value={selectedOptions[poll.id]} 
                                 onValueChange={(value) => setSelectedOptions(prev => ({...prev, [poll.id]: value}))}
@@ -261,38 +294,56 @@ export function PollsWidget() {
                             >
                             {poll.options.map((option) => (
                                 <div key={option.id} className="flex items-center space-x-2">
-                                <RadioGroupItem value={option.id} id={`${poll.id}-${option.id}`} />
-                                <Label htmlFor={`${poll.id}-${option.id}`}>{option.text}</Label>
+                                <RadioGroupItem value={option.id} id={`${poll.id}-${option.id}`} disabled={!isPollActive} />
+                                <Label htmlFor={`${poll.id}-${option.id}`} className={cn(!isPollActive && "text-muted-foreground")}>{option.text}</Label>
                                 </div>
                             ))}
                             </RadioGroup>
                         ) : (
-                            <div className="space-y-3">
-                                {poll.options.map(option => {
-                                    const percentage = pollTotalVotes > 0 ? ((option.votes || 0) / pollTotalVotes) * 100 : 0;
-                                    const isUserChoice = option.id === userVoteOptionId;
-                                    const othersCount = isUserChoice ? (option.votes || 0) - 1 : (option.votes || 0);
+                            <TooltipProvider>
+                                <div className="space-y-4">
+                                    {poll.options.map(option => {
+                                        const percentage = pollTotalVotes > 0 ? ((option.votes || 0) / pollTotalVotes) * 100 : 0;
+                                        const isUserChoice = option.id === userVoteOptionId;
+                                        
+                                        const votersForOption = votersForPoll.filter(v => v.selectedOption === option.id);
 
-                                    return (
-                                        <div key={option.id} className="space-y-1">
-                                            <div className="flex justify-between items-center text-sm">
-                                                <span className={cn("font-medium", isUserChoice && "text-primary")}>{option.text}</span>
-                                                <span className="text-muted-foreground">{percentage.toFixed(0)}% ({option.votes || 0} votes)</span>
-                                            </div>
-                                            <div className="w-full bg-muted rounded-full h-2.5">
-                                                <div className={cn("h-2.5 rounded-full", isUserChoice ? "bg-primary" : "bg-primary/50" )} style={{ width: `${percentage}%` }}></div>
-                                            </div>
-                                            {isUserChoice && (
-                                                <div className="flex items-center gap-1 text-xs text-primary pt-1">
-                                                    <UserCheck className="h-3 w-3" />
-                                                    <span>You voted here</span>
-                                                    {othersCount > 0 && <span> (+ {othersCount} other{othersCount > 1 ? 's' : ''})</span>}
+                                        return (
+                                            <div key={option.id} className="space-y-2">
+                                                <div className="flex justify-between items-center text-sm">
+                                                    <span className={cn("font-medium", isUserChoice && "text-primary")}>{option.text}</span>
+                                                    <span className="text-muted-foreground">{percentage.toFixed(0)}% ({option.votes || 0} votes)</span>
                                                 </div>
-                                            )}
-                                        </div>
-                                    )
-                                })}
-                            </div>
+                                                <div className="w-full bg-muted rounded-full h-2.5">
+                                                    <div className={cn("h-2.5 rounded-full", isUserChoice ? "bg-primary" : "bg-primary/50" )} style={{ width: `${percentage}%` }}></div>
+                                                </div>
+                                                <div className="flex items-center gap-1 flex-wrap">
+                                                    {votersForOption.map(voter => {
+                                                        const voterProfile = allUsersMap.get(voter.userId);
+                                                        if (!voterProfile) return null;
+                                                        
+                                                        const isCurrentUser = voter.userId === user?.uid;
+                                                        
+                                                        return (
+                                                            <Tooltip key={voter.userId}>
+                                                                <TooltipTrigger>
+                                                                    <Avatar className={cn("h-6 w-6 border-2", isCurrentUser ? "border-primary" : "border-transparent")}>
+                                                                        <AvatarImage src={voterProfile.photoURL} />
+                                                                        <AvatarFallback className="text-xs">{getInitials(voterProfile.firstName, voterProfile.lastName)}</AvatarFallback>
+                                                                    </Avatar>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>{voterProfile.firstName} {voterProfile.lastName}</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </TooltipProvider>
                         )}
                     </CardContent>
                     {isPollActive && (

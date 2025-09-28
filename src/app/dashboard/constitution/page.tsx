@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useFirestore, useDoc, useMemoFirebase, useUser } from '@/firebase';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, FileText, Trash2, Replace, Lock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 
 interface Constitution {
   content: string; // URL from Cloudinary
@@ -163,12 +164,12 @@ export default function ConstitutionPage() {
                         toast({ title: "Uploading...", description: "Your file is being uploaded." });
                       }}
                     >
-                      <Button variant="secondary" disabled={isProcessing}>
+                      <button className={cn(buttonVariants({variant: 'secondary'}))} disabled={isProcessing}>
                         <div className="flex items-center">
                           {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Replace className="h-4 w-4" />}
                           <span className="ml-2 hidden sm:inline">Replace</span>
                         </div>
-                      </Button>
+                      </button>
                     </CldUploadButton>
 
                     <AlertDialog>
@@ -208,12 +209,12 @@ export default function ConstitutionPage() {
                     toast({ title: "Uploading...", description: "Your file is being uploaded." });
                   }}
                 >
-                  <Button disabled={isProcessing}>
+                  <button className={cn(buttonVariants())} disabled={isProcessing}>
                     <div className="flex items-center">
                       {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                       {isProcessing ? 'Uploading...' : 'Upload Constitution'}
                     </div>
-                  </Button>
+                  </button>
                 </CldUploadButton>
               ) : (
                 <div className='flex items-center gap-2 text-sm text-muted-foreground'>

@@ -176,6 +176,7 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
                         captionLayout="dropdown-nav"
                         fromYear={2020}
                         toYear={new Date().getFullYear()}
+                        disabled={(date) => date > new Date()}
                         initialFocus
                       />
                     </PopoverContent>
@@ -205,22 +206,24 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
                         </Button>
                     </div>
                   ) : (
-                    <CldUploadButton
-                      options={{ multiple: false, sources: ['local'] }}
-                      uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
-                      onSuccess={handleUploadSuccess}
-                      onUploadAdded={() => {
-                        setIsUploading(true);
-                        toast({ title: "Uploading...", description: "Your file is being uploaded." });
-                      }}
-                    >
-                      <div className={cn(buttonVariants({ variant: 'outline' }), 'w-full', isUploading && 'opacity-50 cursor-not-allowed')}>
-                        <div className="flex items-center">
-                          {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                          {isUploading ? 'Uploading...' : 'Upload Document'}
-                        </div>
-                      </div>
-                    </CldUploadButton>
+                    <FormControl>
+                      <CldUploadButton
+                        options={{ multiple: false, sources: ['local'] }}
+                        uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+                        onSuccess={handleUploadSuccess}
+                        onUploadAdded={() => {
+                          setIsUploading(true);
+                          toast({ title: "Uploading...", description: "Your file is being uploaded." });
+                        }}
+                      >
+                        <button type="button" className={cn(buttonVariants({ variant: 'outline' }), 'w-full', isUploading && 'opacity-50 cursor-not-allowed')} disabled={isUploading}>
+                          <div className="flex items-center">
+                            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                            {isUploading ? 'Uploading...' : 'Upload Document'}
+                          </div>
+                        </button>
+                      </CldUploadButton>
+                    </FormControl>
                   )}
                   <FormMessage />
                 </FormItem>

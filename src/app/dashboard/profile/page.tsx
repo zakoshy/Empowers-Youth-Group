@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
-import { CldUploadWidget } from 'next-cloudinary';
+import { CldUploadButton, CldUploadWidget } from 'next-cloudinary';
 import type { CldUploadWidgetResults } from 'next-cloudinary';
 
 
@@ -194,25 +193,18 @@ export default function ProfilePage() {
                 <AvatarImage src={displayPhoto || undefined} alt="Profile picture" />
                 <AvatarFallback className="text-4xl">{getInitials()}</AvatarFallback>
               </Avatar>
-              <CldUploadWidget
+              <CldUploadButton
                   options={{ multiple: false, sources: ['local'] }}
                   uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
                   onSuccess={handleUploadSuccess}
                   onUploadAdded={() => setIsUploading(true)}
               >
-                  {({ open }) => {
-                      return (
-                          <button
-                              onClick={() => open()}
-                              disabled={isUploading}
-                              className="absolute bottom-1 right-1 bg-secondary text-secondary-foreground rounded-full p-2 cursor-pointer hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                              aria-label="Change profile picture"
-                          >
-                              {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
-                          </button>
-                      );
-                  }}
-              </CldUploadWidget>
+                  <div
+                      className="absolute bottom-1 right-1 bg-secondary text-secondary-foreground rounded-full p-2 cursor-pointer hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                      {isUploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+                  </div>
+              </CldUploadButton>
             </div>
 
             <div className="flex-1 w-full text-center sm:text-left">

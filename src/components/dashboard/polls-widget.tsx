@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { CheckCircle, Vote, Edit, Trash2, UserCheck } from "lucide-react"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import { collection, query, where, orderBy, addDoc, doc, updateDoc, getDoc, deleteDoc, getDocs, writeBatch, setDoc, onSnapshot } from "firebase/firestore";
+import { collection, query, where, orderBy, addDoc, doc, updateDoc, getDoc, deleteDoc, getDocs, writeBatch, setDoc, onSnapshot, runTransaction } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton"
 import { PollFormDialog } from "./poll-form";
 import {
@@ -83,6 +83,8 @@ export function PollsWidget() {
             if (doc.exists()) {
                 const voteData = doc.data() as VoteRecord;
                 setUserVotes(prev => ({...prev, [poll.id]: voteData.selectedOption}))
+                // Pre-select the user's current vote in the UI
+                setSelectedOptions(prev => ({...prev, [poll.id]: voteData.selectedOption}));
             }
         });
     });
@@ -96,50 +98,64 @@ export function PollsWidget() {
       toast({ variant: 'destructive', title: "You must be logged in to vote."});
       return;
     }
-    const selectedOptionId = selectedOptions[poll.id];
-    if (!selectedOptionId) {
+    const newOptionId = selectedOptions[poll.id];
+    if (!newOptionId) {
       toast({ variant: 'destructive', title: "Please select an option to vote."});
       return;
     }
     
     const voteRef = doc(firestore, 'polls', poll.id, 'votes', user.uid);
-    const voteDoc = await getDoc(voteRef);
-
-    if (voteDoc.exists()) {
-        toast({ variant: "destructive", title: "You have already voted in this poll." });
-        return;
-    }
+    const pollRef = doc(firestore, 'polls', poll.id);
 
     try {
-        // Create a private vote document for the user
-        await setDoc(voteRef, {
-            pollId: poll.id,
-            userId: user.uid,
-            selectedOption: selectedOptionId,
-            voteDate: new Date().toISOString(),
-        });
-        
-        // Atomically update the public poll results
-        const pollRef = doc(firestore, 'polls', poll.id);
-        const pollDoc = await getDoc(pollRef);
-        if (pollDoc.exists()) {
-            const pollData = pollDoc.data() as Poll;
-            const updatedOptions = pollData.options.map(opt => 
-                opt.id === selectedOptionId ? { ...opt, votes: (opt.votes || 0) + 1 } : opt
-            );
-            // Track who has voted to update the UI
-            const votedUserIds = pollData.votedUserIds ? [...pollData.votedUserIds, user.uid] : [user.uid];
+        await runTransaction(firestore, async (transaction) => {
+            const voteDoc = await transaction.get(voteRef);
+            const pollDoc = await transaction.get(pollRef);
 
-            await updateDoc(pollRef, { options: updatedOptions, votedUserIds: votedUserIds });
-        }
-        
+            if (!pollDoc.exists()) {
+                throw "Poll does not exist!";
+            }
+
+            const pollData = pollDoc.data() as Poll;
+            let updatedOptions = [...pollData.options];
+            const oldOptionId = voteDoc.exists() ? (voteDoc.data() as VoteRecord).selectedOption : null;
+
+            // If user is changing their vote
+            if (oldOptionId) {
+                if (oldOptionId === newOptionId) {
+                    toast({ title: "No change", description: "You have already voted for this option."});
+                    return; // No need to do anything
+                }
+                // Decrement old vote count
+                updatedOptions = updatedOptions.map(opt => 
+                    opt.id === oldOptionId ? { ...opt, votes: Math.max(0, (opt.votes || 0) - 1) } : opt
+                );
+            }
+
+            // Increment new vote count
+            updatedOptions = updatedOptions.map(opt => 
+                opt.id === newOptionId ? { ...opt, votes: (opt.votes || 0) + 1 } : opt
+            );
+            
+            // Update the poll with new vote counts
+            transaction.update(pollRef, { options: updatedOptions });
+
+            // Set or update the user's personal vote document
+            transaction.set(voteRef, {
+                pollId: poll.id,
+                userId: user.uid,
+                selectedOption: newOptionId,
+                voteDate: new Date().toISOString(),
+            });
+        });
+
       toast({
         title: "Vote Submitted",
         description: "Thank you for your participation!",
       });
-    } catch(error) {
+    } catch(error: any) {
         console.error("Error submitting vote: ", error);
-        toast({ variant: "destructive", title: "Could not submit vote." });
+        toast({ variant: "destructive", title: "Could not submit vote.", description: error.toString() });
     }
   }
 
@@ -191,8 +207,6 @@ export function PollsWidget() {
     if (!user || !userProfile) return false;
     return poll.creatorId === user.uid || userProfile.role === 'Chairperson' || userProfile.role === 'Admin';
   }
-
-  const userHasVoted = (pollId: string) => !!userVotes[pollId];
   
   const totalVotes = (poll: Poll) => poll.options.reduce((acc, option) => acc + (option.votes || 0), 0);
 
@@ -201,7 +215,6 @@ export function PollsWidget() {
         {polls && polls.length > 0 ? (
             polls.map(poll => {
                 const isPollActive = new Date(poll.endDate) >= new Date(now);
-                const hasVoted = userHasVoted(poll.id);
                 const pollTotalVotes = totalVotes(poll);
                 const userVoteOptionId = userVotes[poll.id];
 
@@ -240,8 +253,8 @@ export function PollsWidget() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        {isPollActive && !hasVoted ? (
-                            <RadioGroup 
+                        {isPollActive ? (
+                             <RadioGroup 
                                 value={selectedOptions[poll.id]} 
                                 onValueChange={(value) => setSelectedOptions(prev => ({...prev, [poll.id]: value}))}
                                 className="space-y-2"
@@ -258,7 +271,7 @@ export function PollsWidget() {
                                 {poll.options.map(option => {
                                     const percentage = pollTotalVotes > 0 ? ((option.votes || 0) / pollTotalVotes) * 100 : 0;
                                     const isUserChoice = option.id === userVoteOptionId;
-                                    const othersCount = (option.votes || 0) - 1;
+                                    const othersCount = isUserChoice ? (option.votes || 0) - 1 : (option.votes || 0);
 
                                     return (
                                         <div key={option.id} className="space-y-1">
@@ -282,14 +295,14 @@ export function PollsWidget() {
                             </div>
                         )}
                     </CardContent>
-                    {isPollActive && !hasVoted && (
+                    {isPollActive && (
                         <CardFooter>
                             <Button
                                 className="w-full"
                                 onClick={() => handleVote(poll)}
                                 disabled={!selectedOptions[poll.id]}
                             >
-                                Submit Vote
+                                {userVotes[poll.id] ? 'Change Vote' : 'Submit Vote'}
                             </Button>
                         </CardFooter>
                     )}
@@ -316,3 +329,5 @@ export function PollsWidget() {
     </div>
   )
 }
+
+    

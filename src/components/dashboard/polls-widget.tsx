@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { CheckCircle, Vote, Edit, Trash2 } from "lucide-react"
+import { CheckCircle, Vote, Edit, Trash2, Loader2 } from "lucide-react"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { collection, query, where, orderBy, addDoc, doc, updateDoc, getDoc, deleteDoc, getDocs, writeBatch, setDoc, onSnapshot, runTransaction, collectionGroup } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton"
@@ -89,6 +89,7 @@ export function PollsWidget() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [userVotes, setUserVotes] = useState<Record<string, string>>({});
   const [pollVoters, setPollVoters] = useState<Record<string, VoteRecord[]>>({});
+  const [isSubmittingVote, setIsSubmittingVote] = useState<Record<string, boolean>>({});
 
 
   useEffect(() => {
@@ -111,8 +112,7 @@ export function PollsWidget() {
             const voters = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VoteRecord));
             setPollVoters(prev => ({ ...prev, [poll.id]: voters }));
         }, (error) => {
-             // This will fail for users who haven't voted, which is fine.
-             // The rule only allows voters to see other voters.
+             // This will fail for non-voters on restricted collections, which is expected.
         });
         
         return [unsubUserVote, unsubAllVotes];
@@ -133,11 +133,15 @@ export function PollsWidget() {
       return;
     }
     
+    setIsSubmittingVote(prev => ({ ...prev, [poll.id]: true }));
+
     const voteRef = doc(firestore, 'polls', poll.id, 'votes', user.uid);
     const pollRef = doc(firestore, 'polls', poll.id);
 
     try {
         let isChangingVote = false;
+        const previousVote = userVotes[poll.id];
+
         await runTransaction(firestore, async (transaction) => {
             const voteDoc = await transaction.get(voteRef);
             const pollDoc = await transaction.get(pollRef);
@@ -145,18 +149,18 @@ export function PollsWidget() {
             if (!pollDoc.exists()) {
                 throw "Poll does not exist!";
             }
+            if (new Date(pollDoc.data().endDate) < new Date()) {
+                throw "This poll has already ended.";
+            }
 
             const pollData = pollDoc.data() as Poll;
             let updatedOptions = [...pollData.options];
-            const oldOptionId = voteDoc.exists() ? (voteDoc.data() as VoteRecord).selectedOption : null;
+            
+            isChangingVote = voteDoc.exists();
 
-            // If user is changing their vote
-            if (oldOptionId) {
-                isChangingVote = true;
-                if (oldOptionId === newOptionId) {
-                    // No need to do anything if the vote is the same
-                    return; 
-                }
+            if (isChangingVote) {
+                const oldOptionId = (voteDoc.data() as VoteRecord).selectedOption;
+                if (oldOptionId === newOptionId) return; // No change needed
                 // Decrement old vote count
                 updatedOptions = updatedOptions.map(opt => 
                     opt.id === oldOptionId ? { ...opt, votes: Math.max(0, (opt.votes || 0) - 1) } : opt
@@ -168,10 +172,8 @@ export function PollsWidget() {
                 opt.id === newOptionId ? { ...opt, votes: (opt.votes || 0) + 1 } : opt
             );
             
-            // Update the poll with new vote counts
             transaction.update(pollRef, { options: updatedOptions });
 
-            // Set or update the user's personal vote document
             transaction.set(voteRef, {
                 pollId: poll.id,
                 userId: user.uid,
@@ -180,7 +182,7 @@ export function PollsWidget() {
             });
         });
 
-      if (isChangingVote && userVotes[poll.id] !== newOptionId) {
+      if (isChangingVote && previousVote !== newOptionId) {
         toast({
             title: "Vote Updated",
             description: "Your vote has been successfully changed!",
@@ -195,6 +197,8 @@ export function PollsWidget() {
     } catch(error: any) {
         console.error("Error submitting vote: ", error);
         toast({ variant: "destructive", title: "Could not submit vote.", description: error.toString() });
+    } finally {
+        setIsSubmittingVote(prev => ({ ...prev, [poll.id]: false }));
     }
   }
 
@@ -205,7 +209,6 @@ export function PollsWidget() {
   
   const handleDelete = async (pollId: string) => {
     try {
-      // First, delete all votes in the subcollection
       const votesRef = collection(firestore, 'polls', pollId, 'votes');
       const votesSnapshot = await getDocs(votesRef);
       const batch = writeBatch(firestore);
@@ -214,7 +217,6 @@ export function PollsWidget() {
       });
       await batch.commit();
 
-      // Then, delete the poll itself
       await deleteDoc(doc(firestore, 'polls', pollId));
 
       toast({
@@ -255,13 +257,14 @@ export function PollsWidget() {
     <div className="space-y-6">
         {polls && polls.length > 0 ? (
             polls.map(poll => {
-                const isPollActive = new Date(poll.endDate) > new Date(now);
+                const isPollActive = new Date(poll.endDate) > new Date();
                 const pollTotalVotes = totalVotes(poll);
                 const userVoteOptionId = userVotes[poll.id];
                 const votersForPoll = pollVoters[poll.id] || [];
                 const hasVoted = !!userVoteOptionId;
+                const submitting = isSubmittingVote[poll.id];
 
-                const shouldShowResults = !isPollActive && hasVoted;
+                const shouldShowResults = hasVoted || !isPollActive;
 
                 return (
                 <Card key={poll.id}>
@@ -310,13 +313,16 @@ export function PollsWidget() {
                                         return (
                                             <div key={option.id} className="space-y-2">
                                                 <div className="flex justify-between items-center text-sm">
-                                                    <span className={cn("font-medium", isUserChoice && "text-primary")}>{option.text}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={cn("font-medium", isUserChoice && "text-primary")}>{option.text}</span>
+                                                        {isUserChoice && <CheckCircle className="h-4 w-4 text-primary"/>}
+                                                    </div>
                                                     <span className="text-muted-foreground">{percentage.toFixed(0)}% ({option.votes || 0} votes)</span>
                                                 </div>
                                                 <div className="w-full bg-muted rounded-full h-2.5">
-                                                    <div className={cn("h-2.5 rounded-full", isUserChoice ? "bg-primary" : "bg-primary/50" )} style={{ width: `${percentage}%` }}></div>
+                                                    <div className="bg-primary h-2.5 rounded-full" style={{ width: `${percentage}%` }}></div>
                                                 </div>
-                                                <div className="flex items-center gap-1 flex-wrap pt-1">
+                                                <div className="flex items-center gap-1 flex-wrap pt-1 min-h-[28px]">
                                                     {votersForOption.map(voter => {
                                                         const voterProfile = allUsersMap.get(voter.userId);
                                                         if (!voterProfile) return null;
@@ -353,20 +359,45 @@ export function PollsWidget() {
                             {poll.options.map((option) => (
                                 <div key={option.id} className="flex items-center space-x-2">
                                 <RadioGroupItem value={option.id} id={`${poll.id}-${option.id}`} />
-                                <Label htmlFor={`${poll.id}-${option.id}`} className={cn(!isPollActive && "text-muted-foreground", "cursor-pointer")}>{option.text}</Label>
+                                <Label htmlFor={`${poll.id}-${option.id}`} className="cursor-pointer">{option.text}</Label>
                                 </div>
                             ))}
                             </RadioGroup>
                         )}
                     </CardContent>
-                    {isPollActive && (
+                     {isPollActive && !hasVoted && (
                         <CardFooter>
                             <Button
                                 className="w-full"
                                 onClick={() => handleVote(poll)}
-                                disabled={!selectedOptions[poll.id]}
+                                disabled={!selectedOptions[poll.id] || submitting}
                             >
+                                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Submit Vote
+                            </Button>
+                        </CardFooter>
+                    )}
+                     {isPollActive && hasVoted && (
+                        <CardFooter className="flex-col gap-2 items-start">
+                             <RadioGroup 
+                                value={selectedOptions[poll.id]} 
+                                onValueChange={(value) => setSelectedOptions(prev => ({...prev, [poll.id]: value}))}
+                                className="space-y-2"
+                            >
+                            {poll.options.map((option) => (
+                                <div key={option.id} className="flex items-center space-x-2">
+                                <RadioGroupItem value={option.id} id={`change-${poll.id}-${option.id}`} />
+                                <Label htmlFor={`change-${poll.id}-${option.id}`} className="cursor-pointer">{option.text}</Label>
+                                </div>
+                            ))}
+                            </RadioGroup>
+                            <Button
+                                className="w-full mt-2"
+                                onClick={() => handleVote(poll)}
+                                disabled={!selectedOptions[poll.id] || selectedOptions[poll.id] === userVotes[poll.id] || submitting}
+                            >
+                                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Change Vote
                             </Button>
                         </CardFooter>
                     )}

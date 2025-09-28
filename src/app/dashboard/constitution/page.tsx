@@ -31,7 +31,7 @@ import {
 import { summarizeConstitution } from "@/ai/flows/summarize-constitution";
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Set the worker source to the one provided by jsDelivr CDN
+// Set the worker source to the one provided by jsDelivr CDN, which is a reliable way to avoid bundling issues.
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 
@@ -60,7 +60,7 @@ async function extractTextFromPdfClient(url: string): Promise<string> {
     return text;
   } catch (error) {
     console.error('Error extracting text from PDF on client:', error);
-    throw new Error('Could not process the PDF file on the client.');
+    throw new Error('Could not process the PDF file. Please ensure it is a valid, uncorrupted PDF.');
   }
 }
 

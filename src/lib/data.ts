@@ -2,6 +2,7 @@
 
 
 
+
 export type Event = {
   id: string;
   title: string;
@@ -112,9 +113,10 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
     { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer", "Chairperson"] },
     { href: "/dashboard/polls", label: "Polls", icon: "Vote", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/events", label: "Manage Events", icon: "Calendar", roles: ["Coordinator", "Admin"] },
-    { href: "https://meet.google.com/new", label: "Schedule Meeting", icon: "Video", roles: ["Coordinator", "Admin"] },
+    { href: "https://meet.google.com/new", label: "Schedule Meeting", icon: "Video", roles: ["Coordinator", "Admin", "Secretary"] },
     { href: "/dashboard/reports", label: "Investments", icon: "TrendingUp", roles: ["Member", "Investment Lead", "Admin"] },
-    { href: "/dashboard/constitution", label: "Manage Constitution", icon: "FileText", roles: ["Member", "Chairperson", "Admin"] },
+    { href: "/dashboard/constitution", label: "Manage Constitution", icon: "FileText", roles: ["Chairperson", "Admin"] },
+    { href: "/dashboard/constitution", label: "Constitution", icon: "FileText", roles: ["Member", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/minutes", label: "Manage Minutes", icon: "BookOpen", roles: ["Secretary", "Admin"] },
     { href: "/dashboard/minutes", label: "Meeting Minutes", icon: "BookOpen", roles: ["Member", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Investment Lead"] },
     { href: "/dashboard/manage-users", label: "Manage Users", icon: "Users", roles: ["Admin"] },
@@ -122,10 +124,19 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
   
   const filteredLinks = allLinks.filter(link => link.roles.includes(userRole));
 
-  // Use a Map to ensure uniqueness based on 'href', which should be unique.
+  // Use a Map to ensure uniqueness based on 'href', which should be unique for navigation.
+  // This prevents showing both "Manage X" and "X" for the same page.
   const uniqueLinks = new Map();
   filteredLinks.forEach(link => {
-      uniqueLinks.set(link.href, link);
+      if (!uniqueLinks.has(link.href)) {
+        uniqueLinks.set(link.href, link);
+      } else {
+          // Prioritize the "Manage" link if a user has roles for both.
+          const existingLink = uniqueLinks.get(link.href);
+          if (link.label.startsWith("Manage") && !existingLink.label.startsWith("Manage")) {
+              uniqueLinks.set(link.href, link);
+          }
+      }
   });
 
   return Array.from(uniqueLinks.values());

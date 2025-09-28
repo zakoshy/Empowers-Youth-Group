@@ -1,6 +1,7 @@
 
 
 
+
 export type Event = {
   id: string;
   title: string;
@@ -85,6 +86,16 @@ export type Constitution = {
   fileName: string;
 };
 
+export type MeetingMinute = {
+    id: string;
+    title: string;
+    meetingDate: string;
+    fileUrl: string;
+    fileName: string;
+    uploadedBy: string;
+    uploadDate: string;
+}
+
 export const navLinks = [
   { href: "/#", label: "Home" },
   { href: "/#about", label: "About Us" },
@@ -104,6 +115,8 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
     { href: "https://meet.google.com/new", label: "Schedule Meeting", icon: "Video", roles: ["Coordinator", "Admin"] },
     { href: "/dashboard/reports", label: "Investments", icon: "TrendingUp", roles: ["Member", "Investment Lead", "Admin"] },
     { href: "/dashboard/constitution", label: "Manage Constitution", icon: "FileText", roles: ["Member", "Chairperson", "Admin"] },
+    { href: "/dashboard/minutes", label: "Manage Minutes", icon: "BookOpen", roles: ["Secretary", "Admin"] },
+    { href: "/dashboard/minutes", label: "Meeting Minutes", icon: "BookOpen", roles: ["Member", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Investment Lead"] },
     { href: "/dashboard/manage-users", label: "Manage Users", icon: "Users", roles: ["Admin"] },
   ];
   
@@ -127,5 +140,7 @@ export const FINANCIAL_CONFIG = {
   MONTHLY_CONTRIBUTION: 200,
   FINANCIAL_YEAR_START_MONTH: 0, // January
 };
+
+    
 
     

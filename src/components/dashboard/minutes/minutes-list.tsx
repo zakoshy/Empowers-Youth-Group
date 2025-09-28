@@ -7,7 +7,7 @@ import type { MeetingMinute } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Edit, Trash2, Download } from 'lucide-react';
+import { Edit, Trash2, Download, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { MinuteFormDialog } from './minute-form';
 import {
@@ -21,7 +21,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export function MinutesList() {
   const firestore = useFirestore();
@@ -33,11 +41,18 @@ export function MinutesList() {
   const { data: minutes, isLoading } = useCollection<MeetingMinute>(minutesRef);
 
   const [editingMinute, setEditingMinute] = useState<MeetingMinute | null>(null);
+  const [viewingMinute, setViewingMinute] = useState<MeetingMinute | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
 
   const handleEdit = (minute: MeetingMinute) => {
     setEditingMinute(minute);
     setIsFormOpen(true);
+  };
+
+  const handleView = (minute: MeetingMinute) => {
+    setViewingMinute(minute);
+    setIsViewOpen(true);
   };
   
   const handleDelete = async (minuteId: string) => {
@@ -74,7 +89,7 @@ export function MinutesList() {
           <TableRow>
             <TableHead>Title</TableHead>
             <TableHead>Meeting Date</TableHead>
-            <TableHead>File</TableHead>
+            <TableHead>Format</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -85,13 +100,24 @@ export function MinutesList() {
                 <TableCell className="font-medium">{minute.title}</TableCell>
                 <TableCell>{format(new Date(minute.meetingDate), 'PPP')}</TableCell>
                 <TableCell>
-                  <Button variant="link" asChild className="p-0 h-auto">
-                    <a href={minute.fileUrl} target="_blank" rel="noopener noreferrer" download={minute.fileName}>
-                      {minute.fileName}
-                    </a>
-                  </Button>
+                  {minute.fileUrl ? (
+                     <span className="flex items-center gap-1 text-sm text-muted-foreground"><Download className="h-4 w-4" /> Document</span>
+                  ) : (
+                     <span className="flex items-center gap-1 text-sm text-muted-foreground"><FileText className="h-4 w-4" /> Typed Text</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
+                  {minute.fileUrl ? (
+                     <Button variant="outline" size="sm" asChild>
+                       <a href={minute.fileUrl} target="_blank" rel="noopener noreferrer" download={minute.fileName}>
+                         Download
+                       </a>
+                    </Button>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={() => handleView(minute)}>
+                      View
+                    </Button>
+                  )}
                   <Button variant="ghost" size="icon" onClick={() => handleEdit(minute)}>
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -140,6 +166,24 @@ export function MinutesList() {
           }}
           minute={editingMinute}
         />
+      )}
+
+      {viewingMinute && (
+        <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{viewingMinute.title}</DialogTitle>
+              <DialogDescription>
+                Meeting held on {format(new Date(viewingMinute.meetingDate), 'PPP')}
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="h-96 w-full">
+                <div className="prose dark:prose-invert max-w-none p-4 whitespace-pre-wrap">
+                  {viewingMinute.content}
+                </div>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
       )}
     </>
   );

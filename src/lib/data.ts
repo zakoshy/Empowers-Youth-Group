@@ -7,6 +7,7 @@
 
 
 
+
 export type Event = {
   id: string;
   title: string;
@@ -95,8 +96,9 @@ export type MeetingMinute = {
     id: string;
     title: string;
     meetingDate: string;
-    fileUrl: string;
-    fileName: string;
+    content?: string;
+    fileUrl?: string;
+    fileName?: string;
     uploadedBy: string;
     uploadDate: string;
 }
@@ -121,8 +123,8 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
     { href: "/dashboard/reports", label: "Investments", icon: "TrendingUp", roles: ["Member", "Investment Lead", "Admin"] },
     { href: "/dashboard/constitution", label: "Manage Constitution", icon: "FileText", roles: ["Chairperson", "Admin"] },
     { href: "/dashboard/constitution", label: "Constitution", icon: "FileText", roles: ["Member", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
-    { href: "/dashboard/minutes", label: "Manage Minutes", icon: "BookOpen", roles: ["Admin"] },
-    { href: "/dashboard/minutes", label: "Meeting Minutes", icon: "BookOpen", roles: ["Member", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Investment Lead", "Secretary"] },
+    { href: "/dashboard/minutes", label: "Manage Minutes", icon: "BookOpen", roles: ["Admin", "Secretary"] },
+    { href: "/dashboard/minutes", label: "Meeting Minutes", icon: "BookOpen", roles: ["Member", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Investment Lead"] },
     { href: "/dashboard/manage-users", label: "Manage Users", icon: "Users", roles: ["Admin"] },
   ];
   
@@ -157,5 +159,8 @@ export const FINANCIAL_CONFIG = {
 };
 
     
+
+    
+
 
     

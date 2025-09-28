@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import {
@@ -14,9 +15,19 @@ import { FileText, Download } from 'lucide-react';
 import { format } from "date-fns";
 import { Button } from '../ui/button';
 import type { MeetingMinute } from '@/lib/data';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export function MinutesWidget() {
   const firestore = useFirestore();
+  const [viewingMinute, setViewingMinute] = useState<MeetingMinute | null>(null);
+  const [isViewOpen, setIsViewOpen] = useState(false);
 
   const minutesRef = useMemoFirebase(() => query(
     collection(firestore, 'meetingMinutes'),
@@ -26,47 +37,78 @@ export function MinutesWidget() {
 
   const { data: minutes, isLoading } = useCollection<MeetingMinute>(minutesRef);
 
+  const handleView = (minute: MeetingMinute) => {
+    setViewingMinute(minute);
+    setIsViewOpen(true);
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Recent Meeting Minutes</CardTitle>
-        <CardDescription>Review the latest official records.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-            <div className="space-y-4">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-            </div>
-        ) : (
-            <div className="space-y-4">
-            {minutes && minutes.length > 0 ? (
-                minutes.map((minute) => (
-                    <div key={minute.id} className="flex items-center justify-between gap-4 p-2 rounded-md hover:bg-muted/50">
-                        <div className="flex items-center gap-4">
-                            <FileText className="h-6 w-6 text-primary flex-shrink-0" />
-                            <div className="flex-1">
-                                <p className="font-semibold truncate">{minute.title}</p>
-                                <p className="text-sm text-muted-foreground">
-                                    Meeting Date: {format(new Date(minute.meetingDate), 'MMM d, yyyy')}
-                                </p>
-                            </div>
-                        </div>
-                        <Button variant="ghost" size="icon" asChild>
-                           <a href={minute.fileUrl} target="_blank" rel="noopener noreferrer" download={minute.fileName}>
-                             <Download className="h-4 w-4" />
-                           </a>
-                        </Button>
-                    </div>
-                ))
-            ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">No meeting minutes have been uploaded yet.</p>
-            )}
-            </div>
-        )}
-      </CardContent>
-    </Card>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Meeting Minutes</CardTitle>
+          <CardDescription>Review the latest official records.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+              <div className="space-y-4">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+              </div>
+          ) : (
+              <div className="space-y-4">
+              {minutes && minutes.length > 0 ? (
+                  minutes.map((minute) => (
+                      <div key={minute.id} className="flex items-center justify-between gap-4 p-2 rounded-md hover:bg-muted/50">
+                          <div className="flex items-center gap-4">
+                              <FileText className="h-6 w-6 text-primary flex-shrink-0" />
+                              <div className="flex-1">
+                                  <p className="font-semibold truncate">{minute.title}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                      Meeting Date: {format(new Date(minute.meetingDate), 'MMM d, yyyy')}
+                                  </p>
+                              </div>
+                          </div>
+                          {minute.fileUrl ? (
+                            <Button variant="ghost" size="icon" asChild>
+                              <a href={minute.fileUrl} target="_blank" rel="noopener noreferrer" download={minute.fileName}>
+                                <Download className="h-4 w-4" />
+                              </a>
+                            </Button>
+                          ) : (
+                            <Button variant="outline" size="sm" onClick={() => handleView(minute)}>
+                               View
+                            </Button>
+                          )}
+                      </div>
+                  ))
+              ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">No meeting minutes have been uploaded yet.</p>
+              )}
+              </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {viewingMinute && (
+        <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{viewingMinute.title}</DialogTitle>
+              <DialogDescription>
+                Meeting held on {format(new Date(viewingMinute.meetingDate), 'PPP')}
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="h-96 w-full">
+                <div className="prose dark:prose-invert max-w-none p-4 whitespace-pre-wrap">
+                  {viewingMinute.content}
+                </div>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   )
 }
 

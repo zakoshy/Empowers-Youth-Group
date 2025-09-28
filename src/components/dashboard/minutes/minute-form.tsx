@@ -17,7 +17,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Calendar as CalendarIcon, Upload, FileText, X } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -206,12 +206,12 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
                         toast({ title: "Uploading...", description: "Your file is being uploaded." });
                       }}
                     >
-                      <Button variant="outline" className="w-full" disabled={isUploading}>
+                      <div className={cn(buttonVariants({ variant: 'outline' }), 'w-full', isUploading && 'opacity-50 cursor-not-allowed')}>
                         <div className="flex items-center">
                           {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                           {isUploading ? 'Uploading...' : 'Upload Document'}
                         </div>
-                      </Button>
+                      </div>
                     </CldUploadButton>
                   )}
                   <FormMessage />
@@ -234,5 +234,3 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
     </Dialog>
   );
 }
-
-    

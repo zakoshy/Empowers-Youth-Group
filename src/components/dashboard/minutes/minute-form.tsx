@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -216,12 +217,10 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
                           toast({ title: "Uploading...", description: "Your file is being uploaded." });
                         }}
                       >
-                        <button type="button" className={cn(buttonVariants({ variant: 'outline' }), 'w-full', isUploading && 'opacity-50 cursor-not-allowed')} disabled={isUploading}>
-                          <div className="flex items-center">
+                        <div className={cn(buttonVariants({ variant: 'outline' }), 'w-full flex items-center', isUploading && 'opacity-50 cursor-not-allowed')}>
                             {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                             {isUploading ? 'Uploading...' : 'Upload Document'}
-                          </div>
-                        </button>
+                        </div>
                       </CldUploadButton>
                     </FormControl>
                   )}

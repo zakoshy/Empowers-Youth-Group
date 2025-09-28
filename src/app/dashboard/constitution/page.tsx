@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -164,12 +165,10 @@ export default function ConstitutionPage() {
                         toast({ title: "Uploading...", description: "Your file is being uploaded." });
                       }}
                     >
-                      <button className={cn(buttonVariants({variant: 'secondary'}))} disabled={isProcessing}>
-                        <div className="flex items-center">
+                      <div className={cn(buttonVariants({variant: 'secondary'}), 'flex items-center', isProcessing && 'opacity-50 cursor-not-allowed')}>
                           {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Replace className="h-4 w-4" />}
                           <span className="ml-2 hidden sm:inline">Replace</span>
-                        </div>
-                      </button>
+                      </div>
                     </CldUploadButton>
 
                     <AlertDialog>
@@ -209,12 +208,10 @@ export default function ConstitutionPage() {
                     toast({ title: "Uploading...", description: "Your file is being uploaded." });
                   }}
                 >
-                  <button className={cn(buttonVariants())} disabled={isProcessing}>
-                    <div className="flex items-center">
-                      {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                      {isProcessing ? 'Uploading...' : 'Upload Constitution'}
+                    <div className={cn(buttonVariants(), 'flex items-center', isProcessing && 'opacity-50 cursor-not-allowed')}>
+                        {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                        {isProcessing ? 'Uploading...' : 'Upload Constitution'}
                     </div>
-                  </button>
                 </CldUploadButton>
               ) : (
                 <div className='flex items-center gap-2 text-sm text-muted-foreground'>

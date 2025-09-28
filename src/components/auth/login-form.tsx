@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -33,6 +35,7 @@ const formSchema = z.object({
 export function LoginForm() {
   const { toast } = useToast();
   const auth = useAuth();
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -50,7 +53,7 @@ export function LoginForm() {
         title: "Login Successful",
         description: "Redirecting you to your dashboard...",
       });
-      setTimeout(() => window.location.assign('/dashboard'), 1500);
+      router.push('/dashboard');
     } catch (error: any) {
       console.error("Login Error: ", error);
       toast({
@@ -110,6 +113,7 @@ export function LoginForm() {
           )}
         />
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {form.formState.isSubmitting ? 'Logging in...' : 'Login'}
         </Button>
       </form>

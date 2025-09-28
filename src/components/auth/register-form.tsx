@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -10,7 +11,7 @@ import { useAuth, useFirestore } from "@/firebase";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +47,7 @@ export function RegisterForm() {
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -95,7 +97,7 @@ export function RegisterForm() {
         description: "Please log in with your new account.",
       });
 
-      setTimeout(() => window.location.assign('/login'), 1500);
+      router.push('/login');
 
     } catch (error: any) {
       console.error("Registration Error: ", error);
@@ -197,6 +199,7 @@ export function RegisterForm() {
           )}
         />
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+          {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {form.formState.isSubmitting ? 'Creating account...' : 'Create account'}
         </Button>
       </form>

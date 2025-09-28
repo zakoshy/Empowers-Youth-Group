@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -50,7 +49,6 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
   const [fileUrl, setFileUrl] = useState(minute?.fileUrl || '');
   const [fileName, setFileName] = useState(minute?.fileName || '');
 
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -63,20 +61,20 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
 
   useEffect(() => {
     if (isOpen) {
-        if (minute) {
-            form.reset({ ...minute, meetingDate: new Date(minute.meetingDate) });
-            setFileUrl(minute.fileUrl);
-            setFileName(minute.fileName);
-        } else {
-            form.reset({
-                title: '',
-                meetingDate: new Date(),
-                fileUrl: '',
-                fileName: '',
-            });
-            setFileUrl('');
-            setFileName('');
-        }
+      if (minute) {
+        form.reset({ ...minute, meetingDate: new Date(minute.meetingDate) });
+        setFileUrl(minute.fileUrl);
+        setFileName(minute.fileName);
+      } else {
+        form.reset({
+          title: '',
+          meetingDate: new Date(),
+          fileUrl: '',
+          fileName: '',
+        });
+        setFileUrl('');
+        setFileName('');
+      }
     }
   }, [minute, isOpen, form]);
 
@@ -96,8 +94,8 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) {
-        toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in.' });
-        return;
+      toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in.' });
+      return;
     }
     setIsSubmitting(true);
     try {
@@ -132,9 +130,10 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent onInteractOutside={(e) => {
-          // Prevent closing dialog when clicking on Cloudinary widget
+      <DialogContent
+        onInteractOutside={(e) => {
           const target = e.target as HTMLElement;
+          // Check if the click is on the Cloudinary widget or its children
           if (target.closest('.cloudinary-widget')) {
             e.preventDefault();
           }
@@ -230,23 +229,25 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
                         </div>
                       ) : (
                         <CldUploadButton
+                          uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!}
                           options={{ multiple: false, sources: ['local'] }}
-                          uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
                           onSuccess={handleUploadSuccess}
-                          onUploadAdded={() => {
-                            setIsUploading(true);
-                            toast({ title: "Uploading...", description: "Your file is being uploaded." });
-                          }}
-                          disabled={isUploading}
+                          onUploadAdded={() => setIsUploading(true)}
                         >
-                            <div className={cn(
-                                buttonVariants({ variant: 'outline' }),
-                                'w-full flex items-center cursor-pointer',
-                                (isUploading || isSubmitting) && 'opacity-50 cursor-not-allowed'
-                            )}>
-                                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                                {isUploading ? 'Uploading...' : 'Upload Document'}
-                            </div>
+                          <div
+                            className={cn(
+                              buttonVariants({ variant: 'outline' }),
+                              'w-full flex items-center cursor-pointer',
+                              (isUploading || isSubmitting) && 'opacity-50 cursor-not-allowed'
+                            )}
+                          >
+                            {isUploading ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <Upload className="mr-2 h-4 w-4" />
+                            )}
+                            {isUploading ? 'Uploading...' : 'Upload Document'}
+                          </div>
                         </CldUploadButton>
                       )}
                     </div>

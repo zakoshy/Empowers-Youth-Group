@@ -47,30 +47,24 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: minute
-      ? { ...minute, meetingDate: new Date(minute.meetingDate) }
-      : {
-          title: '',
-          meetingDate: new Date(),
-          fileUrl: '',
-          fileName: '',
-        },
-  });
-  
   const [fileUrl, setFileUrl] = useState(minute?.fileUrl || '');
   const [fileName, setFileName] = useState(minute?.fileName || '');
 
 
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: '',
+      meetingDate: new Date(),
+      fileUrl: '',
+      fileName: '',
+    },
+  });
+
   useEffect(() => {
     if (isOpen) {
         if (minute) {
-            form.reset({
-                ...minute,
-                meetingDate: new Date(minute.meetingDate)
-            });
+            form.reset({ ...minute, meetingDate: new Date(minute.meetingDate) });
             setFileUrl(minute.fileUrl);
             setFileName(minute.fileName);
         } else {
@@ -138,7 +132,15 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent onInteractOutside={(e) => {
+          // Prevent closing dialog when clicking on Cloudinary widget
+          const target = e.target as HTMLElement;
+          if (target.closest('.cloudinary-widget')) {
+            e.preventDefault();
+          }
+        }}
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>{minute ? 'Edit Minute' : 'Upload New Minute'}</DialogTitle>
           <DialogDescription>
@@ -196,62 +198,68 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
                 </FormItem>
               )}
             />
-
-            <div className="space-y-2">
-                <FormLabel>Document File</FormLabel>
-                <div>
-                  {fileUrl ? (
-                    <div className="flex items-center justify-between p-2 border rounded-md">
-                      <div className="flex items-center gap-2 text-sm">
-                        <FileText className="h-5 w-5 text-primary" />
-                        <span className="truncate">{fileName}</span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        type="button"
-                        onClick={() => {
-                            setFileUrl('');
-                            setFileName('');
-                            form.setValue('fileUrl', '');
-                            form.setValue('fileName', '');
-                        }}
-                        disabled={isUploading || isSubmitting}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <CldUploadButton
-                      options={{ multiple: false, sources: ['local'] }}
-                      uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
-                      onSuccess={handleUploadSuccess}
-                      onUploadAdded={() => {
-                        setIsUploading(true);
-                        toast({ title: "Uploading...", description: "Your file is being uploaded." });
-                      }}
-                      disabled={isUploading}
-                    >
-                      <div className={cn(
-                          buttonVariants({ variant: 'outline' }),
-                          'w-full flex items-center cursor-pointer',
-                          (isUploading || isSubmitting) && 'opacity-50 cursor-not-allowed'
-                      )}>
-                        {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                        {isUploading ? 'Uploading...' : 'Upload Document'}
-                      </div>
-                    </CldUploadButton>
-                  )}
-                </div>
-                <FormMessage>{form.formState.errors.fileUrl?.message}</FormMessage>
-            </div>
             
+            <FormField
+              control={form.control}
+              name="fileUrl"
+              render={() => (
+                <FormItem>
+                  <FormLabel>Document File</FormLabel>
+                    <div>
+                      {fileName ? (
+                        <div className="flex items-center justify-between p-2 border rounded-md">
+                          <div className="flex items-center gap-2 text-sm">
+                            <FileText className="h-5 w-5 text-primary" />
+                            <span className="truncate">{fileName}</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            type="button"
+                            className="h-6 w-6"
+                            onClick={() => {
+                                setFileUrl('');
+                                setFileName('');
+                                form.setValue('fileUrl', '', {shouldValidate: true});
+                                form.setValue('fileName', '', {shouldValidate: true});
+                            }}
+                            disabled={isUploading || isSubmitting}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <CldUploadButton
+                          options={{ multiple: false, sources: ['local'] }}
+                          uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+                          onSuccess={handleUploadSuccess}
+                          onUploadAdded={() => {
+                            setIsUploading(true);
+                            toast({ title: "Uploading...", description: "Your file is being uploaded." });
+                          }}
+                          disabled={isUploading}
+                        >
+                            <div className={cn(
+                                buttonVariants({ variant: 'outline' }),
+                                'w-full flex items-center cursor-pointer',
+                                (isUploading || isSubmitting) && 'opacity-50 cursor-not-allowed'
+                            )}>
+                                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                                {isUploading ? 'Uploading...' : 'Upload Document'}
+                            </div>
+                        </CldUploadButton>
+                      )}
+                    </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="secondary" disabled={isUploading}>Cancel</Button>
               </DialogClose>
-              <Button type="submit" disabled={isSubmitting || isUploading}>
+              <Button type="submit" disabled={isSubmitting || isUploading || !fileName}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSubmitting ? 'Saving...' : 'Save Minute'}
               </Button>

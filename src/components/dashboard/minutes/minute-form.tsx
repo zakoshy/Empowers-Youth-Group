@@ -163,6 +163,7 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
                         <Button
                           variant={'outline'}
                           className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')}
+                          disabled={isUploading}
                         >
                           {field.value ? format(field.value, 'PPP') : <span>Pick a date</span>}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
@@ -186,48 +187,67 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
               )}
             />
 
-            <FormItem>
-              <FormLabel>Document File</FormLabel>
-              <FormControl>
-                <>
-                  {form.watch('fileUrl') ? (
-                    <div className="flex items-center justify-between p-2 border rounded-md">
-                        <div className="flex items-center gap-2 text-sm">
+            <FormField
+              control={form.control}
+              name="fileUrl"
+              render={() => (
+                <FormItem>
+                  <FormLabel>Document File</FormLabel>
+                  <FormControl>
+                    <div>
+                      {form.watch('fileUrl') ? (
+                        <div className="flex items-center justify-between p-2 border rounded-md">
+                          <div className="flex items-center gap-2 text-sm">
                             <FileText className="h-5 w-5 text-primary" />
                             <span className="truncate">{form.watch('fileName')}</span>
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" type="button" onClick={() => {
-                            form.setValue('fileUrl', '');
-                            form.setValue('fileName', '');
-                        }}>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            type="button"
+                            onClick={() => {
+                              form.setValue('fileUrl', '');
+                              form.setValue('fileName', '');
+                            }}
+                            disabled={isUploading}
+                          >
                             <X className="h-4 w-4" />
-                        </Button>
+                          </Button>
+                        </div>
+                      ) : (
+                        <CldUploadButton
+                          options={{ multiple: false, sources: ['local'] }}
+                          uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
+                          onSuccess={handleUploadSuccess}
+                          onUploadAdded={() => {
+                            setIsUploading(true);
+                            toast({ title: "Uploading...", description: "Your file is being uploaded." });
+                          }}
+                          disabled={isUploading}
+                        >
+                          <div
+                            className={cn(
+                              buttonVariants({ variant: 'outline' }),
+                              'w-full flex items-center cursor-pointer',
+                              isUploading && 'opacity-50 cursor-not-allowed'
+                            )}
+                          >
+                            {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                            {isUploading ? 'Uploading...' : 'Upload Document'}
+                          </div>
+                        </CldUploadButton>
+                      )}
                     </div>
-                  ) : (
-                    <CldUploadButton
-                      options={{ multiple: false, sources: ['local'] }}
-                      uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
-                      onSuccess={handleUploadSuccess}
-                      onUploadAdded={() => {
-                        setIsUploading(true);
-                        toast({ title: "Uploading...", description: "Your file is being uploaded." });
-                      }}
-                    >
-                      <div className={cn(buttonVariants({ variant: 'outline' }), 'w-full flex items-center cursor-pointer', isUploading && 'opacity-50 cursor-not-allowed')}>
-                          {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                          {isUploading ? 'Uploading...' : 'Upload Document'}
-                      </div>
-                    </CldUploadButton>
-                  )}
-                </>
-              </FormControl>
-              <FormMessage>{form.formState.errors.fileUrl?.message}</FormMessage>
-            </FormItem>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
-
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="secondary">Cancel</Button>
+                <Button type="button" variant="secondary" disabled={isUploading}>Cancel</Button>
               </DialogClose>
               <Button type="submit" disabled={isSubmitting || isUploading}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -240,4 +260,3 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
     </Dialog>
   );
 }
-

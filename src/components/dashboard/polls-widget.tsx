@@ -265,8 +265,6 @@ export function PollsWidget() {
                 const hasVoted = !!userVoteOptionId;
                 const submitting = isSubmittingVote[poll.id];
 
-                const shouldShowResults = hasVoted || !isPollActive;
-
                 return (
                 <Card key={poll.id}>
                     <CardHeader>
@@ -302,7 +300,21 @@ export function PollsWidget() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        {shouldShowResults ? (
+                        {isPollActive ? (
+                            <RadioGroup 
+                                value={selectedOptions[poll.id]} 
+                                onValueChange={(value) => setSelectedOptions(prev => ({...prev, [poll.id]: value}))}
+                                className="space-y-2"
+                                disabled={!isPollActive}
+                            >
+                                {poll.options.map((option) => (
+                                    <div key={option.id} className="flex items-center space-x-2">
+                                    <RadioGroupItem value={option.id} id={`${poll.id}-${option.id}`} />
+                                    <Label htmlFor={`${poll.id}-${option.id}`} className="cursor-pointer">{option.text}</Label>
+                                    </div>
+                                ))}
+                            </RadioGroup>
+                        ) : (
                             <TooltipProvider>
                                 <div className="space-y-4">
                                     {poll.options.map(option => {
@@ -347,35 +359,9 @@ export function PollsWidget() {
                                     })}
                                 </div>
                             </TooltipProvider>
-                        ) : (
-                             <RadioGroup 
-                                value={selectedOptions[poll.id]} 
-                                onValueChange={(value) => setSelectedOptions(prev => ({...prev, [poll.id]: value}))}
-                                className="space-y-2"
-                                disabled={!isPollActive}
-                            >
-                            {poll.options.map((option) => (
-                                <div key={option.id} className="flex items-center space-x-2">
-                                <RadioGroupItem value={option.id} id={`${poll.id}-${option.id}`} />
-                                <Label htmlFor={`${poll.id}-${option.id}`} className="cursor-pointer">{option.text}</Label>
-                                </div>
-                            ))}
-                            </RadioGroup>
                         )}
                     </CardContent>
-                     {isPollActive && !hasVoted && (
-                        <CardFooter>
-                            <Button
-                                className="w-full"
-                                onClick={() => handleVote(poll)}
-                                disabled={!selectedOptions[poll.id] || submitting}
-                            >
-                                {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Submit Vote
-                            </Button>
-                        </CardFooter>
-                    )}
-                     {isPollActive && hasVoted && (
+                     {isPollActive && (
                         <CardFooter>
                            <Button
                                 className="w-full"
@@ -383,7 +369,7 @@ export function PollsWidget() {
                                 disabled={!selectedOptions[poll.id] || submitting}
                             >
                                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Change Vote
+                                {hasVoted ? 'Change Vote' : 'Submit Vote'}
                             </Button>
                         </CardFooter>
                     )}

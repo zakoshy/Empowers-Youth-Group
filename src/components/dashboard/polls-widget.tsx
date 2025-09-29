@@ -137,7 +137,6 @@ export function PollsWidget() {
         const isChangingVote = !!previousVote;
 
         await runTransaction(firestore, async (transaction) => {
-            const voteDoc = await transaction.get(voteRef);
             const pollDoc = await transaction.get(pollRef);
 
             if (!pollDoc.exists()) throw "Poll does not exist!";
@@ -156,12 +155,11 @@ export function PollsWidget() {
             };
             
             if (isChangingVote) {
-                const oldOptionId = (voteDoc.data() as VoteRecord).selectedOption;
-                if (oldOptionId === newOptionId) return; // No change needed
+                if (previousVote === newOptionId) return; // No change needed
 
                 // Decrement old vote count
                 updatedOptions = updatedOptions.map(opt => 
-                    opt.id === oldOptionId ? { ...opt, votes: Math.max(0, (opt.votes || 0) - 1) } : opt
+                    opt.id === previousVote ? { ...opt, votes: Math.max(0, (opt.votes || 0) - 1) } : opt
                 );
                 // Remove old voter entry
                 updatedVoters = updatedVoters.filter(v => v.userId !== user.uid);
@@ -183,6 +181,9 @@ export function PollsWidget() {
                 voteDate: new Date().toISOString(),
             });
         });
+      
+      // Manually update local state to reflect the change immediately
+      setUserVotes(prev => ({ ...prev, [poll.id]: newOptionId }));
 
       if (isChangingVote && previousVote !== newOptionId) {
         toast({
@@ -375,21 +376,9 @@ export function PollsWidget() {
                         </CardFooter>
                     )}
                      {isPollActive && hasVoted && (
-                        <CardFooter className="flex-col gap-2 items-start">
-                             <RadioGroup 
-                                value={selectedOptions[poll.id]} 
-                                onValueChange={(value) => setSelectedOptions(prev => ({...prev, [poll.id]: value}))}
-                                className="space-y-2"
-                            >
-                            {poll.options.map((option) => (
-                                <div key={option.id} className="flex items-center space-x-2">
-                                <RadioGroupItem value={option.id} id={`change-${poll.id}-${option.id}`} />
-                                <Label htmlFor={`change-${poll.id}-${option.id}`} className="cursor-pointer">{option.text}</Label>
-                                </div>
-                            ))}
-                            </RadioGroup>
-                            <Button
-                                className="w-full mt-2"
+                        <CardFooter>
+                           <Button
+                                className="w-full"
                                 onClick={() => handleVote(poll)}
                                 disabled={!selectedOptions[poll.id] || selectedOptions[poll.id] === userVotes[poll.id] || submitting}
                             >

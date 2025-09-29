@@ -380,7 +380,7 @@ export function PollsWidget() {
                            <Button
                                 className="w-full"
                                 onClick={() => handleVote(poll)}
-                                disabled={!selectedOptions[poll.id] || selectedOptions[poll.id] === userVotes[poll.id] || submitting}
+                                disabled={!selectedOptions[poll.id] || submitting}
                             >
                                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Change Vote

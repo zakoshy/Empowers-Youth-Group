@@ -1,25 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useFirestore, useUser } from '@/firebase';
+import { useFirestore, useUser, useDoc, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { CldUploadButton } from 'next-cloudinary';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/dialog';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Calendar as CalendarIcon, Upload, FileText, X } from 'lucide-react';
+import { Loader2, Calendar as CalendarIcon, Upload, FileText, X, ArrowLeft } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
@@ -28,12 +21,7 @@ import { format } from 'date-fns';
 import type { MeetingMinute } from '@/lib/data';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-
-interface MinuteFormDialogProps {
-  isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-  minute?: MeetingMinute | null;
-}
+import { Skeleton } from '@/components/ui/skeleton';
 
 const formSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters.'),
@@ -43,15 +31,23 @@ const formSchema = z.object({
   fileName: z.string().optional(),
 }).refine(data => !!data.content || !!data.fileUrl, {
   message: 'Either minute content or a file upload is required.',
-  path: ['content'], // you can associate the error with a specific field
+  path: ['content'],
 });
 
-export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDialogProps) {
+function MinuteFormPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const minuteId = searchParams.get('id');
+  
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  
+  const minuteRef = useMemoFirebase(() => minuteId ? doc(firestore, 'meetingMinutes', minuteId) : null, [firestore, minuteId]);
+  const { data: minuteData, isLoading: isMinuteLoading } = useDoc<MeetingMinute>(minuteRef);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -65,26 +61,24 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
   });
 
   useEffect(() => {
-    if (isOpen) {
-      if (minute) {
+    if (minuteData) {
+      form.reset({
+        title: minuteData.title || '',
+        meetingDate: minuteData.meetingDate ? new Date(minuteData.meetingDate) : new Date(),
+        content: minuteData.content || '',
+        fileUrl: minuteData.fileUrl || '',
+        fileName: minuteData.fileName || '',
+      });
+    } else if (!minuteId) {
         form.reset({
-          title: minute.title || '',
-          meetingDate: minute.meetingDate ? new Date(minute.meetingDate) : new Date(),
-          content: minute.content || '',
-          fileUrl: minute.fileUrl || '',
-          fileName: minute.fileName || '',
+            title: '',
+            meetingDate: new Date(),
+            content: '',
+            fileUrl: '',
+            fileName: '',
         });
-      } else {
-        form.reset({
-          title: '',
-          meetingDate: new Date(),
-          content: '',
-          fileUrl: '',
-          fileName: '',
-        });
-      }
     }
-  }, [minute, isOpen, form]);
+  }, [minuteData, minuteId, form]);
 
   const handleUploadSuccess = (result: any) => {
     const uploadedFileUrl = result?.info?.secure_url;
@@ -93,7 +87,7 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
     if (uploadedFileUrl && uploadedFileName) {
       form.setValue('fileUrl', uploadedFileUrl, { shouldValidate: true });
       form.setValue('fileName', uploadedFileName, { shouldValidate: true });
-      form.setValue('content', '', { shouldValidate: true }); // Clear content if file is uploaded
+      form.setValue('content', '', { shouldValidate: true });
     }
     setIsUploading(false);
     toast({ title: 'Upload complete!', description: 'Your file is ready to be saved.' });
@@ -107,7 +101,6 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
     }
   };
 
-
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) {
       toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in.' });
@@ -115,23 +108,23 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
     }
     setIsSubmitting(true);
     try {
-      const minuteData = {
+      const minuteDataToSave = {
         ...values,
         meetingDate: values.meetingDate.toISOString(),
         uploadDate: new Date().toISOString(),
         uploadedBy: user.uid,
       };
 
-      if (minute) {
-        const minuteRef = doc(firestore, 'meetingMinutes', minute.id);
-        await updateDoc(minuteRef, minuteData);
+      if (minuteId) {
+        const minuteRef = doc(firestore, 'meetingMinutes', minuteId);
+        await updateDoc(minuteRef, minuteDataToSave);
         toast({ title: 'Success!', description: 'Meeting minute has been updated.' });
       } else {
-        await addDoc(collection(firestore, 'meetingMinutes'), minuteData);
+        await addDoc(collection(firestore, 'meetingMinutes'), minuteDataToSave);
         toast({ title: 'Success!', description: 'New meeting minute has been uploaded.' });
       }
       
-      onOpenChange(false);
+      router.push('/dashboard/minutes');
     } catch (error: any) {
       console.error('Failed to save minute:', error);
       toast({
@@ -146,26 +139,34 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
   
   const watchedFileName = form.watch('fileName');
   const watchedContent = form.watch('content');
+  
+  if (isMinuteLoading && minuteId) {
+      return (
+          <Card>
+              <CardHeader>
+                  <Skeleton className="h-8 w-1/3" />
+                  <Skeleton className="h-4 w-2/3" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-40 w-full" />
+              </CardContent>
+          </Card>
+      )
+  }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-       <DialogContent
-        className="sm:max-w-[625px]"
-        onInteractOutside={(e) => {
-          const target = e.target as HTMLElement;
-          if (target.closest('.cloudinary-widget')) {
-            e.preventDefault();
-          }
-        }}
-      >
-        <DialogHeader>
-          <DialogTitle>{minute ? 'Edit Minute' : 'Upload New Minute'}</DialogTitle>
-           <DialogDescription>
-            Fill in the details below. You can either type the minutes directly or upload a document.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <Card>
+          <CardHeader>
+            <CardTitle>{minuteId ? 'Edit Minute' : 'Upload New Minute'}</CardTitle>
+            <CardDescription>
+              Fill in the details below. You can either type the minutes directly or upload a document.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <FormField
               control={form.control}
               name="title"
@@ -216,10 +217,10 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
               )}
             />
             
-             <Tabs defaultValue={minute?.content ? "type" : "upload"} className="w-full">
+            <Tabs defaultValue={minuteData?.content ? "type" : "upload"} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="type">Type Minutes</TabsTrigger>
-                <TabsTrigger value="upload">Upload File</TabsTrigger>
+                <TabsTrigger value="type" disabled={!!watchedFileName}>Type Minutes</TabsTrigger>
+                <TabsTrigger value="upload" disabled={!!watchedContent}>Upload File</TabsTrigger>
               </TabsList>
               <TabsContent value="type">
                  <FormField
@@ -265,24 +266,17 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
                     </div>
                   ) : (
                     <CldUploadButton
-                        uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!}
                         options={{ multiple: false, sources: ['local'] }}
+                        uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET}
                         onSuccess={handleUploadSuccess}
-                        onUploadAdded={() => setIsUploading(true)}
+                        onUploadAdded={() => {
+                            setIsUploading(true);
+                            toast({ title: "Uploading...", description: "Your file is being uploaded." });
+                        }}
                     >
-                      <div
-                        className={cn(
-                          buttonVariants({ variant: 'outline' }),
-                          'w-full flex items-center cursor-pointer',
-                          (isUploading || isSubmitting) && 'opacity-50 cursor-not-allowed'
-                        )}
-                      >
-                        {isUploading ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Upload className="mr-2 h-4 w-4" />
-                        )}
-                        {isUploading ? 'Uploading...' : 'Upload Document'}
+                      <div className={cn(buttonVariants({variant: 'outline'}), 'w-full flex items-center cursor-pointer', (isUploading || isSubmitting) && 'opacity-50 cursor-not-allowed')}>
+                          {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                          {isUploading ? 'Uploading...' : 'Upload Document'}
                       </div>
                     </CldUploadButton>
                   )}
@@ -292,21 +286,28 @@ export function MinuteFormDialog({ isOpen, onOpenChange, minute }: MinuteFormDia
                 </div>
               </TabsContent>
             </Tabs>
-
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button type="button" variant="secondary" disabled={isUploading}>Cancel</Button>
-              </DialogClose>
-              <Button type="submit" disabled={isSubmitting || isUploading || (!watchedContent && !watchedFileName)}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? 'Saving...' : 'Save Minute'}
+          </CardContent>
+          <CardFooter className="flex justify-between">
+              <Button type="button" variant="outline" onClick={() => router.back()}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
               </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+            <Button type="submit" disabled={isSubmitting || isUploading || (!watchedContent && !watchedFileName)}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting ? 'Saving...' : 'Save Minute'}
+            </Button>
+          </CardFooter>
+        </Card>
+      </form>
+    </Form>
   );
 }
 
-    
+// Use Suspense to handle client-side rendering of search params
+export default function NewMinutePageWrapper() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <MinuteFormPage />
+    </Suspense>
+  )
+}

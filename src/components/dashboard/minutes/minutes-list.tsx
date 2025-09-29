@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import type { MeetingMinute } from '@/lib/data';
@@ -9,7 +10,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Edit, Trash2, Download, FileText } from 'lucide-react';
 import { format } from 'date-fns';
-import { MinuteFormDialog } from './minute-form';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +33,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 export function MinutesList() {
   const firestore = useFirestore();
+  const router = useRouter();
   const { toast } = useToast();
   const minutesRef = useMemoFirebase(
     () => query(collection(firestore, 'meetingMinutes'), orderBy('meetingDate', 'desc')),
@@ -40,14 +41,11 @@ export function MinutesList() {
   );
   const { data: minutes, isLoading } = useCollection<MeetingMinute>(minutesRef);
 
-  const [editingMinute, setEditingMinute] = useState<MeetingMinute | null>(null);
   const [viewingMinute, setViewingMinute] = useState<MeetingMinute | null>(null);
-  const [isFormOpen, setIsFormOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
 
-  const handleEdit = (minute: MeetingMinute) => {
-    setEditingMinute(minute);
-    setIsFormOpen(true);
+  const handleEdit = (minuteId: string) => {
+    router.push(`/dashboard/minutes/new?id=${minuteId}`);
   };
 
   const handleView = (minute: MeetingMinute) => {
@@ -118,7 +116,7 @@ export function MinutesList() {
                       View
                     </Button>
                   )}
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(minute)}>
+                  <Button variant="ghost" size="icon" onClick={() => handleEdit(minute.id)}>
                     <Edit className="h-4 w-4" />
                   </Button>
                   <AlertDialog>
@@ -155,19 +153,6 @@ export function MinutesList() {
         </TableBody>
       </Table>
       
-      {editingMinute && (
-        <MinuteFormDialog
-          isOpen={isFormOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              setEditingMinute(null);
-            }
-            setIsFormOpen(open);
-          }}
-          minute={editingMinute}
-        />
-      )}
-
       {viewingMinute && (
         <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
           <DialogContent className="sm:max-w-2xl">
@@ -188,5 +173,3 @@ export function MinutesList() {
     </>
   );
 }
-
-    

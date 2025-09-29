@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { MinutesList } from '@/components/dashboard/minutes/minutes-list';
-import { MinuteFormDialog } from '@/components/dashboard/minutes/minute-form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Lock } from 'lucide-react';
 
@@ -15,7 +14,7 @@ interface UserProfile {
 }
 
 export default function ManageMinutesPage() {
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const router = useRouter();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
@@ -70,19 +69,12 @@ export default function ManageMinutesPage() {
             <CardTitle>Manage Meeting Minutes</CardTitle>
             <CardDescription>Upload, update, and manage all group meeting minutes.</CardDescription>
           </div>
-          <Button onClick={() => setIsFormOpen(true)}>Upload New Minute</Button>
+          <Button onClick={() => router.push('/dashboard/minutes/new')}>Upload New Minute</Button>
         </CardHeader>
         <CardContent>
           <MinutesList />
         </CardContent>
       </Card>
-      
-      <MinuteFormDialog 
-        isOpen={isFormOpen} 
-        onOpenChange={setIsFormOpen} 
-      />
     </div>
   );
 }
-
-    

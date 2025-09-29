@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -16,7 +17,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { CheckCircle, Vote, Edit, Trash2, Loader2 } from "lucide-react"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
-import { collection, query, where, orderBy, addDoc, doc, updateDoc, getDoc, deleteDoc, getDocs, writeBatch, setDoc, onSnapshot, runTransaction, collectionGroup } from "firebase/firestore";
+import { collection, query, where, orderBy, addDoc, doc, updateDoc, getDoc, deleteDoc, getDocs, writeBatch, setDoc, onSnapshot, runTransaction, collectionGroup, arrayUnion, arrayRemove } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton"
 import { PollFormDialog } from "./poll-form";
 import {
@@ -32,7 +33,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "../ui/tooltip";
 
 
 export type Poll = {
@@ -41,7 +42,13 @@ export type Poll = {
   options: { id: string; text: string; votes: number }[];
   endDate: string;
   creatorId: string;
-  votedUserIds?: string[]; // Array of user IDs who voted
+  voters?: {
+      userId: string;
+      firstName: string;
+      lastName: string;
+      photoURL: string | null;
+      selectedOption: string;
+  }[];
 }
 
 type VoteRecord = {
@@ -78,17 +85,13 @@ export function PollsWidget() {
     return doc(firestore, 'userProfiles', user.uid);
   }, [firestore, user]);
 
-  const allUsersRef = useMemoFirebase(() => collection(firestore, 'userProfiles'), [firestore]);
-
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
   const { data: polls, isLoading: isLoadingPolls, error } = useCollection<Poll>(pollsRef);
-  const { data: allUsers, isLoading: isLoadingUsers } = useCollection<UserProfile>(allUsersRef);
 
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [userVotes, setUserVotes] = useState<Record<string, string>>({});
-  const [pollVoters, setPollVoters] = useState<Record<string, VoteRecord[]>>({});
   const [isSubmittingVote, setIsSubmittingVote] = useState<Record<string, boolean>>({});
 
 
@@ -105,17 +108,8 @@ export function PollsWidget() {
                 setSelectedOptions(prev => ({...prev, [poll.id]: voteData.selectedOption}));
             }
         });
-
-        // Subscribe to all votes for this poll
-        const allVotesRef = collection(firestore, 'polls', poll.id, 'votes');
-        const unsubAllVotes = onSnapshot(allVotesRef, (snapshot) => {
-            const voters = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as VoteRecord));
-            setPollVoters(prev => ({ ...prev, [poll.id]: voters }));
-        }, (error) => {
-             // This will fail for non-voters on restricted collections, which is expected.
-        });
         
-        return [unsubUserVote, unsubAllVotes];
+        return unsubUserVote;
     });
 
     return () => unsubscribes.flat().forEach(unsub => unsub());
@@ -123,7 +117,7 @@ export function PollsWidget() {
 
 
   const handleVote = async (poll: Poll) => {
-    if (!user) {
+    if (!user || !userProfile) {
       toast({ variant: 'destructive', title: "You must be logged in to vote."});
       return;
     }
@@ -139,40 +133,48 @@ export function PollsWidget() {
     const pollRef = doc(firestore, 'polls', poll.id);
 
     try {
-        let isChangingVote = false;
         const previousVote = userVotes[poll.id];
+        const isChangingVote = !!previousVote;
 
         await runTransaction(firestore, async (transaction) => {
             const voteDoc = await transaction.get(voteRef);
             const pollDoc = await transaction.get(pollRef);
 
-            if (!pollDoc.exists()) {
-                throw "Poll does not exist!";
-            }
-            if (new Date(pollDoc.data().endDate) < new Date()) {
-                throw "This poll has already ended.";
-            }
+            if (!pollDoc.exists()) throw "Poll does not exist!";
+            if (new Date(pollDoc.data().endDate) < new Date()) throw "This poll has already ended.";
 
             const pollData = pollDoc.data() as Poll;
             let updatedOptions = [...pollData.options];
+            let updatedVoters = pollData.voters || [];
             
-            isChangingVote = voteDoc.exists();
-
+            const voterInfo = {
+                userId: user.uid,
+                firstName: userProfile.firstName,
+                lastName: userProfile.lastName,
+                photoURL: userProfile.photoURL || null,
+                selectedOption: newOptionId
+            };
+            
             if (isChangingVote) {
                 const oldOptionId = (voteDoc.data() as VoteRecord).selectedOption;
                 if (oldOptionId === newOptionId) return; // No change needed
+
                 // Decrement old vote count
                 updatedOptions = updatedOptions.map(opt => 
                     opt.id === oldOptionId ? { ...opt, votes: Math.max(0, (opt.votes || 0) - 1) } : opt
                 );
+                // Remove old voter entry
+                updatedVoters = updatedVoters.filter(v => v.userId !== user.uid);
             }
 
             // Increment new vote count
             updatedOptions = updatedOptions.map(opt => 
                 opt.id === newOptionId ? { ...opt, votes: (opt.votes || 0) + 1 } : opt
             );
+            // Add new voter entry
+            updatedVoters.push(voterInfo);
             
-            transaction.update(pollRef, { options: updatedOptions });
+            transaction.update(pollRef, { options: updatedOptions, voters: updatedVoters });
 
             transaction.set(voteRef, {
                 pollId: poll.id,
@@ -233,7 +235,7 @@ export function PollsWidget() {
     }
   };
 
-  const isLoading = isLoadingPolls || isProfileLoading || isLoadingUsers;
+  const isLoading = isLoadingPolls || isProfileLoading;
 
   if (isLoading) {
       return (
@@ -251,8 +253,6 @@ export function PollsWidget() {
   
   const totalVotes = (poll: Poll) => poll.options.reduce((acc, option) => acc + (option.votes || 0), 0);
   
-  const allUsersMap = new Map(allUsers?.map(u => [u.id, u]));
-
   return (
     <div className="space-y-6">
         {polls && polls.length > 0 ? (
@@ -260,7 +260,7 @@ export function PollsWidget() {
                 const isPollActive = new Date(poll.endDate) > new Date();
                 const pollTotalVotes = totalVotes(poll);
                 const userVoteOptionId = userVotes[poll.id];
-                const votersForPoll = pollVoters[poll.id] || [];
+                const votersForPoll = poll.voters || [];
                 const hasVoted = !!userVoteOptionId;
                 const submitting = isSubmittingVote[poll.id];
 
@@ -324,21 +324,18 @@ export function PollsWidget() {
                                                 </div>
                                                 <div className="flex items-center gap-1 flex-wrap pt-1 min-h-[28px]">
                                                     {votersForOption.map(voter => {
-                                                        const voterProfile = allUsersMap.get(voter.userId);
-                                                        if (!voterProfile) return null;
-                                                        
                                                         const isCurrentUser = voter.userId === user?.uid;
                                                         
                                                         return (
                                                             <Tooltip key={voter.userId}>
                                                                 <TooltipTrigger>
                                                                     <Avatar className={cn("h-6 w-6 border-2", isCurrentUser ? "border-primary" : "border-transparent")}>
-                                                                        <AvatarImage src={voterProfile.photoURL} />
-                                                                        <AvatarFallback className="text-xs">{getInitials(voterProfile.firstName, voterProfile.lastName)}</AvatarFallback>
+                                                                        <AvatarImage src={voter.photoURL || undefined} />
+                                                                        <AvatarFallback className="text-xs">{getInitials(voter.firstName, voter.lastName)}</AvatarFallback>
                                                                     </Avatar>
                                                                 </TooltipTrigger>
                                                                 <TooltipContent>
-                                                                    <p>{voterProfile.firstName} {voterProfile.lastName}</p>
+                                                                    <p>{voter.firstName} {voter.lastName}</p>
                                                                 </TooltipContent>
                                                             </Tooltip>
                                                         )
@@ -424,5 +421,3 @@ export function PollsWidget() {
     </div>
   )
 }
-
-    

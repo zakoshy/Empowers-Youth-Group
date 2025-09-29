@@ -112,11 +112,11 @@ export function PollFormDialog({
             // Create new poll
             const pollData = {
                 question: values.question,
-                options: values.options.map((opt, index) => ({ id: `opt${index + 1}`, text: opt.text, votes: 0 })),
+                options: values.options.map((opt, index) => ({ id: `opt${Date.now()}${index}`, text: opt.text, votes: 0 })),
                 startDate: new Date().toISOString(),
                 endDate: values.endDate.toISOString(),
                 creatorId: user.uid,
-                votedUserIds: [],
+                voters: [],
             };
             await addDoc(collection(firestore, 'polls'), pollData);
             toast({ title: 'Success!', description: 'New poll has been created.' });
@@ -247,3 +247,5 @@ export function PollFormDialog({
     </Dialog>
   );
 }
+
+    

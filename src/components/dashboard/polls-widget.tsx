@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { CheckCircle, Vote, Edit, Trash2, Loader2 } from "lucide-react"
+import { CheckCircle, Vote, Edit, Trash2, Loader2, UserX } from "lucide-react"
 import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { collection, query, where, orderBy, addDoc, doc, updateDoc, getDoc, deleteDoc, getDocs, writeBatch, setDoc, onSnapshot, runTransaction, collectionGroup, arrayUnion, arrayRemove } from "firebase/firestore";
 import { Skeleton } from "../ui/skeleton"
@@ -106,6 +106,13 @@ export function PollsWidget() {
                 const voteData = doc.data() as VoteRecord;
                 setUserVotes(prev => ({...prev, [poll.id]: voteData.selectedOption}))
                 setSelectedOptions(prev => ({...prev, [poll.id]: voteData.selectedOption}));
+            } else {
+                 // User has not voted or vote was deleted
+                setUserVotes(prev => {
+                    const newVotes = {...prev};
+                    delete newVotes[poll.id];
+                    return newVotes;
+                })
             }
         });
         
@@ -133,8 +140,8 @@ export function PollsWidget() {
     const pollRef = doc(firestore, 'polls', poll.id);
 
     try {
-        const previousVote = userVotes[poll.id];
-        const isChangingVote = !!previousVote;
+        const previousVoteId = userVotes[poll.id];
+        const isChangingVote = !!previousVoteId;
 
         await runTransaction(firestore, async (transaction) => {
             const pollDoc = await transaction.get(pollRef);
@@ -155,11 +162,11 @@ export function PollsWidget() {
             };
             
             if (isChangingVote) {
-                if (previousVote === newOptionId) return; // No change needed
+                if (previousVoteId === newOptionId) return; // No change needed
 
                 // Decrement old vote count
                 updatedOptions = updatedOptions.map(opt => 
-                    opt.id === previousVote ? { ...opt, votes: Math.max(0, (opt.votes || 0) - 1) } : opt
+                    opt.id === previousVoteId ? { ...opt, votes: Math.max(0, (opt.votes || 0) - 1) } : opt
                 );
                 // Remove old voter entry
                 updatedVoters = updatedVoters.filter(v => v.userId !== user.uid);
@@ -182,10 +189,9 @@ export function PollsWidget() {
             });
         });
       
-      // Manually update local state to reflect the change immediately
       setUserVotes(prev => ({ ...prev, [poll.id]: newOptionId }));
 
-      if (isChangingVote && previousVote !== newOptionId) {
+      if (isChangingVote && previousVoteId !== newOptionId) {
         toast({
             title: "Vote Updated",
             description: "Your vote has been successfully changed!",
@@ -204,6 +210,49 @@ export function PollsWidget() {
         setIsSubmittingVote(prev => ({ ...prev, [poll.id]: false }));
     }
   }
+
+  const handleUnvote = async (poll: Poll) => {
+    if (!user || !userProfile) return;
+
+    setIsSubmittingVote(prev => ({ ...prev, [poll.id]: true }));
+    const voteRef = doc(firestore, "polls", poll.id, "votes", user.uid);
+    const pollRef = doc(firestore, "polls", poll.id);
+    const previousVoteId = userVotes[poll.id];
+
+    if (!previousVoteId) {
+      setIsSubmittingVote(prev => ({ ...prev, [poll.id]: false }));
+      return;
+    }
+
+    try {
+        await runTransaction(firestore, async (transaction) => {
+            const pollDoc = await transaction.get(pollRef);
+            if (!pollDoc.exists()) throw "Poll does not exist!";
+            
+            const pollData = pollDoc.data() as Poll;
+            let updatedOptions = pollData.options.map(opt => 
+                opt.id === previousVoteId ? { ...opt, votes: Math.max(0, (opt.votes || 0) - 1) } : opt
+            );
+            let updatedVoters = (pollData.voters || []).filter(v => v.userId !== user.uid);
+
+            transaction.update(pollRef, { options: updatedOptions, voters: updatedVoters });
+            transaction.delete(voteRef);
+        });
+
+        toast({ title: "Vote Removed", description: "Your vote has been successfully retracted." });
+        setSelectedOptions(prev => {
+            const newSelections = {...prev};
+            delete newSelections[poll.id];
+            return newSelections;
+        });
+
+    } catch (error: any) {
+        console.error("Error removing vote:", error);
+        toast({ variant: "destructive", title: "Could not remove vote.", description: error.toString() });
+    } finally {
+        setIsSubmittingVote(prev => ({ ...prev, [poll.id]: false }));
+    }
+};
 
   const handleEdit = (poll: Poll) => {
     setEditingPoll(poll);
@@ -277,7 +326,7 @@ export function PollsWidget() {
                             </div>
                             {canManagePoll(poll) && (
                                 <div className="flex gap-1">
-                                    <Button variant="ghost" size="icon" onClick={() => handleEdit(poll)}><Edit className="h-4 w-4" /></Button>
+                                    <Button variant="ghost" size="icon" onClick={() => handleEdit(poll)} disabled={!isPollActive}><Edit className="h-4 w-4" /></Button>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
@@ -317,7 +366,7 @@ export function PollsWidget() {
                                                 <span className="text-muted-foreground">{percentage.toFixed(0)}% ({option.votes || 0} votes)</span>
                                             </div>
                                             <div className="w-full bg-muted rounded-full h-2.5">
-                                                <div className="bg-primary h-2.5 rounded-full" style={{ width: `${percentage}%` }}></div>
+                                                <div className={cn("h-2.5 rounded-full", isUserChoice ? "bg-primary" : "bg-secondary")} style={{ width: `${percentage}%` }}></div>
                                             </div>
                                             <div className="flex items-center gap-1 flex-wrap pt-1 min-h-[28px]">
                                                 {votersForOption.map(voter => {
@@ -349,6 +398,7 @@ export function PollsWidget() {
                                 value={selectedOptions[poll.id]} 
                                 onValueChange={(value) => setSelectedOptions(prev => ({...prev, [poll.id]: value}))}
                                 className="space-y-2 mt-6 border-t pt-4"
+                                disabled={submitting}
                             >
                                 {poll.options.map((option) => (
                                     <div key={option.id} className="flex items-center space-x-2">
@@ -360,7 +410,7 @@ export function PollsWidget() {
                         )}
                     </CardContent>
                      {isPollActive && (
-                        <CardFooter>
+                        <CardFooter className="gap-2">
                            <Button
                                 className="w-full"
                                 onClick={() => handleVote(poll)}
@@ -369,6 +419,15 @@ export function PollsWidget() {
                                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {hasVoted ? 'Change Vote' : 'Submit Vote'}
                             </Button>
+                             {hasVoted && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handleUnvote(poll)}
+                                    disabled={submitting}
+                                >
+                                    {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserX className="h-4 w-4" />}
+                                </Button>
+                            )}
                         </CardFooter>
                     )}
                 </Card>
@@ -394,3 +453,5 @@ export function PollsWidget() {
     </div>
   )
 }
+
+    

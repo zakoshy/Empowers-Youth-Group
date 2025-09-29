@@ -300,65 +300,63 @@ export function PollsWidget() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        {isPollActive ? (
+                        <TooltipProvider>
+                            <div className="space-y-4">
+                                {poll.options.map(option => {
+                                    const percentage = pollTotalVotes > 0 ? ((option.votes || 0) / pollTotalVotes) * 100 : 0;
+                                    const isUserChoice = option.id === userVoteOptionId;
+                                    
+                                    const votersForOption = votersForPoll.filter(v => v.selectedOption === option.id);
+
+                                    return (
+                                        <div key={option.id} className="space-y-2">
+                                            <div className="flex justify-between items-center text-sm">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={cn("font-medium", isUserChoice && "text-primary")}>{option.text}</span>
+                                                </div>
+                                                <span className="text-muted-foreground">{percentage.toFixed(0)}% ({option.votes || 0} votes)</span>
+                                            </div>
+                                            <div className="w-full bg-muted rounded-full h-2.5">
+                                                <div className="bg-primary h-2.5 rounded-full" style={{ width: `${percentage}%` }}></div>
+                                            </div>
+                                            <div className="flex items-center gap-1 flex-wrap pt-1 min-h-[28px]">
+                                                {votersForOption.map(voter => {
+                                                    const isCurrentUser = voter.userId === user?.uid;
+                                                    
+                                                    return (
+                                                        <Tooltip key={voter.userId}>
+                                                            <TooltipTrigger>
+                                                                <Avatar className={cn("h-6 w-6 border-2", isCurrentUser ? "border-primary" : "border-transparent")}>
+                                                                    <AvatarImage src={voter.photoURL || undefined} />
+                                                                    <AvatarFallback className="text-xs">{getInitials(voter.firstName, voter.lastName)}</AvatarFallback>
+                                                                </Avatar>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>{voter.firstName} {voter.lastName}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </TooltipProvider>
+
+                         {isPollActive && (
                             <RadioGroup 
                                 value={selectedOptions[poll.id]} 
                                 onValueChange={(value) => setSelectedOptions(prev => ({...prev, [poll.id]: value}))}
-                                className="space-y-2"
-                                disabled={!isPollActive}
+                                className="space-y-2 mt-6 border-t pt-4"
                             >
                                 {poll.options.map((option) => (
                                     <div key={option.id} className="flex items-center space-x-2">
                                     <RadioGroupItem value={option.id} id={`${poll.id}-${option.id}`} />
-                                    <Label htmlFor={`${poll.id}-${option.id}`} className="cursor-pointer">{option.text}</Label>
+                                    <Label htmlFor={`${poll.id}-${option.id}`} className="cursor-pointer font-normal">{option.text}</Label>
                                     </div>
                                 ))}
                             </RadioGroup>
-                        ) : (
-                            <TooltipProvider>
-                                <div className="space-y-4">
-                                    {poll.options.map(option => {
-                                        const percentage = pollTotalVotes > 0 ? ((option.votes || 0) / pollTotalVotes) * 100 : 0;
-                                        const isUserChoice = option.id === userVoteOptionId;
-                                        
-                                        const votersForOption = votersForPoll.filter(v => v.selectedOption === option.id);
-
-                                        return (
-                                            <div key={option.id} className="space-y-2">
-                                                <div className="flex justify-between items-center text-sm">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={cn("font-medium", isUserChoice && "text-primary")}>{option.text}</span>
-                                                        {isUserChoice && <CheckCircle className="h-4 w-4 text-primary"/>}
-                                                    </div>
-                                                    <span className="text-muted-foreground">{percentage.toFixed(0)}% ({option.votes || 0} votes)</span>
-                                                </div>
-                                                <div className="w-full bg-muted rounded-full h-2.5">
-                                                    <div className="bg-primary h-2.5 rounded-full" style={{ width: `${percentage}%` }}></div>
-                                                </div>
-                                                <div className="flex items-center gap-1 flex-wrap pt-1 min-h-[28px]">
-                                                    {votersForOption.map(voter => {
-                                                        const isCurrentUser = voter.userId === user?.uid;
-                                                        
-                                                        return (
-                                                            <Tooltip key={voter.userId}>
-                                                                <TooltipTrigger>
-                                                                    <Avatar className={cn("h-6 w-6 border-2", isCurrentUser ? "border-primary" : "border-transparent")}>
-                                                                        <AvatarImage src={voter.photoURL || undefined} />
-                                                                        <AvatarFallback className="text-xs">{getInitials(voter.firstName, voter.lastName)}</AvatarFallback>
-                                                                    </Avatar>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>
-                                                                    <p>{voter.firstName} {voter.lastName}</p>
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        )
-                                                    })}
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
-                                </div>
-                            </TooltipProvider>
                         )}
                     </CardContent>
                      {isPollActive && (

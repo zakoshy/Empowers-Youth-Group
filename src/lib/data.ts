@@ -8,6 +8,7 @@
 
 
 
+
 export type Event = {
   id: string;
   title: string;
@@ -113,7 +114,7 @@ export const navLinks = [
 export const roles = ["Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead", "Member"];
 
 export const dashboardNavLinks = (userRole: string = "Member") => {
-  const allLinks = [
+  let allLinks = [
     { href: "/dashboard", label: "Dashboard", icon: "Home", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/profile", label: "Profile", icon: "Users", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer", "Chairperson"] },
@@ -128,18 +129,30 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
     { href: "/dashboard/manage-users", label: "Manage Users", icon: "Users", roles: ["Admin"] },
   ];
   
+  // Customize labels for Admin role
+  if (userRole === 'Admin') {
+      allLinks = allLinks.map(link => {
+          if (link.href === '/dashboard/events') return { ...link, label: 'Events' };
+          if (link.href === '/dashboard/constitution') return { ...link, label: 'Constitution' };
+          if (link.href === '/dashboard/minutes') return { ...link, label: 'Minutes' };
+          return link;
+      });
+  }
+
   const filteredLinks = allLinks.filter(link => link.roles.includes(userRole));
 
-  // Use a Map to ensure uniqueness based on 'href', which should be unique for navigation.
-  // This prevents showing both "Manage X" and "X" for the same page.
   const uniqueLinks = new Map();
   filteredLinks.forEach(link => {
       if (!uniqueLinks.has(link.href)) {
         uniqueLinks.set(link.href, link);
       } else {
-          // Prioritize the "Manage" link if a user has roles for both.
           const existingLink = uniqueLinks.get(link.href);
-          if (link.label.startsWith("Manage") && !existingLink.label.startsWith("Manage")) {
+          // For Admin, prefer the non-"Manage" label if duplicates exist for the same href
+          if (userRole === 'Admin' && !link.label.startsWith("Manage")) {
+              uniqueLinks.set(link.href, link);
+          } 
+          // For other roles, prefer the "Manage" link
+          else if (userRole !== 'Admin' && link.label.startsWith("Manage") && !existingLink.label.startsWith("Manage")) {
               uniqueLinks.set(link.href, link);
           }
       }

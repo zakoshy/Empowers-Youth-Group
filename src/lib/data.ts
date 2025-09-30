@@ -1,14 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
 export type Event = {
   id: string;
   title: string;
@@ -117,7 +107,7 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
   let allLinks = [
     { href: "/dashboard", label: "Dashboard", icon: "Home", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/profile", label: "Profile", icon: "Users", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
-    { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer", "Chairperson"] },
+    { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer", "Chairperson", "Investment Lead"] },
     { href: "/dashboard/polls", label: "Polls", icon: "Vote", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/events", label: "Manage Events", icon: "Calendar", roles: ["Coordinator", "Admin"] },
     { href: "https://meet.google.com/new", label: "Schedule Meeting", icon: "Video", roles: ["Coordinator", "Admin"] },
@@ -170,10 +160,3 @@ export const FINANCIAL_CONFIG = {
   MONTHLY_CONTRIBUTION: 200,
   FINANCIAL_YEAR_START_MONTH: 0, // January
 };
-
-    
-
-    
-
-
-    

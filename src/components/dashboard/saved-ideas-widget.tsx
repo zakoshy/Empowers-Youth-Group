@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
 import { collection, query, orderBy, limit, deleteDoc, doc } from 'firebase/firestore';
 import {
   Card,
@@ -46,7 +46,7 @@ export function SavedIdeasWidget() {
 
   const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'userProfiles', user.uid) : null, [firestore, user]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
-  const isInvestmentLead = userProfile?.role === 'Investment Lead';
+  const isInvestmentLead = userProfile?.role === 'Investment Lead' || userProfile?.role === 'Admin';
 
   const ideasRef = useMemoFirebase(() => query(
     collection(firestore, 'investmentIdeas'),
@@ -139,8 +139,3 @@ export function SavedIdeasWidget() {
     </Card>
   )
 }
-
-// Re-export useDoc here because it is used internally by the widget
-export { useDoc } from '@/firebase';
-
-    

@@ -8,12 +8,15 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lightbulb } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Lightbulb, Save, Loader2 } from "lucide-react";
 import { getInvestmentSuggestions } from "@/ai/flows/investment-suggestions";
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collectionGroup, query, getDocs } from "firebase/firestore";
+import { useFirestore, useUser } from "@/firebase";
+import { collectionGroup, query, getDocs, addDoc, collection } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 interface Contribution {
     amount: number;
@@ -23,8 +26,11 @@ export function InvestmentSuggestions() {
   const [suggestions, setSuggestions] = useState("");
   const [totalFunds, setTotalFunds] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
   const firestore = useFirestore();
+  const { user } = useUser();
+  const { toast } = useToast();
 
   useEffect(() => {
     async function fetchTotalFundsAndSuggestions() {
@@ -66,6 +72,38 @@ export function InvestmentSuggestions() {
     fetchTotalFundsAndSuggestions();
   }, [firestore]);
 
+  const handleSaveSuggestion = async () => {
+    if (!suggestions || !user) {
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "No suggestion to save or user not logged in."
+        });
+        return;
+    }
+    setIsSaving(true);
+    try {
+        await addDoc(collection(firestore, 'investmentIdeas'), {
+            content: suggestions,
+            savedBy: user.uid,
+            savedDate: new Date().toISOString(),
+        });
+        toast({
+            title: "Idea Saved!",
+            description: "The investment suggestion has been saved for the group."
+        })
+    } catch (error) {
+        console.error("Error saving suggestion:", error);
+        toast({
+            variant: "destructive",
+            title: "Save Failed",
+            description: "Could not save the idea. Check permissions or try again."
+        })
+    } finally {
+        setIsSaving(false);
+    }
+  }
+
   return (
     <Card className="bg-gradient-to-br from-primary/10 to-card">
       <CardHeader>
@@ -88,11 +126,25 @@ export function InvestmentSuggestions() {
         )}
         {error && <p className="text-sm text-destructive">{error}</p>}
         {!loading && !error && (
-            <div className="text-sm text-foreground/80 whitespace-pre-line">
-                {suggestions}
-            </div>
+            <div className="prose prose-sm max-w-none text-foreground/80 dark:prose-invert prose-headings:font-headline prose-headings:text-foreground"
+                dangerouslySetInnerHTML={{ __html: suggestions }}
+            />
         )}
       </CardContent>
+      {!loading && !error && suggestions && (
+        <CardFooter>
+            <Button onClick={handleSaveSuggestion} disabled={isSaving}>
+                {isSaving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                    <Save className="mr-2 h-4 w-4" />
+                )}
+                {isSaving ? "Saving..." : "Save Idea for the Group"}
+            </Button>
+        </CardFooter>
+      )}
     </Card>
   );
 }
+
+    

@@ -16,6 +16,7 @@ import { FileText, Phone, Wand2, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { doc } from "firebase/firestore";
 import { MinutesWidget } from "@/components/dashboard/minutes-widget";
+import { SavedIdeasWidget } from "@/components/dashboard/saved-ideas-widget";
 import {
   Dialog,
   DialogContent,
@@ -108,6 +109,7 @@ export default function DashboardPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 grid gap-6">
               {userRole === 'Investment Lead' ? <InvestmentSuggestions /> : (showPersonalizedSuggestions && <PersonalizedSuggestions />)}
+              <SavedIdeasWidget />
               <ReportsWidget />
               <MinutesWidget />
           </div>
@@ -120,5 +122,7 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    
 
     

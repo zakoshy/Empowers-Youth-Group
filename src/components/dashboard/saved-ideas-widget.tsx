@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
@@ -46,7 +45,7 @@ export function SavedIdeasWidget() {
 
   const userProfileRef = useMemoFirebase(() => user ? doc(firestore, 'userProfiles', user.uid) : null, [firestore, user]);
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
-  const isInvestmentLead = userProfile?.role === 'Investment Lead' || userProfile?.role === 'Admin';
+  const canManage = userProfile?.role === 'Investment Lead' || userProfile?.role === 'Admin' || userProfile?.role === 'Chairperson';
 
   const ideasRef = useMemoFirebase(() => query(
     collection(firestore, 'investmentIdeas'),
@@ -109,7 +108,7 @@ export function SavedIdeasWidget() {
                     <p className="text-xs text-muted-foreground">
                         Saved on {format(new Date(idea.savedDate), "MMM d, yyyy")}
                     </p>
-                    {isInvestmentLead && (
+                    {canManage && (
                          <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity">

@@ -43,7 +43,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
-      <section className="relative h-[60vh] md:h-[80vh] w-full">
+      <section className="relative h-[60vh] w-full">
         {heroImage && (
           <Image
             src={heroImage.imageUrl}
@@ -55,9 +55,9 @@ export default function HomePage() {
           />
         )}
         <div className="absolute inset-0 bg-black/50" />
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white">
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
             <div className="relative container mx-auto h-full flex flex-col items-center justify-center text-center text-white">
-                <h1 className="text-4xl md:text-7xl font-headline font-bold">
+                <h1 className="text-4xl md:text-6xl font-headline font-bold">
                     Empowering Youth, Building Community
                 </h1>
                 <p className="mt-4 max-w-2xl text-lg md:text-xl">
@@ -284,3 +284,4 @@ export default function HomePage() {
 }
 
     
+

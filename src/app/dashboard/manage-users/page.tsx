@@ -1,8 +1,7 @@
-
 'use client';
 
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, doc, updateDoc } from 'firebase/firestore';
+import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { collection, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import {
   Table,
   TableBody,
@@ -22,7 +21,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { roles } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useUser } from '@/firebase';
+import { Button } from '@/components/ui/button';
+import { Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface UserProfile {
   id: string;
@@ -36,6 +48,7 @@ interface UserProfile {
 export default function ManageUsersPage() {
   const { user: currentUser } = useUser();
   const firestore = useFirestore();
+  const { toast } = useToast();
   const usersRef = useMemoFirebase(() => collection(firestore, 'userProfiles'), [firestore]);
   const { data: users, isLoading } = useCollection<UserProfile>(usersRef);
 
@@ -44,8 +57,22 @@ export default function ManageUsersPage() {
     const userDocRef = doc(firestore, 'userProfiles', userId);
     try {
       await updateDoc(userDocRef, { role: newRole });
+      toast({ title: 'Success', description: `Role updated to ${newRole}.`});
     } catch (error) {
       console.error('Error updating role: ', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not update role.'});
+    }
+  };
+  
+  const handleDeleteUser = async (userId: string) => {
+    if (!firestore) return;
+    const userDocRef = doc(firestore, 'userProfiles', userId);
+    try {
+      await deleteDoc(userDocRef);
+      toast({ title: 'User Deleted', description: 'The user has been removed from the system.' });
+    } catch (error) {
+      console.error('Error deleting user: ', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not delete the user.'});
     }
   };
 
@@ -73,6 +100,7 @@ export default function ManageUsersPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -89,8 +117,8 @@ export default function ManageUsersPage() {
                   </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
-                    {user.role === 'Admin' ? (
-                        <span className="font-medium text-muted-foreground">Admin</span>
+                    {user.id === currentUser?.uid ? (
+                        <span className="font-medium text-muted-foreground">{user.role}</span>
                     ) : (
                         <Select
                             defaultValue={user.role}
@@ -107,6 +135,31 @@ export default function ManageUsersPage() {
                             ))}
                             </SelectContent>
                         </Select>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {user.id !== currentUser?.uid && (
+                       <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                           <Button variant="destructive" size="icon">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete the user's account and remove all their associated data from the system.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>
+                              Delete User
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     )}
                   </TableCell>
                 </TableRow>

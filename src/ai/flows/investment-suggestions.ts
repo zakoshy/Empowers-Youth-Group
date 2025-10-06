@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {googleAI} from '@genkit-ai/googleai';
 
 const InvestmentSuggestionsInputSchema = z.object({
   totalFunds: z.number().describe('The total amount of funds available for investment in Kenyan Shillings (Ksh).'),
@@ -32,6 +33,7 @@ const prompt = ai.definePrompt({
   name: 'investmentSuggestionsPrompt',
   input: {schema: InvestmentSuggestionsInputSchema},
   output: {schema: InvestmentSuggestionsOutputSchema},
+  model: 'gemini-pro',
   prompt: `You are an expert investment advisor for a community-based youth group in a rural Kenyan village. The group's mission is to achieve financial self-reliance and fund community projects.
 
 Your task is to analyze the group's total available capital and suggest 3-4 viable, sustainable, and scalable investment projects.

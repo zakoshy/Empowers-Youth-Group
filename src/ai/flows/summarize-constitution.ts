@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {googleAI} from '@genkit-ai/googleai';
 
 const SummarizeConstitutionInputSchema = z.object({
   constitutionText: z.string().describe('The full text content of the constitution document.'),
@@ -32,6 +33,7 @@ const prompt = ai.definePrompt({
   name: 'summarizeConstitutionPrompt',
   input: {schema: SummarizeConstitutionInputSchema },
   output: {schema: SummarizeConstitutionOutputSchema},
+  model: 'gemini-pro',
   prompt: `You are an expert legal analyst specializing in simplifying complex documents for community groups.
 
 Your task is to read the following constitution and provide a clear, concise summary. The summary should be easy for a layperson to understand.

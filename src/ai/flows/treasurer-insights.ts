@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import {googleAI} from '@genkit-ai/googleai';
 
 const TreasurerInsightsInputSchema = z.object({
   allMembersData: z.string().describe('A JSON string representing an array of all members and their contribution data for the current year. Each member object includes their name, monthly contributions, and special contributions.'),
@@ -34,6 +35,7 @@ const prompt = ai.definePrompt({
   name: 'treasurerInsightsPrompt',
   input: {schema: TreasurerInsightsInputSchema},
   output: {schema: TreasurerInsightsOutputSchema},
+  model: 'gemini-pro',
   prompt: `You are an expert financial analyst and advisor for the treasurer of a community youth group. Your tone should be professional, insightful, and action-oriented.
 
 Your task is to analyze the financial data for all group members for the current year and provide a concise summary of insights and actionable recommendations for the treasurer. **Keep your entire response concise and under 150 words.**

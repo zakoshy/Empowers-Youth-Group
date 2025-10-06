@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -52,6 +53,9 @@ export function Header() {
         element.scrollIntoView({ behavior: 'smooth' });
         setIsMenuOpen(false);
       }
+    } else {
+        // If on a different page, just navigate
+        setIsMenuOpen(false);
     }
   };
 

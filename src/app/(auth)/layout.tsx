@@ -11,8 +11,8 @@ export default function AuthLayout({
 }) {
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-center py-12">
-      <div className="mx-auto grid w-[350px] gap-6">
+    <div className="w-full min-h-screen flex items-center justify-center py-12 px-4">
+      <div className="mx-auto grid w-full max-w-sm gap-6">
         <div className="grid gap-2 text-center">
           <Link href="/" className="flex flex-col items-center justify-center space-y-2 mb-4">
             <TheEmpowersYouthGroupLogo className="h-8 w-8 text-primary" />

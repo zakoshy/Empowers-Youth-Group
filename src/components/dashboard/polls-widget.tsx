@@ -410,7 +410,7 @@ export function PollsWidget() {
                         )}
                     </CardContent>
                      {isPollActive && (
-                        <CardFooter className="gap-2">
+                        <CardFooter className="flex-col sm:flex-row gap-2">
                            <Button
                                 className="w-full"
                                 onClick={() => handleVote(poll)}
@@ -453,5 +453,3 @@ export function PollsWidget() {
     </div>
   )
 }
-
-    

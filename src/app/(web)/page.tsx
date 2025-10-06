@@ -43,7 +43,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
-      <section className="relative h-[60vh] w-full">
+      <section className="relative h-[70vh] w-full">
         {heroImage && (
           <Image
             src={heroImage.imageUrl}
@@ -60,7 +60,7 @@ export default function HomePage() {
                 <h1 className="text-4xl md:text-6xl font-headline font-bold">
                     Empowering Youth, Building Community
                 </h1>
-                <p className="mt-4 max-w-2xl text-lg md:text-xl">
+                <p className="mt-4 max-w-2xl text-base md:text-xl">
                     From shared hardship to a beacon of hope, The Empowers youth group is a youth-led initiative dedicated to giving back and uplifting our society.
                 </p>
                 <div className="mt-8">
@@ -282,6 +282,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-    
-

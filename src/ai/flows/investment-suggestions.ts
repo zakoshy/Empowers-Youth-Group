@@ -10,7 +10,6 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {googleAI} from '@genkit-ai/googleai';
 import {z} from 'genkit';
 
 const InvestmentSuggestionsInputSchema = z.object({
@@ -33,7 +32,7 @@ const prompt = ai.definePrompt({
   name: 'investmentSuggestionsPrompt',
   input: {schema: InvestmentSuggestionsInputSchema},
   output: {schema: InvestmentSuggestionsOutputSchema},
-  model: googleAI.model('gemini-pro'),
+  model: 'gemini-pro',
   prompt: `You are an expert investment advisor for a community-based youth group in a rural Kenyan village. The group's mission is to achieve financial self-reliance and fund community projects.
 
 Your task is to analyze the group's total available capital and suggest 3-4 viable, sustainable, and scalable investment projects.

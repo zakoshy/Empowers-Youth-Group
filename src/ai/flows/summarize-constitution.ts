@@ -32,7 +32,7 @@ const prompt = ai.definePrompt({
   name: 'summarizeConstitutionPrompt',
   input: {schema: SummarizeConstitutionInputSchema },
   output: {schema: SummarizeConstitutionOutputSchema},
-  model: 'googleai/gemini-pro',
+  model: 'gemini-pro',
   prompt: `You are an expert legal analyst specializing in simplifying complex documents for community groups.
 
 Your task is to read the following constitution and provide a clear, concise summary. The summary should be easy for a layperson to understand.

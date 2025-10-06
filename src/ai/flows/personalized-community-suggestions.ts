@@ -9,6 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {googleAI} from '@genkit-ai/googleai';
 import {z} from 'genkit';
 
 const PersonalizedSuggestionsInputSchema = z.object({
@@ -35,6 +36,7 @@ const prompt = ai.definePrompt({
   name: 'personalizedSuggestionsPrompt',
   input: {schema: PersonalizedSuggestionsInputSchema},
   output: {schema: PersonalizedSuggestionsOutputSchema},
+  model: googleAI.model('gemini-pro'),
   prompt: `You are an AI financial mentor and community engagement advisor for The Empowers youth group. Your tone should be encouraging, supportive, and motivating.
 
   Your task is to analyze the provided member's financial data and provide personalized feedback and suggestions.

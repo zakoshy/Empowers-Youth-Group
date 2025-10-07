@@ -45,5 +45,10 @@ export default function ContributionsPage() {
     return <TreasurerDashboard isReadOnly={true} />;
   }
   
+  if (userProfile.role === 'Coordinator' || userProfile.role === 'Member' || userProfile.role === 'Investment Lead' || userProfile.role === 'Secretary' || userProfile.role === 'Vice Chairperson') {
+    return <MemberDashboard userId={user!.uid} />;
+  }
+
+  // Fallback for any other roles or if logic gets complex
   return <MemberDashboard userId={user!.uid} />;
 }

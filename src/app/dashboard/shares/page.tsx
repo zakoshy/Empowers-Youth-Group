@@ -47,7 +47,7 @@ async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> 
     const [usersSnapshot, contributionsSnapshot, specialContributionsSnapshot] = await Promise.all([
         getDocs(usersQuery),
         getDocs(contributionsQuery),
-        getDocs(specialContributionsSnapshot)
+        getDocs(specialContributionsQuery)
     ]);
 
     const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
@@ -125,13 +125,21 @@ export default function SharesPage() {
         if (err.code === 'failed-precondition' && err.message.includes('index')) {
             const urlMatch = err.message.match(/(https?:\/\/[^\s]+)/);
             const isNotReady = err.message.includes('not ready yet');
-
+            const isContributionsIndex = err.message.includes('collection contributions');
+            const isSpecialContributionsIndex = err.message.includes('collection specialContributions');
+            
             let instructions = `This feature requires a database index. Please click the link to create it, wait a few minutes for it to build, then refresh the page.`;
             let errorMessage = `Action Required: Database Index Needed`;
 
             if (isNotReady) {
-                instructions = `The required database index is still being built. This can take a few minutes. Please wait and then refresh the page.`;
+                instructions = `The required database index for ${isContributionsIndex ? 'contributions' : 'special contributions'} is still being built. This can take a few minutes. Please wait and then refresh the page.`;
                 errorMessage = `Action Required: Database Index Building`;
+            } else if (isContributionsIndex) {
+                 instructions = `This page requires an index for regular contributions. Click the link to create it, wait a few minutes, then refresh.`;
+                 errorMessage = `Missing Index for Contributions`;
+            } else if (isSpecialContributionsIndex) {
+                instructions = `This page requires an index for special contributions. Click the link to create it, wait a few minutes, then refresh.`;
+                errorMessage = `Missing Index for Special Contributions`;
             }
 
             setError({ 
@@ -141,7 +149,7 @@ export default function SharesPage() {
             });
 
         } else {
-             setError({ message: "An unexpected error occurred.", instructions: "Failed to fetch member shares data. You may not have the required permissions." });
+             setError({ message: "An unexpected error occurred.", instructions: `Failed to fetch member shares data. You may not have the required permissions. ${err.message}` });
         }
       })
       .finally(() => {

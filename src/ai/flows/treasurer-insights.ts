@@ -34,7 +34,7 @@ const prompt = ai.definePrompt({
   name: 'treasurerInsightsPrompt',
   input: {schema: TreasurerInsightsInputSchema},
   output: {schema: TreasurerInsightsOutputSchema},
-  model: 'gemini-pro',
+  model: 'googleai/gemini-pro',
   prompt: `You are an expert financial analyst and advisor for the treasurer of a community youth group. Your tone should be professional, insightful, and action-oriented.
 
 Your task is to analyze the financial data for all group members for the current year and provide a concise summary of insights and actionable recommendations for the treasurer. **Keep your entire response concise and under 150 words.**

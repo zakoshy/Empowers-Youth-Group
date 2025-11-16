@@ -78,7 +78,6 @@ export default function DashboardPage() {
   const isMemberView = userRole && !['Admin', 'Investment Lead', 'Treasurer'].includes(userRole);
   const showPersonalizedSuggestions = userRole && !['Admin', 'Investment Lead'].includes(userRole);
 
-
   return (
     <>
       <div className="flex flex-col gap-6">
@@ -87,8 +86,7 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">Here's a summary of your activities and group updates.</p>
         </div>
         
-        {isMemberView && (
-          <Card className="bg-primary/5">
+        <Card className="bg-primary/5">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Phone className="h-5 w-5" />
@@ -101,10 +99,9 @@ export default function DashboardPage() {
             <CardContent>
               <p className="text-2xl font-bold font-mono tracking-widest">0112263590</p>
             </CardContent>
-          </Card>
-        )}
+        </Card>
 
-        {isMemberView && <StatsCards />}
+        <StatsCards />
 
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 grid gap-6">
@@ -115,14 +112,10 @@ export default function DashboardPage() {
           </div>
           <div className="lg:col-span-1 grid gap-6">
               <EventsWidget />
-              {isMemberView && <PollsWidget />}
+              {userRole !== 'Admin' && <PollsWidget />}
           </div>
         </div>
       </div>
     </>
   );
 }
-
-    
-
-    

@@ -3,13 +3,13 @@
 
 import { useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
-import { collection, collectionGroup, doc, query } from 'firebase/firestore';
+import { collection, collectionGroup, doc, query, where } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { Lock, Scale } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
 interface UserProfile {
   id: string;
@@ -23,11 +23,14 @@ interface UserProfile {
 interface Contribution {
   userId: string;
   amount: number;
+  year: number;
 }
 
 const getInitials = (firstName = '', lastName = '') => {
   return `${firstName?.charAt(0) ?? ''}${lastName?.charAt(0) ?? ''}`.toUpperCase();
 };
+
+const currentYear = new Date().getFullYear();
 
 export default function SharesPage() {
   const firestore = useFirestore();
@@ -40,15 +43,15 @@ export default function SharesPage() {
   const isAdmin = currentUserProfile?.role === 'Admin';
 
   // Fetch all users
-  const usersRef = useMemoFirebase(() => (isAdmin ? collection(firestore, 'userProfiles') : null), [isAdmin, firestore]);
+  const usersRef = useMemoFirebase(() => (isAdmin ? query(collection(firestore, 'userProfiles'), where('role', '!=', 'Admin')) : null), [isAdmin, firestore]);
   const { data: users, isLoading: areUsersLoading } = useCollection<UserProfile>(usersRef);
 
-  // Fetch all contributions via collection group query
-  const contributionsRef = useMemoFirebase(() => (isAdmin ? query(collectionGroup(firestore, 'contributions')) : null), [isAdmin, firestore]);
+  // Fetch all contributions for the current year via collection group query
+  const contributionsRef = useMemoFirebase(() => (isAdmin ? query(collectionGroup(firestore, 'contributions'), where('year', '==', currentYear)) : null), [isAdmin, firestore]);
   const { data: contributions, isLoading: areContributionsLoading } = useCollection<Contribution>(contributionsRef);
 
-  // Fetch all special contributions via collection group query
-  const specialContributionsRef = useMemoFirebase(() => (isAdmin ? query(collectionGroup(firestore, 'specialContributions')) : null), [isAdmin, firestore]);
+  // Fetch all special contributions for the current year via collection group query
+  const specialContributionsRef = useMemoFirebase(() => (isAdmin ? query(collectionGroup(firestore, 'specialContributions'), where('year', '==', currentYear)) : null), [isAdmin, firestore]);
   const { data: specialContributions, isLoading: areSpecialContributionsLoading } = useCollection<Contribution>(specialContributionsRef);
 
   const isLoading = isUserLoading || isProfileLoading || areUsersLoading || areContributionsLoading || areSpecialContributionsLoading;
@@ -83,7 +86,7 @@ export default function SharesPage() {
         memberTotals[sc.userId] = (memberTotals[sc.userId] || 0) + sc.amount;
     });
 
-    const memberShares = users.filter(u => u.role !== 'Admin').map(user => {
+    const memberShares = users.map(user => {
       const totalContribution = memberTotals[user.id] || 0;
       const sharePercentage = (totalContribution / grandTotal) * 100;
       return {
@@ -134,9 +137,9 @@ export default function SharesPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Member Shares</CardTitle>
+        <CardTitle>Member Shares - {currentYear}</CardTitle>
         <CardDescription>
-          An overview of each member's contribution share in the group. Total collected funds: <span className="font-bold text-primary">Ksh {sharesData.grandTotal.toLocaleString()}</span>.
+          An overview of each member's contribution share for the current year. Total collected funds: <span className="font-bold text-primary">Ksh {sharesData.grandTotal.toLocaleString()}</span>.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -149,7 +152,8 @@ export default function SharesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sharesData.memberShares.map(member => (
+            {sharesData.memberShares.length > 0 ? (
+                sharesData.memberShares.map(member => (
               <TableRow key={member.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
@@ -168,7 +172,14 @@ export default function SharesPage() {
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+            ))
+            ) : (
+                <TableRow>
+                    <TableCell colSpan={3} className="text-center">
+                        No contribution data available for the current year.
+                    </TableCell>
+                </TableRow>
+            )}
           </TableBody>
         </Table>
       </CardContent>

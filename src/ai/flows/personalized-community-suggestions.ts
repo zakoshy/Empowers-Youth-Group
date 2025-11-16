@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -36,7 +35,6 @@ const prompt = ai.definePrompt({
   name: 'personalizedSuggestionsPrompt',
   input: {schema: PersonalizedSuggestionsInputSchema},
   output: {schema: PersonalizedSuggestionsOutputSchema},
-  model: 'gemini-pro',
   prompt: `You are an AI financial mentor and community engagement advisor for The Empowers youth group. Your tone should be encouraging, supportive, and motivating.
 
   Your task is to analyze the provided member's financial data and provide personalized feedback and suggestions.

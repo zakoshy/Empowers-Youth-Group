@@ -6,6 +6,7 @@ import { doc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import TreasurerDashboard from "@/components/dashboard/contributions/treasurer-dashboard";
 import MemberDashboard from "@/components/dashboard/contributions/member-dashboard";
+import { PersonalizedSuggestions } from "@/components/dashboard/personalized-suggestions";
 
 interface UserProfile {
   role: string;
@@ -38,7 +39,12 @@ export default function ContributionsPage() {
   }
   
   if (userProfile.role === 'Treasurer') {
-    return <TreasurerDashboard isReadOnly={false} />;
+    return (
+      <div className="space-y-6">
+        <PersonalizedSuggestions />
+        <TreasurerDashboard isReadOnly={false} />
+      </div>
+    );
   }
 
   if (userProfile.role === 'Chairperson') {

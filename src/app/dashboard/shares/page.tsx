@@ -119,24 +119,28 @@ export default function SharesPage() {
           })
           .catch(err => {
             console.error("Error fetching shares data:", err);
-            const defaultErrorMsg = "Failed to fetch member shares data. You may not have the required permissions or a database index is missing.";
             
             if (err.code === 'failed-precondition' && err.message.includes('index')) {
                 const urlMatch = err.message.match(/(https?:\/\/[^\s]+)/);
                 const isNotReady = err.message.includes('not ready yet');
+                const isContributionsIndex = err.message.includes('contributions');
 
-                let specificInstructions = `This feature requires a database index that has not been created yet. Please click the link below to create it in the Firebase console, then refresh this page after a few minutes.`;
-                if (isNotReady) {
-                    specificInstructions = `The required database index is still being built. This can take a few minutes. Please wait and then refresh the page. If the error persists, you can check the status via the link below.`
+                let instructions = `This feature requires a database index that is still being built. This can take a few minutes. Please wait and then refresh the page. If the error persists, you can check the status via the link below.`;
+                let errorMessage = `Action Required: Database Index Building`;
+
+                if (!isNotReady) {
+                    instructions = `This feature requires a database index that has not been created yet. Please click the link below to create it in the Firebase console, then refresh this page after a few minutes.`
+                    errorMessage = `Action Required: Database Index Needed`;
                 }
 
                 setError({ 
-                    message: `Action Required: Database Index Needed`,
-                    instructions: specificInstructions,
+                    message: errorMessage,
+                    instructions,
                     link: urlMatch ? urlMatch[0] : undefined
                 });
+
             } else {
-                setError({ message: "An unexpected error occurred.", instructions: defaultErrorMsg });
+                 setError({ message: "An unexpected error occurred.", instructions: "Failed to fetch member shares data. You may not have the required permissions." });
             }
           })
           .finally(() => {

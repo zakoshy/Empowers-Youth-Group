@@ -20,7 +20,7 @@ service cloud.firestore {
      * @description Checks if the user is an existing owner of the resource (isSignedIn and resource exists).
      */
     function isExistingOwner(userId) {
-        return isSignedIn() && isOwner(userId) && exists(resource);
+        return isSignedIn() && isOwner(userId) && exists(/databases/$(database)/documents/userProfiles/$(userId));
     }
 
     /**
@@ -83,7 +83,7 @@ service cloud.firestore {
      */
     match /userProfiles/{userId} {
       allow get: if isSignedIn() && (isOwner(userId) || isTreasurer() || isAdmin() || isChairperson());
-      allow list: if isSignedIn() && (isAdmin() || isTreasurer());
+      allow list: if isSignedIn() && isAdmin(); // Only Admins can list all users for the shares page
       allow create: if isSignedIn() && isOwner(userId);
       allow update: if isSignedIn() && isOwner(userId) &&
                     !(('role' in request.resource.data) && 

@@ -2,14 +2,16 @@
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
-import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
+import { useFirestore, useMemoFirebase, useUser, useDoc } from '@/firebase';
 import { collection, collectionGroup, doc, query, where, getDocs, Firestore } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { Lock } from 'lucide-react';
+import { Lock, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface UserProfile {
   id: string;
@@ -95,18 +97,20 @@ export default function SharesPage() {
   const { user, isUserLoading } = useUser();
   const [sharesData, setSharesData] = useState<SharesData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string, link?: string } | null>(null);
 
-  // Get current user's profile to check their role
   const userProfileRef = useMemoFirebase(() => (user ? doc(firestore, 'userProfiles', user.uid) : null), [firestore, user]);
   const { data: currentUserProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
   
   const isAdmin = currentUserProfile?.role === 'Admin';
+  const initialLoading = isUserLoading || isProfileLoading;
 
   useEffect(() => {
-    // Only proceed if we are done loading the user and their profile, and they are an admin.
-    if (!isUserLoading && !isProfileLoading && firestore) {
-      if (isAdmin) {
+    if (initialLoading || !firestore) {
+      return;
+    }
+
+    if (isAdmin) {
         setIsLoading(true);
         fetchAllDataForShares(firestore)
           .then(data => {
@@ -115,19 +119,25 @@ export default function SharesPage() {
           })
           .catch(err => {
             console.error("Error fetching shares data:", err);
-            setError("Failed to fetch member shares data.");
+            if (err.code === 'failed-precondition' && err.message.includes('index')) {
+                const urlMatch = err.message.match(/(https?:\/\/[^\s]+)/);
+                setError({ 
+                    message: "This feature requires a database index that has not been created yet. Please click the link below to create it in the Firebase console, then refresh this page.",
+                    link: urlMatch ? urlMatch[0] : undefined
+                });
+            } else {
+                setError({ message: "Failed to fetch member shares data. You may not have the required permissions." });
+            }
           })
           .finally(() => {
             setIsLoading(false);
           });
-      } else {
-        // Not an admin, stop loading and show access denied.
-        setIsLoading(false);
-      }
+    } else {
+      setIsLoading(false);
     }
-  }, [isUserLoading, isProfileLoading, isAdmin, firestore]);
+  }, [initialLoading, isAdmin, firestore]);
 
-  if (isLoading) {
+  if (initialLoading || isLoading) {
     return (
       <Card>
         <CardHeader>
@@ -162,15 +172,20 @@ export default function SharesPage() {
 
   if (error) {
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Error</CardTitle>
-                <CardDescription>Something went wrong.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-destructive">{error}</p>
-            </CardContent>
-        </Card>
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Action Required</AlertTitle>
+          <AlertDescription>
+            {error.message}
+            {error.link && (
+                <Button asChild className="mt-4">
+                    <a href={error.link} target="_blank" rel="noopener noreferrer">
+                        Create Firestore Index
+                    </a>
+                </Button>
+            )}
+          </AlertDescription>
+        </Alert>
     )
   }
 

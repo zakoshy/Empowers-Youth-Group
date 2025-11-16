@@ -97,7 +97,7 @@ export default function SharesPage() {
   const { user, isUserLoading } = useUser();
   const [sharesData, setSharesData] = useState<SharesData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<{ message: string, link?: string } | null>(null);
+  const [error, setError] = useState<{ message: string, link?: string, instructions?: string } | null>(null);
 
   const userProfileRef = useMemoFirebase(() => (user ? doc(firestore, 'userProfiles', user.uid) : null), [firestore, user]);
   const { data: currentUserProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
@@ -119,14 +119,24 @@ export default function SharesPage() {
           })
           .catch(err => {
             console.error("Error fetching shares data:", err);
+            const defaultErrorMsg = "Failed to fetch member shares data. You may not have the required permissions or a database index is missing.";
+            
             if (err.code === 'failed-precondition' && err.message.includes('index')) {
                 const urlMatch = err.message.match(/(https?:\/\/[^\s]+)/);
+                const isNotReady = err.message.includes('not ready yet');
+
+                let specificInstructions = `This feature requires a database index that has not been created yet. Please click the link below to create it in the Firebase console, then refresh this page after a few minutes.`;
+                if (isNotReady) {
+                    specificInstructions = `The required database index is still being built. This can take a few minutes. Please wait and then refresh the page. If the error persists, you can check the status via the link below.`
+                }
+
                 setError({ 
-                    message: "This feature requires a database index that has not been created yet. Please click the link below to create it in the Firebase console, then refresh this page after a few minutes.",
+                    message: `Action Required: Database Index Needed`,
+                    instructions: specificInstructions,
                     link: urlMatch ? urlMatch[0] : undefined
                 });
             } else {
-                setError({ message: "Failed to fetch member shares data. You may not have the required permissions." });
+                setError({ message: "An unexpected error occurred.", instructions: defaultErrorMsg });
             }
           })
           .finally(() => {
@@ -182,13 +192,13 @@ export default function SharesPage() {
           <CardContent>
             <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Action Required</AlertTitle>
+            <AlertTitle>{error.message}</AlertTitle>
             <AlertDescription>
-                {error.message}
+                {error.instructions}
                 {error.link && (
                     <Button asChild className="mt-4">
                         <a href={error.link} target="_blank" rel="noopener noreferrer">
-                            Create Firestore Index
+                            Create/View Firestore Index
                         </a>
                     </Button>
                 )}

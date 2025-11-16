@@ -27,8 +27,8 @@ export function useAllUsers() {
   const { data: currentUserProfile, isLoading: isRoleLoading } = useDoc<CurrentUserProfile>(currentUserProfileRef);
   
   const userRole = currentUserProfile?.role;
-  // Ensure shouldFetchUsers is only true when the role is explicitly one of these
-  const shouldFetchUsers = userRole === 'Admin' || userRole === 'Treasurer';
+  // Ensure shouldFetchUsers is only true when the role has been loaded and is explicitly one of these
+  const shouldFetchUsers = !isRoleLoading && (userRole === 'Admin' || userRole === 'Treasurer');
 
   const usersRef = useMemoFirebase(
     () => {

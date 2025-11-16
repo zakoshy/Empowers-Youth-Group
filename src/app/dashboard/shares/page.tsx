@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
-import { collection, collectionGroup, doc, query, where } from 'firebase/firestore';
+import { collection, collectionGroup, doc, query, where, getDocs, Firestore } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -26,40 +26,31 @@ interface Contribution {
   year: number;
 }
 
+interface SharesData {
+    memberShares: (UserProfile & { totalContribution: number; sharePercentage: number })[];
+    grandTotal: number;
+}
+
 const getInitials = (firstName = '', lastName = '') => {
   return `${firstName?.charAt(0) ?? ''}${lastName?.charAt(0) ?? ''}`.toUpperCase();
 };
 
 const currentYear = new Date().getFullYear();
 
-export default function SharesPage() {
-  const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
+async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> {
+    const usersQuery = query(collection(firestore, 'userProfiles'), where('role', '!=', 'Admin'));
+    const contributionsQuery = query(collectionGroup(firestore, 'contributions'), where('year', '==', currentYear));
+    const specialContributionsQuery = query(collectionGroup(firestore, 'specialContributions'), where('year', '==', currentYear));
 
-  // Get current user's profile to check their role
-  const userProfileRef = useMemoFirebase(() => (user ? doc(firestore, 'userProfiles', user.uid) : null), [firestore, user]);
-  const { data: currentUserProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+    const [usersSnapshot, contributionsSnapshot, specialContributionsSnapshot] = await Promise.all([
+        getDocs(usersQuery),
+        getDocs(contributionsQuery),
+        getDocs(specialContributionsQuery)
+    ]);
 
-  const isAdmin = currentUserProfile?.role === 'Admin';
-
-  // Fetch all users
-  const usersRef = useMemoFirebase(() => (isAdmin ? query(collection(firestore, 'userProfiles'), where('role', '!=', 'Admin')) : null), [isAdmin, firestore]);
-  const { data: users, isLoading: areUsersLoading } = useCollection<UserProfile>(usersRef);
-
-  // Fetch all contributions for the current year via collection group query
-  const contributionsRef = useMemoFirebase(() => (isAdmin ? query(collectionGroup(firestore, 'contributions'), where('year', '==', currentYear)) : null), [isAdmin, firestore]);
-  const { data: contributions, isLoading: areContributionsLoading } = useCollection<Contribution>(contributionsRef);
-
-  // Fetch all special contributions for the current year via collection group query
-  const specialContributionsRef = useMemoFirebase(() => (isAdmin ? query(collectionGroup(firestore, 'specialContributions'), where('year', '==', currentYear)) : null), [isAdmin, firestore]);
-  const { data: specialContributions, isLoading: areSpecialContributionsLoading } = useCollection<Contribution>(specialContributionsRef);
-
-  const isLoading = isUserLoading || isProfileLoading || areUsersLoading || areContributionsLoading || areSpecialContributionsLoading;
-
-  const sharesData = useMemo(() => {
-    if (!users || !contributions || !specialContributions) {
-      return { memberShares: [], grandTotal: 0 };
-    }
+    const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+    const contributions = contributionsSnapshot.docs.map(doc => doc.data() as Contribution);
+    const specialContributions = specialContributionsSnapshot.docs.map(doc => doc.data() as Contribution);
 
     const monthlyTotal = contributions.reduce((sum, c) => sum + c.amount, 0);
     const specialTotal = specialContributions.reduce((sum, sc) => sum + sc.amount, 0);
@@ -96,10 +87,45 @@ export default function SharesPage() {
       };
     }).sort((a, b) => b.sharePercentage - a.sharePercentage);
 
-
     return { memberShares, grandTotal };
-  }, [users, contributions, specialContributions]);
+}
 
+export default function SharesPage() {
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+  const [sharesData, setSharesData] = useState<SharesData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Get current user's profile to check their role
+  const userProfileRef = useMemoFirebase(() => (user ? doc(firestore, 'userProfiles', user.uid) : null), [firestore, user]);
+  const { data: currentUserProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
+  
+  const isAdmin = currentUserProfile?.role === 'Admin';
+
+  useEffect(() => {
+    // Only proceed if we are done loading the user and their profile, and they are an admin.
+    if (!isUserLoading && !isProfileLoading && firestore) {
+      if (isAdmin) {
+        setIsLoading(true);
+        fetchAllDataForShares(firestore)
+          .then(data => {
+            setSharesData(data);
+            setError(null);
+          })
+          .catch(err => {
+            console.error("Error fetching shares data:", err);
+            setError("Failed to fetch member shares data.");
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
+      } else {
+        // Not an admin, stop loading and show access denied.
+        setIsLoading(false);
+      }
+    }
+  }, [isUserLoading, isProfileLoading, isAdmin, firestore]);
 
   if (isLoading) {
     return (
@@ -134,12 +160,26 @@ export default function SharesPage() {
     );
   }
 
+  if (error) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Error</CardTitle>
+                <CardDescription>Something went wrong.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <p className="text-destructive">{error}</p>
+            </CardContent>
+        </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Member Shares - {currentYear}</CardTitle>
         <CardDescription>
-          An overview of each member's contribution share for the current year. Total collected funds: <span className="font-bold text-primary">Ksh {sharesData.grandTotal.toLocaleString()}</span>.
+          An overview of each member's contribution share for the current year. Total collected funds: <span className="font-bold text-primary">Ksh {sharesData?.grandTotal.toLocaleString() ?? 0}</span>.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -152,7 +192,7 @@ export default function SharesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sharesData.memberShares.length > 0 ? (
+            {sharesData && sharesData.memberShares.length > 0 ? (
                 sharesData.memberShares.map(member => (
               <TableRow key={member.id}>
                 <TableCell>

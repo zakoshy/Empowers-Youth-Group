@@ -17,7 +17,7 @@ interface CurrentUserProfile {
 
 export function useAllUsers() {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
 
   const currentUserProfileRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -29,12 +29,21 @@ export function useAllUsers() {
   const userRole = currentUserProfile?.role;
   const shouldFetchUsers = userRole === 'Admin' || userRole === 'Treasurer';
 
+  // This is the critical change: ensure the query is only created when all conditions are met.
   const usersRef = useMemoFirebase(
-    () => (firestore && shouldFetchUsers ? collection(firestore, 'userProfiles') : null),
-    [firestore, shouldFetchUsers]
+    () => {
+      if (firestore && !isRoleLoading && shouldFetchUsers) {
+        return collection(firestore, 'userProfiles');
+      }
+      return null;
+    },
+    [firestore, isRoleLoading, shouldFetchUsers]
   );
   
   const { data, isLoading: usersLoading, error } = useCollection<UserProfile>(usersRef);
 
-  return { users: data || [], isLoading: isRoleLoading || usersLoading, error, userRole };
+  // The overall loading state must account for the initial user and role checks.
+  const isLoading = isUserLoading || isRoleLoading || (shouldFetchUsers && usersLoading);
+
+  return { users: data || [], isLoading, error, userRole };
 }

@@ -117,6 +117,7 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
     { href: "/dashboard", label: "Dashboard", icon: "Home", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/profile", label: "Profile", icon: "Users", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer", "Chairperson", "Investment Lead", "Coordinator"] },
+    { href: "/dashboard/shares", label: "Shares", icon: "Scale", roles: ["Admin"] },
     { href: "/dashboard/polls", label: "Polls", icon: "Vote", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/events", label: "Manage Events", icon: "Calendar", roles: ["Coordinator", "Admin"] },
     { href: "https://meet.google.com/new", label: "Virtual Meeting", icon: "Video", roles: ["Coordinator", "Admin"] },

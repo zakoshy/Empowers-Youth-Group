@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/sidebar"
 import { TheEmpowersYouthGroupLogo } from "../icons";
 import { dashboardNavLinks } from "@/lib/data";
-import { Home, LineChart, Package, Package2, ShoppingCart, Users, Vote, FileText, DollarSign, TrendingUp, Calendar, Settings, BookOpen, LogOut, Video } from "lucide-react";
+import { Home, LineChart, Package, Package2, ShoppingCart, Users, Vote, FileText, DollarSign, TrendingUp, Calendar, Settings, BookOpen, LogOut, Video, Scale } from "lucide-react";
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
@@ -32,6 +32,7 @@ const icons: { [key: string]: React.ElementType } = {
   BookOpen,
   Settings,
   Video,
+  Scale,
 };
 
 interface UserProfile {

@@ -122,7 +122,7 @@ export default function SharesPage() {
             if (err.code === 'failed-precondition' && err.message.includes('index')) {
                 const urlMatch = err.message.match(/(https?:\/\/[^\s]+)/);
                 setError({ 
-                    message: "This feature requires a database index that has not been created yet. Please click the link below to create it in the Firebase console, then refresh this page.",
+                    message: "This feature requires a database index that has not been created yet. Please click the link below to create it in the Firebase console, then refresh this page after a few minutes.",
                     link: urlMatch ? urlMatch[0] : undefined
                 });
             } else {
@@ -172,20 +172,30 @@ export default function SharesPage() {
 
   if (error) {
     return (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Action Required</AlertTitle>
-          <AlertDescription>
-            {error.message}
-            {error.link && (
-                <Button asChild className="mt-4">
-                    <a href={error.link} target="_blank" rel="noopener noreferrer">
-                        Create Firestore Index
-                    </a>
-                </Button>
-            )}
-          </AlertDescription>
-        </Alert>
+        <Card>
+          <CardHeader>
+            <CardTitle>Member Shares - {currentYear}</CardTitle>
+            <CardDescription>
+                An overview of each member's contribution share for the current year.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Action Required</AlertTitle>
+            <AlertDescription>
+                {error.message}
+                {error.link && (
+                    <Button asChild className="mt-4">
+                        <a href={error.link} target="_blank" rel="noopener noreferrer">
+                            Create Firestore Index
+                        </a>
+                    </Button>
+                )}
+            </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
     )
   }
 

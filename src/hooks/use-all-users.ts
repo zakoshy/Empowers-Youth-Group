@@ -27,17 +27,17 @@ export function useAllUsers() {
   const { data: currentUserProfile, isLoading: isRoleLoading } = useDoc<CurrentUserProfile>(currentUserProfileRef);
   
   const userRole = currentUserProfile?.role;
-  const shouldFetchUsers = userRole === 'Admin' || userRole === 'Treasurer';
+  const shouldFetchUsers = !isRoleLoading && (userRole === 'Admin' || userRole === 'Treasurer');
 
   // This is the critical change: ensure the query is only created when all conditions are met.
   const usersRef = useMemoFirebase(
     () => {
-      if (firestore && !isRoleLoading && shouldFetchUsers) {
+      if (firestore && shouldFetchUsers) {
         return collection(firestore, 'userProfiles');
       }
       return null;
     },
-    [firestore, isRoleLoading, shouldFetchUsers]
+    [firestore, shouldFetchUsers]
   );
   
   const { data, isLoading: usersLoading, error } = useCollection<UserProfile>(usersRef);

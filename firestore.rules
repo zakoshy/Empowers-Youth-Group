@@ -83,7 +83,7 @@ service cloud.firestore {
      */
     match /userProfiles/{userId} {
       allow get: if isSignedIn() && (isOwner(userId) || isTreasurer() || isAdmin() || isChairperson());
-      allow list: if isSignedIn() && (isAdmin() || isTreasurer()); // Allow Admins and Treasurers to list users
+      allow list: if isSignedIn() && (isAdmin() || isTreasurer());
       allow create: if isSignedIn() && isOwner(userId);
       allow update: if isSignedIn() && isOwner(userId) &&
                     !(('role' in request.resource.data) && 

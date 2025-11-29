@@ -1,6 +1,6 @@
 'use client';
 
-import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
 import { collection, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import {
   Table,
@@ -22,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { roles } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Lock } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,12 +45,28 @@ interface UserProfile {
   photoURL?: string;
 }
 
+interface CurrentUserProfile {
+    role: string;
+}
+
 export default function ManageUsersPage() {
-  const { user: currentUser } = useUser();
+  const { user: currentUser, isUserLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
-  const usersRef = useMemoFirebase(() => collection(firestore, 'userProfiles'), [firestore]);
-  const { data: users, isLoading } = useCollection<UserProfile>(usersRef);
+
+  const currentUserProfileRef = useMemoFirebase(() => 
+    currentUser ? doc(firestore, 'userProfiles', currentUser.uid) : null, 
+    [firestore, currentUser]
+  );
+  const { data: currentUserProfile, isLoading: isRoleLoading } = useDoc<CurrentUserProfile>(currentUserProfileRef);
+
+  const canFetchUsers = currentUserProfile?.role === 'Admin' || currentUserProfile?.role === 'Treasurer';
+
+  const usersRef = useMemoFirebase(() => 
+    canFetchUsers ? collection(firestore, 'userProfiles') : null, 
+    [firestore, canFetchUsers]
+  );
+  const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersRef);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     if (!firestore) return;
@@ -80,6 +96,42 @@ export default function ManageUsersPage() {
     return `${firstName?.charAt(0) ?? ''}${lastName?.charAt(0) ?? ''}`.toUpperCase();
   };
 
+  const isLoading = isUserLoading || isRoleLoading || (canFetchUsers && usersLoading);
+  
+  if (isLoading) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Manage Users</CardTitle>
+                <CardDescription>View and manage user roles in the system.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+            </CardContent>
+        </Card>
+    );
+  }
+
+  if (!canFetchUsers) {
+      return (
+          <Card>
+              <CardHeader>
+                  <CardTitle>Access Denied</CardTitle>
+                  <CardDescription>You do not have permission to manage users.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
+                  <Lock className="h-12 w-12 text-muted-foreground" />
+                  <p className="mt-4 text-muted-foreground">Only Admins can access this page.</p>
+              </CardContent>
+          </Card>
+      )
+  }
+
+
   return (
     <Card>
       <CardHeader>
@@ -87,13 +139,6 @@ export default function ManageUsersPage() {
         <CardDescription>View and manage user roles in the system.</CardDescription>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -123,6 +168,7 @@ export default function ManageUsersPage() {
                         <Select
                             defaultValue={user.role}
                             onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
+                            disabled={currentUserProfile?.role !== 'Admin'}
                         >
                             <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Select role" />
@@ -138,7 +184,7 @@ export default function ManageUsersPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {user.id !== currentUser?.uid && (
+                    {user.id !== currentUser?.uid && currentUserProfile?.role === 'Admin' && (
                        <AlertDialog>
                         <AlertDialogTrigger asChild>
                            <Button variant="destructive" size="icon">
@@ -166,7 +212,6 @@ export default function ManageUsersPage() {
               ))}
             </TableBody>
           </Table>
-        )}
       </CardContent>
     </Card>
   );

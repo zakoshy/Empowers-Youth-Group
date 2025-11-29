@@ -122,10 +122,13 @@ export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardPro
   }, [firestore, members, fetchSpecialContributions]);
 
   useEffect(() => {
-    if (members) {
+    if (members && members.length > 0) {
       fetchData();
+    } else if (!usersLoading) {
+      // If there are no members and we are not loading, stop loading data.
+      setLoadingData(false);
     }
-  }, [members, fetchData]);
+  }, [members, usersLoading, fetchData]);
 
   const handleAmountChange = (userId: string, monthIndex: number, value: string) => {
     const amount = Number(value);
@@ -238,7 +241,7 @@ export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardPro
       return <Skeleton className="h-[500px] w-full" />
   }
 
-  if (!members) {
+  if (!members || members.length === 0) {
       return <p>No members found.</p>
   }
 

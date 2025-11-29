@@ -17,7 +17,7 @@ interface CurrentUserProfile {
 
 export function useAllUsers() {
   const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
+  const { user, isUserLoading: isAuthLoading } = useUser();
 
   const currentUserProfileRef = useMemoFirebase(() => {
     if (!user) return null;
@@ -27,24 +27,27 @@ export function useAllUsers() {
   const { data: currentUserProfile, isLoading: isRoleLoading } = useDoc<CurrentUserProfile>(currentUserProfileRef);
 
   const userRole = currentUserProfile?.role;
-  const shouldFetchUsers = !isUserLoading && !isRoleLoading && (userRole === 'Admin' || userRole === 'Treasurer');
+  const canFetchUsers = userRole === 'Admin' || userRole === 'Treasurer';
 
   const usersRef = useMemoFirebase(
     () => {
-      // Only create the collection reference if all conditions are met
-      if (firestore && shouldFetchUsers) {
+      // Only create the collection reference if the user has the correct role
+      if (firestore && canFetchUsers) {
         return collection(firestore, 'userProfiles');
       }
-      // Otherwise, return null to prevent the query
+      // Return null otherwise to prevent the query
       return null;
     },
-    [firestore, shouldFetchUsers]
+    [firestore, canFetchUsers] 
   );
 
   const { data, isLoading: usersLoading, error } = useCollection<UserProfile>(usersRef);
 
-  // The overall loading state must account for the initial user and role checks.
-  const isLoading = isUserLoading || isRoleLoading || (shouldFetchUsers && usersLoading);
+  // The overall loading state is true if we are still verifying auth, role, or fetching users.
+  const isLoading = isAuthLoading || isRoleLoading || (canFetchUsers && usersLoading);
+  
+  // Return empty array if we can't fetch users
+  const usersData = canFetchUsers ? data : [];
 
-  return { users: data || [], isLoading, error, userRole };
+  return { users: usersData || [], isLoading, error, userRole };
 }

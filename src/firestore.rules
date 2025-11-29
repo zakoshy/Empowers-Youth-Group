@@ -1,0 +1,211 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Checks if the user is signed in.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the user is the owner of the resource.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the user is an existing owner of the resource (isSignedIn and resource exists).
+     */
+    function isExistingOwner(userId) {
+        return isSignedIn() && isOwner(userId) && exists(/databases/$(database)/documents/userProfiles/$(userId));
+    }
+
+    /**
+     * @description Checks if the user has the 'Chairperson' role in their user profile.
+     */
+    function isChairperson() {
+      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Chairperson';
+    }
+
+    /**
+     * @description Checks if the user has the 'Coordinator' role in their user profile.
+     */
+    function isCoordinator() {
+      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Coordinator';
+    }
+
+    /**
+     * @description Checks if the user has the 'Investment Lead' role in their user profile.
+     */
+    function isInvestmentLead() {
+      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Investment Lead';
+    }
+    
+    /**
+     * @description Checks if the user has the 'Treasurer' role in their user profile.
+     */
+    function isTreasurer() {
+      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Treasurer';
+    }
+
+    /**
+     * @description Checks if the user has the 'Secretary' role in their user profile.
+     */
+    function isSecretary() {
+      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Secretary';
+    }
+
+    /**
+     * @description Checks if the user is an admin by verifying the existence of a document in the `roles_admin` collection.
+     */
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * @description Rules for the admin role collection.
+     * @path /roles_admin/{userId}
+     */
+    match /roles_admin/{userId} {
+      allow get: if isSignedIn() && isAdmin();
+      allow list: if false;
+      allow create: if isSignedIn() && request.auth.uid == userId ;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Rules for user profiles.
+     * @path /userProfiles/{userId}
+     */
+    match /userProfiles/{userId} {
+      allow get: if isSignedIn() && (isOwner(userId) || isTreasurer() || isAdmin() || isChairperson());
+      allow list: if isSignedIn() && (isAdmin() || isTreasurer());
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId) &&
+                    !(('role' in request.resource.data) && 
+                      request.resource.data.role != resource.data.role);
+      allow update: if isSignedIn() && isAdmin();
+      allow delete: if isAdmin() || isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for financial years.
+     * @path /financialYears/{financialYearId}
+     */
+    match /financialYears/{financialYearId} {
+      allow get, list: if isSignedIn();
+      allow create, update: if isSignedIn() && (isChairperson() || isTreasurer());
+      allow delete: if false;
+    }
+
+    /**
+     * @description Rules for user contributions.
+     * @path /userProfiles/{userId}/contributions/{contributionId}
+     */
+    match /userProfiles/{userId}/contributions/{contributionId} {
+      allow get, list: if isSignedIn() && (isOwner(userId) || isTreasurer() || isChairperson());
+      allow create, update: if isSignedIn() && (request.auth.uid == userId || isTreasurer());
+      allow delete: if isExistingOwner(userId);
+    }
+    
+    match /{path=**}/contributions/{contributionId} {
+      allow list: if isSignedIn() && (isInvestmentLead() || isChairperson() || isAdmin() || isTreasurer());
+    }
+
+    match /userProfiles/{userId}/specialContributions/{specialContributionId} {
+      allow get, list: if isSignedIn() && (isOwner(userId) || isTreasurer() || isChairperson());
+      allow create, update, delete: if isSignedIn() && isTreasurer();
+    }
+    
+    match /{path=**}/specialContributions/{specialContributionId} {
+      allow list: if isSignedIn() && (isTreasurer() || isInvestmentLead() || isChairperson() || isAdmin());
+    }
+
+    /**
+     * @description Rules for events.
+     * @path /events/{eventId}
+     */
+    match /events/{eventId} {
+      allow get, list: if true;
+      allow create, update: if isSignedIn() && isCoordinator();
+      allow delete: if false;
+    }
+
+    /**
+     * @description Rules for the constitution.
+     * @path /constitution/{constitutionId}
+     */
+    match /constitution/{constitutionId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && isChairperson();
+    }
+
+    /**
+     * @description Rules for investment reports.
+     * @path /investmentReports/{investmentReportId}
+     */
+    match /investmentReports/{investmentReportId} {
+      allow get, list: if isSignedIn();
+      allow create, update: if isSignedIn() && isInvestmentLead();
+      allow delete: if false;
+    }
+
+    match /investmentIdeas/{ideaId} {
+        allow get, list: if isSignedIn();
+        allow create, update, delete: if isSignedIn() && (isInvestmentLead() || isChairperson());
+    }
+
+    match /meetingMinutes/{minuteId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && (isSecretary() || isAdmin());
+    }
+
+    /**
+     * @description Rules for polls.
+     * @path /polls/{pollId}
+     */
+    match /polls/{pollId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.creatorId;
+
+      allow update: if isSignedIn() &&
+        (isOwner(resource.data.creatorId) || isChairperson() || isAdmin());
+
+      allow delete: if isSignedIn() &&
+        ((resource.data.creatorId != null && resource.data.creatorId == request.auth.uid)
+         || isChairperson()
+         || isAdmin());
+
+      allow update: if isSignedIn() &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(['options', 'voters']);
+    }
+
+    function hasVoted(pollId) {
+      return exists(/databases/$(database)/documents/polls/$(pollId)/votes/$(request.auth.uid));
+    }
+    
+    match /polls/{pollId}/votes/{voteId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn() && (hasVoted(pollId) || isChairperson() || isAdmin());
+
+      allow create: if isSignedIn() &&
+        voteId == request.auth.uid &&
+        request.resource.data.userId == request.auth.uid;
+
+      allow update: if isSignedIn() &&
+        voteId == request.auth.uid &&
+        request.resource.data.userId == request.auth.uid;
+      
+      allow delete: if isSignedIn() && (
+        isOwner(voteId) || 
+        isOwner(get(/databases/$(database)/documents/polls/$(pollId)).data.creatorId) || 
+        isChairperson() || 
+        isAdmin()
+      );
+    }
+  }
+}

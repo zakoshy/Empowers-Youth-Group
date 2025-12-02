@@ -13,6 +13,7 @@ import { z } from 'genkit';
 import {googleAI, textEmbedding} from '@genkit-ai/google-genai';
 import * as path from 'path';
 import * as fs from 'fs';
+import { defineRetriever, faissRetriever } from 'genkitx-faiss';
 
 // Define the schema for the chatbot input
 export const RagQueryInputSchema = z.object({
@@ -27,7 +28,6 @@ export const RagQueryOutputSchema = z.object({
 export type RagQueryOutput = z.infer<typeof RagQueryOutputSchema>;
 
 // Define the document retriever using FAISS
-/*
 const docRetriever = defineRetriever(
   {
     name: 'empowers-retriever',
@@ -69,7 +69,7 @@ const docRetriever = defineRetriever(
     );
   }
 );
-*/
+
 // Define the AI prompt for answering questions
 const answerPrompt = ai.definePrompt({
   name: 'answerPrompt',
@@ -84,7 +84,7 @@ const answerPrompt = ai.definePrompt({
     }),
   },
   // Augment the prompt with context from our retriever
-  // retrievers: [docRetriever],
+  retrievers: [docRetriever],
   // Use a powerful model capable of following instructions
   model: 'googleai/gemini-1.5-flash-latest',
   prompt: `You are a helpful assistant for "The Empowers youth group".
@@ -110,12 +110,10 @@ const ragChatFlow = ai.defineFlow(
     outputSchema: RagQueryOutputSchema,
   },
   async ({ question }) => {
-    //
-    return { answer: "The RAG chatbot is temporarily disabled due to a configuration issue. Please check back later." };
-    /*
+    
     const { output } = await answerPrompt({ question });
     return output!;
-    */
+    
   }
 );
 

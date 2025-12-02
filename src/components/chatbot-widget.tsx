@@ -5,9 +5,6 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import { MessageSquare } from 'lucide-react';
 
@@ -29,12 +26,6 @@ export function ChatbotWidget() {
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-md h-[70vh] flex flex-col p-0">
-          <DialogHeader className="p-6 pb-2">
-            <DialogTitle>Chat with our Assistant</DialogTitle>
-            <DialogDescription>
-              Ask questions about the group, our mission, or how to join.
-            </DialogDescription>
-          </DialogHeader>
           <div className="flex-1 overflow-hidden border-t">
             <iframe
               src={CHATBOT_URL}

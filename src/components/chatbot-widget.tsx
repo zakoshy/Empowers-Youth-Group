@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -5,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
 } from '@/components/ui/dialog';
 import { MessageSquare } from 'lucide-react';
 
@@ -26,7 +30,13 @@ export function ChatbotWidget() {
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-md h-[70vh] flex flex-col p-0">
-          <div className="flex-1 overflow-hidden border-t">
+           <DialogHeader className="sr-only">
+            <DialogTitle>Empowers Youth Group Chatbot</DialogTitle>
+            <DialogDescription>
+              An interactive chatbot to answer your questions about the Empowers youth group. You can ask about our mission, events, and how to join.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
             <iframe
               src={CHATBOT_URL}
               className="w-full h-full border-0"

@@ -10,6 +10,12 @@ import {
   DialogTitle,
   DialogDescription
 } from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { MessageSquare } from 'lucide-react';
 
 const CHATBOT_URL = 'https://rag-project-delta.vercel.app/';
@@ -19,14 +25,23 @@ export function ChatbotWidget() {
 
   return (
     <>
-      <Button
-        className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg"
-        onClick={() => setIsOpen(true)}
-        aria-label="Open chatbot"
-        style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}
-      >
-        <MessageSquare className="h-8 w-8" />
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg"
+              onClick={() => setIsOpen(true)}
+              aria-label="Open chatbot"
+              style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}
+            >
+              <MessageSquare className="h-8 w-8" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Empowers chatbot</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-md h-[70vh] flex flex-col p-0">

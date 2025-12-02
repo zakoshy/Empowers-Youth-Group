@@ -42,7 +42,6 @@
     "date-fns": "^3.6.0",
     "dotenv": "^16.5.0",
     "embla-carousel-react": "^8.6.0",
-    "faiss-node": "^0.5.1",
     "firebase": "^11.9.1",
     "genkit": "^1.24.0",
     "lodash.debounce": "^4.0.8",

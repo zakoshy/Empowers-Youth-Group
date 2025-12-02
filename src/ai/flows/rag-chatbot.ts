@@ -10,10 +10,13 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import {googleAI, textEmbedding} from '@genkit-ai/google-genai';
+import { googleAI, textEmbedding } from '@genkit-ai/google-genai';
 import * as path from 'path';
 import * as fs from 'fs';
-import { defineRetriever, faissRetriever } from 'genkitx-faiss';
+import { defineRetriever, Retriever } from 'genkit';
+import { Document } from 'genkit/ai/retriever';
+import { FaissStore } from 'faiss-node';
+
 
 // Define the schema for the chatbot input
 export const RagQueryInputSchema = z.object({
@@ -27,48 +30,43 @@ export const RagQueryOutputSchema = z.object({
 });
 export type RagQueryOutput = z.infer<typeof RagQueryOutputSchema>;
 
-// Define the document retriever using FAISS
-const docRetriever = defineRetriever(
+// Define a custom FAISS retriever using `defineRetriever`
+const faissRetriever: Retriever = defineRetriever(
   {
-    name: 'empowers-retriever',
-    configSchema: z.object({
-      indexFile: z.string().optional(),
-    }),
+    name: 'empowers-faiss-retriever',
   },
-  async (config) => {
-    const documents = [];
+  async (input) => {
     const docsDir = path.resolve(process.cwd(), 'src', 'docs', 'rag-data');
+    const documents: Document[] = [];
 
     if (fs.existsSync(docsDir)) {
-        const files = fs.readdirSync(docsDir);
-        for (const file of files) {
-            if (file.endsWith('.txt')) {
-                const content = fs.readFileSync(path.join(docsDir, file), 'utf-8');
-                documents.push({
-                    content,
-                    metadata: { source: file }
-                });
-            }
+      const files = fs.readdirSync(docsDir);
+      for (const file of files) {
+        if (file.endsWith('.txt')) {
+          const content = fs.readFileSync(path.join(docsDir, file), 'utf-8');
+          documents.push(Document.fromText(content, { source: file }));
         }
+      }
     }
 
     if (documents.length === 0) {
-        documents.push({
-            content: "There are currently no documents available to answer questions from. Please add some text files to the 'src/docs/rag-data' directory.",
-            metadata: { source: 'system-placeholder' }
-        });
+      documents.push(Document.fromText(
+        "There are currently no documents available to answer questions from. Please add some text files to the 'src/docs/rag-data' directory.",
+        { source: 'system-placeholder' }
+      ));
     }
+    
+    const embedder = textEmbedding('text-embedding-004');
 
-    // Initialize the FAISS retriever with our documents and embedding model
-    return faissRetriever(
-      {
-        documents,
-        embedder: textEmbedding('text-embedding-004'),
-        indexFile: config.indexFile,
-      }
-    );
+    // Create a FAISS store with the documents.
+    const store = await FaissStore.fromDocuments(documents, embedder);
+    
+    // Retrieve the most relevant documents for the input query.
+    const relevantDocs = await store.similaritySearch(input.text, 3);
+    return { documents: relevantDocs };
   }
 );
+
 
 // Define the AI prompt for answering questions
 const answerPrompt = ai.definePrompt({
@@ -84,7 +82,7 @@ const answerPrompt = ai.definePrompt({
     }),
   },
   // Augment the prompt with context from our retriever
-  retrievers: [docRetriever],
+  retrievers: [faissRetriever],
   // Use a powerful model capable of following instructions
   model: 'googleai/gemini-1.5-flash-latest',
   prompt: `You are a helpful assistant for "The Empowers youth group".

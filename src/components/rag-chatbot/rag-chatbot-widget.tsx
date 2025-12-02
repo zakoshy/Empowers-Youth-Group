@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -8,7 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Tooltip,
@@ -17,10 +16,10 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { MessageSquare } from 'lucide-react';
+import { RagChatbot } from './rag-chatbot';
 
-const CHATBOT_URL = 'https://rag-project-delta.vercel.app/';
 
-export function ChatbotWidget() {
+export function RagChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -44,21 +43,12 @@ export function ChatbotWidget() {
       </TooltipProvider>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md h-[70vh] flex flex-col p-0">
-           <DialogHeader className="sr-only">
-            <DialogTitle>Empowers Youth Group Chatbot</DialogTitle>
-            <DialogDescription>
-              An interactive chatbot to answer your questions about the Empowers youth group. You can ask about our mission, events, and how to join.
-            </DialogDescription>
+        <DialogContent className="sm:max-w-lg h-[80vh] flex flex-col p-0 gap-0">
+           <DialogHeader className="p-4 border-b">
+            <DialogTitle className="sr-only">Empowers Chatbot</DialogTitle>
+            <DialogDescription className="sr-only">A chatbot to help you with questions about The Empowers youth group.</DialogDescription>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden">
-            <iframe
-              src={CHATBOT_URL}
-              className="w-full h-full border-0"
-              title="Empowers Youth Group Chatbot"
-              allow="microphone"
-            />
-          </div>
+          <RagChatbot />
         </DialogContent>
       </Dialog>
     </>

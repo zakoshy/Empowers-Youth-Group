@@ -106,6 +106,7 @@ export default {
               fontFamily: theme('fontFamily.headline'),
             },
             '--tw-prose-bullets': theme('colors.primary.DEFAULT'),
+             '--tw-prose-p': { 'margin-top': '0', 'margin-bottom': '0' },
           },
         },
       }),

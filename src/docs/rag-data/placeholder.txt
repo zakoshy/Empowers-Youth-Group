@@ -1,0 +1,11 @@
+This is a placeholder file for the RAG chatbot data.
+
+Please delete this file and add your own .txt documents to this directory. Each text file will be treated as a separate document that the chatbot can learn from.
+
+For example, you could create files like:
+- mission.txt
+- about_us.txt
+- joining_instructions.txt
+- events_faq.txt
+
+The chatbot will only answer questions based on the content found in these files.

@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -13,8 +14,7 @@ import { z } from 'genkit';
 import { googleAI, textEmbedding } from '@genkit-ai/google-genai';
 import * as path from 'path';
 import * as fs from 'fs';
-import { defineRetriever, Retriever } from 'genkit';
-import { Document } from 'genkit/ai/retriever';
+import { defineRetriever, Retriever, Document } from 'genkit';
 import { FaissStore } from 'faiss-node';
 
 

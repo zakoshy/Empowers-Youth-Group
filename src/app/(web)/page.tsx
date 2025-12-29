@@ -16,12 +16,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function HomePage() {
-  const heroImage = PlaceHolderImages.find((img) => img.id === "hero-background");
-
-  const aboutImage = PlaceHolderImages.find((img) => img.id === "about-story");
-  const missionVisionImage = PlaceHolderImages.find((img) => img.id === "mission-vision");
-  const aboutStoryImage = PlaceHolderImages.find((img) => img.id === "about-story");
-
   const firestore = useFirestore();
   const [now] = useState(() => new Date().toISOString());
 
@@ -44,16 +38,14 @@ export default function HomePage() {
     <div className="flex flex-col">
       {/* Hero Section */}
       <section className="relative h-[70vh] w-full">
-        {heroImage && (
-          <Image
-            src={heroImage.imageUrl}
-            alt={heroImage.description}
-            fill
-            className="object-cover"
-            data-ai-hint={heroImage.imageHint}
-            priority
-          />
-        )}
+        <Image
+          src="/empower4.jpg"
+          alt="Youth group collaborating on a project"
+          fill
+          className="object-cover"
+          data-ai-hint="empowered youth"
+          priority
+        />
         <div className="absolute inset-0 bg-black/50" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white p-4">
             <div className="relative container mx-auto h-full flex flex-col items-center justify-center text-center text-white">
@@ -137,18 +129,16 @@ export default function HomePage() {
               Having found our own paths to stability, we felt a collective responsibility to return to our roots and build the support system we wished we'd had. We decided to pool our resources, knowledge, and energy to create a platform for the next generation.
             </p>
 
-            {aboutStoryImage && (
-              <div className="my-12 flex justify-center">
-                <Image
-                    src={aboutStoryImage.imageUrl}
-                    alt={aboutStoryImage.description}
-                    width={600}
-                    height={400}
-                    className="rounded-lg shadow-2xl object-cover"
-                    data-ai-hint={aboutStoryImage.imageHint}
-                />
-              </div>
-            )}
+            <div className="my-12 flex justify-center">
+              <Image
+                  src="/youth5.jpg"
+                  alt="A smiling young person"
+                  width={600}
+                  height={400}
+                  className="rounded-lg shadow-2xl object-cover"
+                  data-ai-hint="youth empowerment"
+              />
+            </div>
 
             <h2 className="mt-8 text-2xl font-headline font-semibold">The Birth of The Empowers youth group</h2>
             <p className="mt-4 text-muted-foreground">

@@ -39,7 +39,7 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="relative h-[70vh] w-full">
         <Image
-          src="/empower4.jpg"
+          src="/empower4.jpg?v=2"
           alt="Youth group collaborating on a project"
           fill
           className="object-cover"
@@ -131,7 +131,7 @@ export default function HomePage() {
 
             <div className="my-12 flex justify-center">
               <Image
-                  src="/youth5.jpg"
+                  src="/youth5.jpg?v=2"
                   alt="A smiling young person"
                   width={600}
                   height={400}

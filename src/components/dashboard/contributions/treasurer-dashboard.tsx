@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { MONTHS, FINANCIAL_CONFIG } from '@/lib/data';
+import { MONTHS, FINANCIAL_CONFIG, Expenditure } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -58,7 +58,9 @@ export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardPro
   const { toast } = useToast();
   
   const usersRef = useMemoFirebase(() => query(collection(firestore, 'userProfiles'), where('role', '!=', 'Admin')), [firestore]);
+  const expendituresRef = useMemoFirebase(() => query(collection(firestore, 'expenditures'), where('year', '==', currentYear)), [firestore]);
   const { data: members, isLoading: usersLoading } = useCollection<UserProfile>(usersRef);
+  const { data: expenditures, isLoading: expendituresLoading } = useCollection<Expenditure>(expendituresRef);
   
   const [contributions, setContributions] = useState<Record<string, Record<string, number>>>({});
   const [specialContributions, setSpecialContributions] = useState<Record<string, SpecialContribution[]>>({});
@@ -213,7 +215,7 @@ export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardPro
     }
   }
 
-  const grandTotal = useMemo(() => {
+  const grandTotalContributions = useMemo(() => {
     const monthlyTotal = Object.values(contributions).reduce((total, userContributions) => {
         return total + Object.values(userContributions).reduce((userTotal, amount) => userTotal + amount, 0);
     }, 0);
@@ -224,8 +226,15 @@ export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardPro
 
     return monthlyTotal + specialTotal;
   }, [contributions, specialContributions]);
+
+  const totalExpenditure = useMemo(() => {
+    if (!expenditures) return 0;
+    return expenditures.reduce((total, exp) => total + exp.amount, 0);
+  }, [expenditures]);
+
+  const netTotal = grandTotalContributions - totalExpenditure;
   
-  const isLoading = usersLoading || loadingData;
+  const isLoading = usersLoading || loadingData || expendituresLoading;
 
   const allMembersDataForAI = useMemo(() => {
     if (!members) return [];
@@ -251,7 +260,7 @@ export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardPro
         {!isReadOnly && (
           <TreasurerInsights 
             allMembersData={allMembersDataForAI}
-            totalFunds={grandTotal}
+            totalFunds={netTotal}
             monthlyTarget={FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION}
           />
         )}
@@ -433,9 +442,9 @@ export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardPro
             </>
             )}
         </CardContent>
-        <CardFooter className="justify-between items-center">
+        <CardFooter className="justify-between items-center flex-wrap gap-4">
             <div className="text-lg font-bold">
-              Total Collected: <span className="text-primary">Ksh {grandTotal.toLocaleString()}</span>
+              Total Funds (Net): <span className="text-primary">Ksh {netTotal.toLocaleString()}</span>
             </div>
             {!isReadOnly && (
                 <Button onClick={handleUpdateContributions} disabled={isSaving}>

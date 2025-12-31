@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
@@ -23,7 +22,7 @@ export default function ExpenditurePage() {
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
 
   const isLoading = isUserLoading || isProfileLoading;
-  const isTreasurer = userProfile?.role === 'Treasurer' || userProfile?.role === 'Admin';
+  const isTreasurer = userProfile?.role === 'Treasurer';
 
   if (isLoading) {
     return (

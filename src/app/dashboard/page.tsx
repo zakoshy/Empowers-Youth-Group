@@ -12,7 +12,7 @@ import { InvestmentSuggestions } from "@/components/dashboard/investment-suggest
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { FileText, Phone, Wand2, Loader2 } from "lucide-react";
+import { FileText, Phone, Wand2, Loader2, Banknote as BankIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { doc } from "firebase/firestore";
 import { MinutesWidget } from "@/components/dashboard/minutes-widget";
@@ -86,20 +86,37 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">Here's a summary of your activities and group updates.</p>
         </div>
         
-        <Card className="bg-primary/5">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Phone className="h-5 w-5" />
-                <span>M-Pesa Contribution Details</span>
-              </CardTitle>
-              <CardDescription>
-                Use the number below to send your monthly contributions.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold font-mono tracking-widest">0112263590</p>
-            </CardContent>
-        </Card>
+        <div className="grid gap-4 md:grid-cols-2">
+            <Card className="bg-primary/5">
+                <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Phone className="h-5 w-5" />
+                    <span>M-Pesa Contribution Details</span>
+                </CardTitle>
+                <CardDescription>
+                    Use the till number below to send your monthly contributions.
+                </CardDescription>
+                </CardHeader>
+                <CardContent>
+                <p className="text-2xl font-bold font-mono tracking-widest">0112263590</p>
+                </CardContent>
+            </Card>
+            <Card className="bg-accent/10">
+                <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <BankIcon className="h-5 w-5" />
+                    <span>Equity Bank Account</span>
+                </CardTitle>
+                <CardDescription>
+                    Use Paybill <strong>247247</strong> with the account number below.
+                </CardDescription>
+                </CardHeader>
+                <CardContent>
+                <p className="text-2xl font-bold font-mono tracking-widest">1050187008802</p>
+                </CardContent>
+            </Card>
+        </div>
+
 
         <StatsCards />
 

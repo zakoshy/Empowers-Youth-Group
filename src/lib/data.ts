@@ -113,6 +113,16 @@ export type Expenditure = {
     recordedBy: string;
 }
 
+export type MiscellaneousIncome = {
+    id: string;
+    type: 'Registration Fee' | 'Fine' | 'Loan Interest';
+    description: string;
+    amount: number;
+    date: string;
+    memberId?: string;
+    recordedBy: string;
+};
+
 export const navLinks = [
   { href: "/", label: "Home" },
   { href: "/#about", label: "About Us" },

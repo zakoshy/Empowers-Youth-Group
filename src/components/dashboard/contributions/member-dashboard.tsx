@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -12,6 +11,13 @@ import { MONTHS, FINANCIAL_CONFIG } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Gift, Banknote } from 'lucide-react';
 import { format } from 'date-fns';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface Contribution {
   id: string; 
@@ -47,42 +53,62 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
     [firestore, userId]
   );
 
-  const { data: contributions, isLoading: contributionsLoading } = useCollection<Contribution>(contributionsRef);
-  const { data: specialContributions, isLoading: specialContributionsLoading } = useCollection<SpecialContribution>(specialContributionsRef);
+  const { data: allContributions, isLoading: contributionsLoading } = useCollection<Contribution>(contributionsRef);
+  const { data: allSpecialContributions, isLoading: specialContributionsLoading } = useCollection<SpecialContribution>(specialContributionsRef);
 
-  const [yearlyData, setYearlyData] = useState<Record<string, number>>({});
-  const [totalContribution, setTotalContribution] = useState(0);
-  const [totalSpecialContribution, setTotalSpecialContribution] = useState(0);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
 
-  useEffect(() => {
-    if (contributions) {
-      const dataForYear = contributions.reduce((acc, curr) => {
-        if (curr.year === currentYear) {
+  const { yearlyData, totalContributionForYear, totalDebt, grandTotal, totalSpecialContribution } = useMemo(() => {
+    if (!allContributions || !allSpecialContributions) {
+        return { yearlyData: {}, totalContributionForYear: 0, totalDebt: 0, grandTotal: 0, totalSpecialContribution: 0 };
+    }
+
+    const years = new Set<number>([currentYear]);
+    allContributions.forEach(c => years.add(c.year));
+    allSpecialContributions.forEach(sc => years.add(sc.year));
+    const sortedYears = Array.from(years).sort((a,b) => b-a);
+    if(availableYears.length !== sortedYears.length) {
+        setAvailableYears(sortedYears);
+    }
+    
+    // Calculate total debt up to the current year
+    let calculatedTotalDebt = 0;
+    for (let year = Math.min(...sortedYears); year <= currentYear; year++) {
+        const contributionsThisYear = allContributions.filter(c => c.year === year).reduce((sum, c) => sum + c.amount, 0);
+        calculatedTotalDebt += (annualTarget - contributionsThisYear);
+    }
+
+    // Data for selected year
+    const dataForSelectedYear = allContributions.reduce((acc, curr) => {
+        if (curr.year === selectedYear) {
           acc[MONTHS[curr.month].toLowerCase()] = curr.amount;
         }
         return acc;
       }, {} as Record<string, number>);
 
-      const total = Object.values(dataForYear).reduce((sum, amount) => sum + amount, 0);
-      
-      setYearlyData(dataForYear);
-      setTotalContribution(total);
-    }
-  }, [contributions]);
+    const totalContributionForSelectedYear = Object.values(dataForSelectedYear).reduce((sum, amount) => sum + amount, 0);
+    
+    // Grand totals for all time
+    const allTimeMonthlyTotal = allContributions.reduce((sum, c) => sum + c.amount, 0);
+    const allTimeSpecialTotal = allSpecialContributions.reduce((sum, sc) => sum + sc.amount, 0);
 
-  useEffect(() => {
-    if (specialContributions) {
-        const currentYearSpecialContributions = specialContributions.filter(sc => sc.year === currentYear);
-        const total = currentYearSpecialContributions.reduce((sum, sc) => sum + sc.amount, 0);
-        setTotalSpecialContribution(total);
-    }
-  }, [specialContributions]);
+
+    return { 
+        yearlyData: dataForSelectedYear,
+        totalContributionForYear: totalContributionForSelectedYear,
+        totalDebt: calculatedTotalDebt,
+        grandTotal: allTimeMonthlyTotal + allTimeSpecialTotal,
+        totalSpecialContribution: allTimeSpecialTotal
+    };
+
+  }, [allContributions, allSpecialContributions, selectedYear, availableYears]);
   
   const monthlySpecialContributions = useMemo(() => {
     const monthly: Record<string, SpecialContribution[]> = {};
-    if (specialContributions) {
-      specialContributions.forEach(sc => {
-        if (sc.year === currentYear) {
+    if (allSpecialContributions) {
+      allSpecialContributions.forEach(sc => {
+        if (sc.year === selectedYear) {
           const monthName = MONTHS[sc.month];
           if (!monthly[monthName]) {
             monthly[monthName] = [];
@@ -92,11 +118,9 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
       });
     }
     return monthly;
-  }, [specialContributions]);
+  }, [allSpecialContributions, selectedYear]);
 
-  const outstandingDebt = annualTarget - totalContribution;
-  const progressPercentage = (totalContribution / annualTarget) * 100;
-  const grandTotal = totalContribution + totalSpecialContribution;
+  const progressPercentage = (totalContributionForYear / annualTarget) * 100;
 
   const isLoading = contributionsLoading || specialContributionsLoading;
 
@@ -118,56 +142,70 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>My Contributions - {currentYear}</CardTitle>
-          <CardDescription>
-            A summary of your financial status for the current year.
-          </CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>My Contributions - {selectedYear}</CardTitle>
+              <CardDescription>
+                A summary of your financial status.
+              </CardDescription>
+            </div>
+             <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(Number(value))}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select year" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map(year => (
+                  <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Monthly Contributions</CardTitle>
+                    <CardTitle className="text-sm font-medium">Contributions This Year</CardTitle>
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">Ksh {totalContribution.toLocaleString()}</div>
+                    <div className="text-2xl font-bold">Ksh {totalContributionForYear.toLocaleString()}</div>
                     <p className="text-xs text-muted-foreground">out of Ksh {annualTarget.toLocaleString()}</p>
                 </CardContent>
             </Card>
              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Outstanding Debt</CardTitle>
+                    <CardTitle className="text-sm font-medium">Total Outstanding Debt</CardTitle>
                     <TrendingDown className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">Ksh {outstandingDebt.toLocaleString()}</div>
-                     <p className="text-xs text-muted-foreground">for monthly contributions</p>
+                    <div className="text-2xl font-bold">Ksh {totalDebt > 0 ? totalDebt.toLocaleString() : 0}</div>
+                     <p className="text-xs text-muted-foreground">across all years</p>
                 </CardContent>
             </Card>
              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Miniharambees</CardTitle>
+                    <CardTitle className="text-sm font-medium">All-Time Miniharambees</CardTitle>
                     <Gift className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">Ksh {totalSpecialContribution.toLocaleString()}</div>
-                     <p className="text-xs text-muted-foreground">total raised this year</p>
+                     <p className="text-xs text-muted-foreground">total raised</p>
                 </CardContent>
             </Card>
             <Card className="bg-primary/10">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Grand Total</CardTitle>
+                    <CardTitle className="text-sm font-medium">All-Time Grand Total</CardTitle>
                     <Banknote className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">Ksh {grandTotal.toLocaleString()}</div>
-                     <p className="text-xs text-muted-foreground">monthly + miniharambees</p>
+                     <p className="text-xs text-muted-foreground">all contributions</p>
                 </CardContent>
             </Card>
           </div>
             <div className="space-y-2">
-                <p className="text-sm font-medium">Yearly Contribution Progress</p>
+                <p className="text-sm font-medium">{selectedYear} Contribution Progress</p>
                 <Progress value={progressPercentage} className="w-full" />
                 <p className="text-xs text-muted-foreground text-right">{progressPercentage.toFixed(0)}% complete</p>
             </div>
@@ -176,7 +214,7 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
       
       <Card>
           <CardHeader>
-              <CardTitle>Detailed Breakdown by Month</CardTitle>
+              <CardTitle>Detailed Breakdown for {selectedYear}</CardTitle>
           </CardHeader>
           <CardContent>
           <Table>
@@ -235,5 +273,3 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
     </div>
   );
 }
-
-    

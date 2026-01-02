@@ -1,9 +1,8 @@
-
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, collectionGroup, getDocs, query } from 'firebase/firestore';
 import {
   Card,
   CardContent,
@@ -27,49 +26,66 @@ interface SpecialContribution {
 export function StatsCards() {
   const { user } = useUser();
   const firestore = useFirestore();
-
   const currentYear = new Date().getFullYear();
   const annualTarget = FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION * 12;
 
-  const contributionsRef = useMemoFirebase(
-    () => user ? collection(firestore, 'userProfiles', user.uid, 'contributions') : null,
-    [firestore, user]
-  );
-
-  const specialContributionsRef = useMemoFirebase(
-    () => user ? collection(firestore, 'userProfiles', user.uid, 'specialContributions') : null,
-    [firestore, user]
-  );
-  
-  const { data: contributions, isLoading: contributionsLoading } = useCollection<Contribution>(contributionsRef);
-  const { data: specialContributions, isLoading: specialContributionsLoading } = useCollection<SpecialContribution>(specialContributionsRef);
-  
+  const [isLoading, setIsLoading] = useState(true);
   const [totalContribution, setTotalContribution] = useState(0);
+  const [totalDebt, setTotalDebt] = useState(0);
   const [totalSpecialContribution, setTotalSpecialContribution] = useState(0);
-  const [outstandingDebt, setOutstandingDebt] = useState(annualTarget);
+  const [grandTotal, setGrandTotal] = useState(0);
 
   useEffect(() => {
-    if (contributions) {
-      const currentYearContributions = contributions.filter(c => c.year === currentYear);
-      const total = currentYearContributions.reduce((acc, curr) => acc + curr.amount, 0);
-      setTotalContribution(total);
-      setOutstandingDebt(annualTarget - total);
-    } else {
-        setTotalContribution(0);
-        setOutstandingDebt(annualTarget);
-    }
-  }, [contributions, annualTarget]);
+    if (!user) {
+        setIsLoading(false);
+        return;
+    };
 
-  useEffect(() => {
-    if (specialContributions) {
-        const currentYearSpecialContributions = specialContributions.filter(sc => sc.year === currentYear);
-        const total = currentYearSpecialContributions.reduce((sum, sc) => sum + sc.amount, 0);
-        setTotalSpecialContribution(total);
-    }
-  }, [specialContributions]);
+    const fetchData = async () => {
+        setIsLoading(true);
+        try {
+            const contributionsRef = collection(firestore, 'userProfiles', user.uid, 'contributions');
+            const specialContributionsRef = collection(firestore, 'userProfiles', user.uid, 'specialContributions');
+            
+            const [contributionsSnapshot, specialContributionsSnapshot] = await Promise.all([
+                getDocs(query(contributionsRef)),
+                getDocs(query(specialContributionsRef)),
+            ]);
 
-  const isLoading = contributionsLoading || specialContributionsLoading;
-  const grandTotal = totalContribution + totalSpecialContribution;
+            const allContributions: Contribution[] = contributionsSnapshot.docs.map(d => d.data() as Contribution);
+            const allSpecialContributions: SpecialContribution[] = specialContributionsSnapshot.docs.map(d => d.data() as SpecialContribution);
+
+            const years = new Set<number>([currentYear]);
+            allContributions.forEach(c => years.add(c.year));
+
+            let calculatedTotalDebt = 0;
+            for (let year = Math.min(...Array.from(years)); year <= currentYear; year++) {
+                const contributionsThisYear = allContributions.filter(c => c.year === year).reduce((sum, c) => sum + c.amount, 0);
+                calculatedTotalDebt += (annualTarget - contributionsThisYear);
+            }
+            setTotalDebt(calculatedTotalDebt > 0 ? calculatedTotalDebt : 0);
+
+            const currentYearContributions = allContributions.filter(c => c.year === currentYear);
+            const totalForCurrentYear = currentYearContributions.reduce((acc, curr) => acc + curr.amount, 0);
+            setTotalContribution(totalForCurrentYear);
+
+            const allTimeSpecialTotal = allSpecialContributions.reduce((sum, sc) => sum + sc.amount, 0);
+            setTotalSpecialContribution(allTimeSpecialTotal);
+
+            const allTimeMonthlyTotal = allContributions.reduce((sum, c) => sum + c.amount, 0);
+            setGrandTotal(allTimeMonthlyTotal + allTimeSpecialTotal);
+
+        } catch (error) {
+            console.error("Failed to fetch stats:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    fetchData();
+
+  }, [user, firestore, currentYear, annualTarget]);
+
 
   if (isLoading) {
     return (
@@ -89,7 +105,6 @@ export function StatsCards() {
     const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
     const lastDayOfNextMonth = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 0);
     
-    // If today is past the due date of current month, show next month's due date
     const currentMonthDueDate = new Date(today.getFullYear(), today.getMonth(), 30);
     if(today > currentMonthDueDate) {
       const nextMonthDate = new Date(today.getFullYear(), today.getMonth() + 1, 30);
@@ -104,7 +119,7 @@ export function StatsCards() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
-            Monthly Contribution ({currentYear})
+            Contribution ({currentYear})
           </CardTitle>
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -120,16 +135,16 @@ export function StatsCards() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
-            Outstanding Debt ({currentYear})
+            Total Outstanding Debt
           </CardTitle>
           <TrendingDown className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            Ksh {outstandingDebt.toLocaleString()}
+            Ksh {totalDebt.toLocaleString()}
           </div>
           <p className="text-xs text-muted-foreground">
-            Remaining for monthly goal
+            Cumulative from previous years
           </p>
         </CardContent>
       </Card>
@@ -149,7 +164,7 @@ export function StatsCards() {
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Miniharambees ({currentYear})</CardTitle>
+          <CardTitle className="text-sm font-medium">All-Time Miniharambees</CardTitle>
           <Gift className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -175,12 +190,12 @@ export function StatsCards() {
       </Card>
         <Card className="bg-primary/10">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Grand Total ({currentYear})</CardTitle>
+                <CardTitle className="text-sm font-medium">All-Time Grand Total</CardTitle>
                 <Banknote className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
                 <div className="text-2xl font-bold">Ksh {grandTotal.toLocaleString()}</div>
-                    <p className="text-xs text-muted-foreground">monthly + miniharambees</p>
+                    <p className="text-xs text-muted-foreground">all contributions made</p>
             </CardContent>
         </Card>
     </div>

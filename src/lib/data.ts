@@ -126,7 +126,7 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
   let allLinks = [
     { href: "/dashboard", label: "Dashboard", icon: "Home", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/profile", label: "Profile", icon: "Users", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
-    { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer", "Chairperson", "Investment Lead", "Coordinator"] },
+    { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer", "Chairperson", "Investment Lead", "Coordinator", "Secretary", "Vice Chairperson"] },
     { href: "/dashboard/expenditure", label: "Expenditure", icon: "TrendingDown", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/shares", label: "Shares", icon: "Scale", roles: ["Admin"] },
     { href: "/dashboard/polls", label: "Polls", icon: "Vote", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },

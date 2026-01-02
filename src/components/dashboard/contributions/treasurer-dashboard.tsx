@@ -21,6 +21,7 @@ import { format } from 'date-fns';
 import { TreasurerInsights } from './treasurer-insights';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OtherIncome } from './other-income';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 interface UserProfile {
@@ -52,15 +53,18 @@ interface TreasurerDashboardProps {
   isReadOnly: boolean;
 }
 
-
-const currentYear = new Date().getFullYear();
+const initialYear = new Date().getFullYear();
 
 export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   
   const usersRef = useMemoFirebase(() => query(collection(firestore, 'userProfiles'), where('role', '!=', 'Admin')), [firestore]);
-  const expendituresRef = useMemoFirebase(() => query(collection(firestore, 'expenditures'), where('year', '==', currentYear)), [firestore]);
+  
+  const [selectedYear, setSelectedYear] = useState(initialYear);
+  const [availableYears, setAvailableYears] = useState<number[]>([initialYear]);
+
+  const expendituresRef = useMemoFirebase(() => query(collection(firestore, 'expenditures'), where('year', '==', selectedYear)), [firestore]);
   const otherIncomesRef = useMemoFirebase(() => query(collection(firestore, 'miscellaneousIncomes')), [firestore]);
   const { data: members, isLoading: usersLoading } = useCollection<UserProfile>(usersRef);
   const { data: expenditures, isLoading: expendituresLoading } = useCollection<Expenditure>(expendituresRef);
@@ -87,7 +91,7 @@ export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardPro
     const allSpecialContributions: Record<string, SpecialContribution[]> = {};
     for (const member of members) {
       const specialContributionsRef = collection(firestore, 'userProfiles', member.id, 'specialContributions');
-      const qSpecial = query(specialContributionsRef, where('year', '==', currentYear));
+      const qSpecial = query(specialContributionsRef, where('year', '==', selectedYear));
       const specialSnapshot = await getDocs(qSpecial);
 
       const memberSpecialContributions: SpecialContribution[] = [];
@@ -97,7 +101,7 @@ export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardPro
       allSpecialContributions[member.id] = memberSpecialContributions;
     }
     setSpecialContributions(allSpecialContributions);
-  }, [firestore, members]);
+  }, [firestore, members, selectedYear]);
 
   const fetchData = useCallback(async () => {
     if (!members || !members.length) {
@@ -108,10 +112,20 @@ export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardPro
     setLoadingData(true);
     const allContributions: Record<string, Record<string, number>> = {};
     
+    // Determine available years from all contributions
+    const years = new Set<number>([initialYear]);
+    const allContributionsSnap = await getDocs(query(collectionGroup(firestore, 'contributions')));
+    allContributionsSnap.forEach(doc => years.add((doc.data() as Contribution).year));
+    const allSpecialContributionsSnap = await getDocs(query(collectionGroup(firestore, 'specialContributions')));
+    allSpecialContributionsSnap.forEach(doc => years.add((doc.data() as SpecialContribution).year));
+    
+    const sortedYears = Array.from(years).sort((a,b) => b-a);
+    setAvailableYears(sortedYears);
+
     for (const member of members) {
-      // Fetch regular contributions
+      // Fetch regular contributions for selected year
       const contributionsRef = collection(firestore, 'userProfiles', member.id, 'contributions');
-      const qCont = query(contributionsRef, where('year', '==', currentYear));
+      const qCont = query(contributionsRef, where('year', '==', selectedYear));
       const contSnapshot = await getDocs(qCont);
       
       const memberContributions: Record<string, number> = {};
@@ -123,18 +137,17 @@ export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardPro
     }
     
     setContributions(allContributions);
-    await fetchSpecialContributions(); // Also fetch special contributions
+    await fetchSpecialContributions();
     setLoadingData(false);
-  }, [firestore, members, fetchSpecialContributions]);
+  }, [firestore, members, selectedYear, fetchSpecialContributions]);
 
   useEffect(() => {
     if (members && members.length > 0) {
       fetchData();
     } else if (!usersLoading) {
-      // If there are no members and we are not loading, stop loading data.
       setLoadingData(false);
     }
-  }, [members, usersLoading, fetchData]);
+  }, [members, usersLoading, fetchData, selectedYear]);
 
   const handleAmountChange = (userId: string, monthIndex: number, value: string) => {
     const amount = Number(value);
@@ -159,14 +172,14 @@ export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardPro
       Object.entries(monthlyData).forEach(([monthName, amount]) => {
         const monthIndex = MONTHS.findIndex(m => m.toLowerCase() === monthName);
         if (monthIndex !== -1) {
-          const contributionId = `${monthName}_${currentYear}`;
+          const contributionId = `${monthName}_${selectedYear}`;
           const docRef = doc(firestore, 'userProfiles', userId, 'contributions', contributionId);
           batch.set(docRef, {
-            year: currentYear,
+            year: selectedYear,
             month: monthIndex,
             amount: amount,
             userId: userId,
-            financialYearId: currentYear.toString(),
+            financialYearId: selectedYear.toString(),
           }, { merge: true });
         }
       });
@@ -176,7 +189,7 @@ export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardPro
       await batch.commit();
       toast({
         title: 'Success!',
-        description: 'All member contributions have been updated.',
+        description: `Contributions for ${selectedYear} have been updated.`,
       });
     } catch (error) {
       console.error("Failed to save contributions:", error);
@@ -191,7 +204,7 @@ export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardPro
   };
 
   const handleOpenAddSpecialDialog = (member: UserProfile, monthIndex: number) => {
-    setSpecialContributionData({member, month: monthIndex, year: currentYear});
+    setSpecialContributionData({member, month: monthIndex, year: selectedYear});
     setIsAddSpecialOpen(true);
   }
 
@@ -294,13 +307,27 @@ export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardPro
           <TabsContent value="contributions">
              <Card>
               <CardHeader>
-                  <CardTitle>Manage Member Contributions - {currentYear}</CardTitle>
-                  <CardDescription>
-                      {isReadOnly 
-                          ? "Viewing all member contributions for the current year. Only the Treasurer can make changes."
-                          : "Enter and update monthly contributions. Click the '+' icon to add a miniharambee for a specific month."
-                      }
-                  </CardDescription>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <CardTitle>Manage Member Contributions - {selectedYear}</CardTitle>
+                      <CardDescription className="mt-1">
+                          {isReadOnly 
+                              ? "Viewing all member contributions. Only the Treasurer can make changes."
+                              : "Enter and update monthly contributions. Click the '+' icon to add a miniharambee."
+                          }
+                      </CardDescription>
+                    </div>
+                     <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(Number(value))}>
+                      <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="Select year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableYears.map(year => (
+                          <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
               </CardHeader>
               <CardContent>
                   {isLoading ? (

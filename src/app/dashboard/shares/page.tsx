@@ -37,12 +37,11 @@ const getInitials = (firstName = '', lastName = '') => {
   return `${firstName?.charAt(0) ?? ''}${lastName?.charAt(0) ?? ''}`.toUpperCase();
 };
 
-const currentYear = new Date().getFullYear();
-
 async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> {
     const usersQuery = query(collection(firestore, 'userProfiles'), where('role', '!=', 'Admin'));
-    const contributionsQuery = query(collectionGroup(firestore, 'contributions'), where('year', '==', currentYear));
-    const specialContributionsQuery = query(collectionGroup(firestore, 'specialContributions'), where('year', '==', currentYear));
+    // Fetch all contributions from all years
+    const contributionsQuery = query(collectionGroup(firestore, 'contributions'));
+    const specialContributionsQuery = query(collectionGroup(firestore, 'specialContributions'));
 
     const [usersSnapshot, contributionsSnapshot, specialContributionsSnapshot] = await Promise.all([
         getDocs(usersQuery),
@@ -194,9 +193,9 @@ export default function SharesPage() {
     return (
         <Card>
           <CardHeader>
-            <CardTitle>Member Shares - {currentYear}</CardTitle>
+            <CardTitle>All-Time Member Shares</CardTitle>
             <CardDescription>
-                An overview of each member's contribution share for the current year.
+                An overview of each member's total contribution share.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -222,9 +221,9 @@ export default function SharesPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Member Shares - {currentYear}</CardTitle>
+        <CardTitle>All-Time Member Shares</CardTitle>
         <CardDescription>
-          An overview of each member's contribution share for the current year. Total collected funds: <span className="font-bold text-primary">Ksh {sharesData?.grandTotal.toLocaleString() ?? 0}</span>.
+          An overview of each member's total contribution share. Total collected funds: <span className="font-bold text-primary">Ksh {sharesData?.grandTotal.toLocaleString() ?? 0}</span>.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -261,7 +260,7 @@ export default function SharesPage() {
             ) : (
                 <TableRow>
                     <TableCell colSpan={3} className="text-center">
-                        No contribution data available for the current year.
+                        No contribution data available.
                     </TableCell>
                 </TableRow>
             )}

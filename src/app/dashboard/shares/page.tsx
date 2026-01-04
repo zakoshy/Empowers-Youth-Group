@@ -12,6 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Lock, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import type { MiscellaneousIncome } from '@/lib/data';
 
 interface UserProfile {
   id: string;
@@ -39,23 +40,31 @@ const getInitials = (firstName = '', lastName = '') => {
 
 async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> {
     const usersQuery = query(collection(firestore, 'userProfiles'), where('role', '!=', 'Admin'));
-    // Fetch all contributions from all years
+    
     const contributionsQuery = query(collectionGroup(firestore, 'contributions'));
     const specialContributionsQuery = query(collectionGroup(firestore, 'specialContributions'));
+    const miscellaneousIncomesQuery = query(collection(firestore, 'miscellaneousIncomes'));
 
-    const [usersSnapshot, contributionsSnapshot, specialContributionsSnapshot] = await Promise.all([
+    const [usersSnapshot, contributionsSnapshot, specialContributionsSnapshot, miscIncomesSnapshot] = await Promise.all([
         getDocs(usersQuery),
         getDocs(contributionsQuery),
-        getDocs(specialContributionsQuery)
+        getDocs(specialContributionsQuery),
+        getDocs(miscellaneousIncomesQuery),
     ]);
 
     const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
     const contributions = contributionsSnapshot.docs.map(doc => doc.data() as Contribution);
     const specialContributions = specialContributionsSnapshot.docs.map(doc => doc.data() as Contribution);
+    const miscellaneousIncomes = miscIncomesSnapshot.docs.map(doc => doc.data() as MiscellaneousIncome);
 
     const monthlyTotal = contributions.reduce((sum, c) => sum + c.amount, 0);
     const specialTotal = specialContributions.reduce((sum, sc) => sum + sc.amount, 0);
-    const grandTotal = monthlyTotal + specialTotal;
+    const miscTotal = miscellaneousIncomes.reduce((sum, income) => sum + income.amount, 0);
+
+    const grandTotal = monthlyTotal + specialTotal + miscTotal;
+
+    const numberOfMembers = users.length > 0 ? users.length : 1;
+    const equalShareFromMisc = miscTotal / numberOfMembers;
 
     if (grandTotal === 0) {
       return {
@@ -68,22 +77,24 @@ async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> 
       };
     }
     
-    const memberTotals: Record<string, number> = {};
+    const memberPersonalTotals: Record<string, number> = {};
 
     contributions.forEach(c => {
-        memberTotals[c.userId] = (memberTotals[c.userId] || 0) + c.amount;
+        memberPersonalTotals[c.userId] = (memberPersonalTotals[c.userId] || 0) + c.amount;
     });
 
     specialContributions.forEach(sc => {
-        memberTotals[sc.userId] = (memberTotals[sc.userId] || 0) + sc.amount;
+        memberPersonalTotals[sc.userId] = (memberPersonalTotals[sc.userId] || 0) + sc.amount;
     });
 
     const memberShares = users.map(user => {
-      const totalContribution = memberTotals[user.id] || 0;
-      const sharePercentage = (totalContribution / grandTotal) * 100;
+      const personalContribution = memberPersonalTotals[user.id] || 0;
+      const totalEffectiveContribution = personalContribution + equalShareFromMisc;
+      const sharePercentage = (totalEffectiveContribution / grandTotal) * 100;
+      
       return {
         ...user,
-        totalContribution,
+        totalContribution: totalEffectiveContribution,
         sharePercentage,
       };
     }).sort((a, b) => b.sharePercentage - a.sharePercentage);
@@ -231,7 +242,7 @@ export default function SharesPage() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[300px]">Member</TableHead>
-              <TableHead>Total Contribution</TableHead>
+              <TableHead>Total Share Value</TableHead>
               <TableHead className="w-[300px]">Share Percentage</TableHead>
             </TableRow>
           </TableHeader>
@@ -248,7 +259,7 @@ export default function SharesPage() {
                     <div className="font-medium">{member.firstName} {member.lastName}</div>
                   </div>
                 </TableCell>
-                <TableCell>Ksh {member.totalContribution.toLocaleString()}</TableCell>
+                <TableCell>Ksh {member.totalContribution.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Progress value={member.sharePercentage} className="w-40" />
@@ -270,3 +281,5 @@ export default function SharesPage() {
     </Card>
   );
 }
+
+    

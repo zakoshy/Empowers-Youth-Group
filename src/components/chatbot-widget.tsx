@@ -9,7 +9,7 @@ export function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-4 right-4 z-50">
       {/* Chat Window */}
       <div
         className={cn(
@@ -19,7 +19,8 @@ export function ChatbotWidget() {
             : 'opacity-0 translate-y-4 pointer-events-none'
         )}
       >
-        <div className="w-[350px] h-[500px] sm:w-[400px] sm:h-[600px] bg-card shadow-2xl rounded-lg overflow-hidden border">
+        {/* Use responsive width and height. On small screens, it takes up most of the view, on larger screens it has a fixed size. */}
+        <div className="fixed bottom-24 right-4 w-[calc(100vw-32px)] h-[calc(100vh-120px)] max-h-[600px] max-w-[400px] sm:w-[400px] sm:h-[600px] bg-card shadow-2xl rounded-lg overflow-hidden border">
           <iframe
             src="https://empowersyouthchatbot.vercel.app/"
             className="w-full h-full border-0"

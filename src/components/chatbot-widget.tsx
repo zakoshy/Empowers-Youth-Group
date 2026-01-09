@@ -49,7 +49,7 @@ export function ChatbotWidget() {
             </DialogDescription>
           </DialogHeader>
           <iframe
-            src="https://rag-project-delta.vercel.app/"
+            src="https://empowersyouthchatbot.vercel.app/"
             className="w-full h-full border-0"
             title="Empowers Chatbot"
           ></iframe>

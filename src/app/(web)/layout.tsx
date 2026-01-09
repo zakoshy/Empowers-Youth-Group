@@ -1,6 +1,5 @@
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
-import { ChatbotWidget } from "@/components/chatbot-widget";
 
 export default function WebLayout({
   children,
@@ -12,7 +11,13 @@ export default function WebLayout({
       <Header />
       <main className="flex-1">{children}</main>
       <Footer />
-      <ChatbotWidget />
+      <iframe
+        src="https://empowersyouthchatbot.vercel.app/"
+        className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg border-0"
+        style={{ zIndex: 1000 }}
+        title="Empowers Chatbot"
+        allow="microphone"
+      ></iframe>
     </div>
   );
 }

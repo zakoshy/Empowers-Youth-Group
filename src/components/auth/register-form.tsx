@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useAuth, useFirestore } from "@/firebase";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { Eye, EyeOff, Loader2, CreditCard } from "lucide-react";
+import { Eye, EyeOff, Loader2, CreditCard, ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -42,7 +42,9 @@ const formSchema = z.object({
 });
 
 export function RegisterForm() {
-  const [step, setStep] = useState('payment'); // State for multi-step form
+  const searchParams = useSearchParams();
+  const paymentSuccess = searchParams.get('payment_success') === 'true';
+
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -107,7 +109,7 @@ export function RegisterForm() {
     }
   }
   
-  if (step === 'payment') {
+  if (!paymentSuccess) {
     return (
       <div className="grid gap-4">
         <div className="grid gap-2 text-center">
@@ -118,17 +120,14 @@ export function RegisterForm() {
         </div>
         <div className="p-4 border rounded-lg bg-card text-center space-y-3">
           <p className="text-sm">
-            Click the button below to pay via M-Pesa. After completing the payment, click "Continue" to create your account.
+            Click the button below to pay via M-Pesa. After a successful payment, you will be redirected back to complete your registration.
           </p>
           <Button asChild className="w-full">
-              <a href="https://lipana.dev/pay/registration-fee-3a29-1" target="_blank" rel="noopener noreferrer">
+              <a href="https://lipana.dev/pay/registration-fee-3a29-1" rel="noopener noreferrer">
                   <CreditCard className="mr-2 h-4 w-4" /> Pay Ksh 500 Now
               </a>
           </Button>
         </div>
-        <Button variant="secondary" onClick={() => setStep('form')}>
-            Continue to Registration
-        </Button>
         <div className="mt-4 text-center text-sm">
           Already have an account?{" "}
           <Link href="/login" className="underline">
@@ -145,8 +144,8 @@ export function RegisterForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
         <div className="grid gap-2 text-center">
           <h1 className="text-3xl font-bold">Step 2: Create an account</h1>
-          <p className="text-balance text-muted-foreground">
-            Enter your information to create an account
+          <p className="text-balance text-muted-foreground text-green-600">
+            Payment successful! Please complete your registration.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -235,7 +234,10 @@ export function RegisterForm() {
         </Button>
       </form>
        <div className="mt-4 text-center text-sm">
-         <button type="button" onClick={() => setStep('payment')} className="underline">Back to payment step</button>
+         <Link href="/register" className="underline flex items-center justify-center gap-1">
+            <ArrowLeft className="h-4 w-4" />
+            Back to payment step
+         </Link>
       </div>
     </Form>
   );

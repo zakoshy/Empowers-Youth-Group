@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useAuth, useFirestore } from "@/firebase";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { Eye, EyeOff, Loader2, CreditCard, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -42,9 +42,6 @@ const formSchema = z.object({
 });
 
 export function RegisterForm() {
-  const searchParams = useSearchParams();
-  const paymentSuccess = searchParams.get('payment_success') === 'true';
-
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -71,33 +68,29 @@ export function RegisterForm() {
         displayName: `${values.firstName} ${values.lastName}`
       });
       
-      const isAdmin = values.email.toLowerCase() === "edwinoshome37@gmail.com";
-      const userRole = isAdmin ? "Admin" : "Member";
-
       const userProfile = {
         id: user.uid,
         email: values.email,
         firstName: values.firstName,
         lastName: values.lastName,
         phone: values.phone,
-        role: userRole,
+        role: 'Pending',
+        status: 'pending',
+        treasurerApproved: false,
+        chairpersonApproved: false,
         photoURL: null,
       };
 
       const userDocRef = doc(firestore, "userProfiles", user.uid);
       await setDoc(userDocRef, userProfile);
 
-      if (isAdmin) {
-        const adminRoleRef = doc(firestore, "roles_admin", user.uid);
-        await setDoc(adminRoleRef, { email: values.email, role: 'Admin' });
-      }
-
       toast({
-        title: "Registration Successful",
-        description: "Please log in with your new account.",
+        title: "Registration Submitted!",
+        description: "Please complete the payment to finalize your registration. Your account will be activated after approval.",
       });
 
-      router.push('/login');
+      // Redirect to M-Pesa payment link
+      window.location.href = 'https://lipana.dev/pay/registration-fee-3a29-1';
 
     } catch (error: any) {
       console.error("Registration Error: ", error);
@@ -108,44 +101,14 @@ export function RegisterForm() {
       });
     }
   }
-  
-  if (!paymentSuccess) {
-    return (
-      <div className="grid gap-4">
-        <div className="grid gap-2 text-center">
-          <h1 className="text-3xl font-bold">Step 1: Registration Fee</h1>
-          <p className="text-balance text-muted-foreground">
-            A one-time registration fee of <span className="font-bold text-primary">Ksh 500</span> is required to join The Empowers youth group.
-          </p>
-        </div>
-        <div className="p-4 border rounded-lg bg-card text-center space-y-3">
-          <p className="text-sm">
-            Click the button below to pay via M-Pesa. After a successful payment, you will be redirected back to complete your registration.
-          </p>
-          <Button asChild className="w-full">
-              <a href="https://lipana.dev/pay/registration-fee-3a29-1" target="_blank" rel="noopener noreferrer">
-                  <CreditCard className="mr-2 h-4 w-4" /> Pay Ksh 500 Now
-              </a>
-          </Button>
-        </div>
-        <div className="mt-4 text-center text-sm">
-          Already have an account?{" "}
-          <Link href="/login" className="underline">
-            Sign in
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
         <div className="grid gap-2 text-center">
-          <h1 className="text-3xl font-bold">Step 2: Create an account</h1>
-          <p className="text-balance text-muted-foreground text-green-600">
-            Payment successful! Please complete your registration.
+          <h1 className="text-3xl font-bold">Create an account</h1>
+          <p className="text-balance text-muted-foreground">
+            Enter your details below to register. You will be redirected to pay the KES 500 registration fee.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -230,15 +193,17 @@ export function RegisterForm() {
         />
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {form.formState.isSubmitting ? 'Creating account...' : 'Create Account'}
+          {form.formState.isSubmitting ? 'Registering...' : 'Register and Pay'}
         </Button>
       </form>
        <div className="mt-4 text-center text-sm">
-         <Link href="/register" className="underline flex items-center justify-center gap-1">
-            <ArrowLeft className="h-4 w-4" />
-            Back to payment step
+         Already have an account?{" "}
+         <Link href="/login" className="underline">
+            Sign in
          </Link>
       </div>
     </Form>
   );
 }
+
+    

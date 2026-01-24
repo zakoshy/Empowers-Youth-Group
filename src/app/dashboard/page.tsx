@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { doc } from "firebase/firestore";
 import { MinutesWidget } from "@/components/dashboard/minutes-widget";
 import { SavedIdeasWidget } from "@/components/dashboard/saved-ideas-widget";
+import { ApprovalPending } from "@/components/dashboard/approval-pending";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ interface UserProfile {
   firstName: string;
   lastName: string;
   role: string;
+  status: 'pending' | 'active';
 }
 
 export default function DashboardPage() {
@@ -72,6 +74,11 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+  if (userProfile?.status === 'pending') {
+    return <ApprovalPending />;
+  }
+
 
   const welcomeName = userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : user?.displayName || 'Member';
   const userRole = userProfile?.role;
@@ -136,3 +143,5 @@ export default function DashboardPage() {
     </>
   );
 }
+
+    

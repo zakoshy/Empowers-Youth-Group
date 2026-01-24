@@ -86,10 +86,15 @@ service cloud.firestore {
       allow get: if isSignedIn() && (isOwner(userId) || isTreasurer() || isAdmin() || isChairperson());
       allow list: if isSignedIn() && (isAdmin() || isTreasurer() || isChairperson());
       allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId) &&
-                    !(('role' in request.resource.data) && 
-                      request.resource.data.role != resource.data.role);
-      allow update: if isSignedIn() && isAdmin();
+      allow update: if 
+          // Admins can manage any user profile.
+          isAdmin() ||
+          // Treasurers and Chairpersons can update approval and status fields.
+          ((isTreasurer() || isChairperson()) && 
+              request.resource.data.diff(resource.data).affectedKeys().hasAny(['treasurerApproved', 'chairpersonApproved', 'status', 'role'])) ||
+          // A user can update their own non-sensitive profile information.
+          (isOwner(userId) && 
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['firstName', 'lastName', 'phone', 'photoURL']));
       allow delete: if isAdmin() || isExistingOwner(userId);
     }
 
@@ -220,3 +225,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

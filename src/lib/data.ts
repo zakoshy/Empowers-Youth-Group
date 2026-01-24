@@ -123,6 +123,19 @@ export type MiscellaneousIncome = {
     recordedBy: string;
 };
 
+export type UserProfile = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  status: 'pending' | 'active';
+  treasurerApproved: boolean;
+  chairpersonApproved: boolean;
+  photoURL?: string;
+};
+
+
 export const navLinks = [
   { href: "/", label: "Home" },
   { href: "/#about", label: "About Us" },
@@ -130,11 +143,12 @@ export const navLinks = [
   { href: "/#events", label: "Events" },
 ];
 
-export const roles = ["Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead", "Member"];
+export const roles = ["Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead", "Member", "Pending"];
 
 export const dashboardNavLinks = (userRole: string = "Member") => {
   let allLinks = [
     { href: "/dashboard", label: "Dashboard", icon: "Home", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
+    { href: "/dashboard/approvals", label: "Approvals", icon: "Users", roles: ["Admin", "Treasurer", "Chairperson"] },
     { href: "/dashboard/profile", label: "Profile", icon: "Users", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/contributions", label: "Contributions", icon: "DollarSign", roles: ["Member", "Treasurer", "Chairperson", "Investment Lead", "Coordinator", "Secretary", "Vice Chairperson"] },
     { href: "/dashboard/expenditure", label: "Expenditure", icon: "TrendingDown", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
@@ -192,3 +206,5 @@ export const FINANCIAL_CONFIG = {
   MONTHLY_CONTRIBUTION: 200,
   FINANCIAL_YEAR_START_MONTH: 0, // January
 };
+
+    

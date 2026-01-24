@@ -88,7 +88,7 @@ export function Header() {
           <Button variant="ghost" asChild>
             <Link href="/login">Login</Link>
           </Button>
-          <Button asChild style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
+          <Button asChild>
             <Link href="/register">Register</Link>
           </Button>
           <button

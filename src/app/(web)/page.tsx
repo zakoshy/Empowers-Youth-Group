@@ -56,7 +56,7 @@ export default function HomePage() {
                     From shared hardship to a beacon of hope, The Empowers youth group is a youth-led initiative dedicated to giving back and uplifting our society.
                 </p>
                 <div className="mt-8">
-                    <Button size="lg" asChild style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
+                    <Button size="lg" asChild>
                         <Link href="/register">Join Us</Link>
                     </Button>
                 </div>
@@ -264,7 +264,7 @@ export default function HomePage() {
            <p className="mt-2 max-w-2xl mx-auto text-muted-foreground">
              Become a part of our journey. Whether you're from our village or share our vision, there's a place for you at The Empowers youth group.
            </p>
-           <Button size="lg" asChild className="mt-8" style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
+           <Button size="lg" asChild className="mt-8">
               <Link href="/register">Join The Empowers youth group Today</Link>
             </Button>
         </div>

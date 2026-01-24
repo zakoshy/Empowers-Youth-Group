@@ -12,7 +12,7 @@ import { InvestmentSuggestions } from "@/components/dashboard/investment-suggest
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { FileText, Phone, Wand2, Loader2, Banknote as BankIcon } from "lucide-react";
+import { FileText, Phone, Wand2, Loader2, Banknote as BankIcon, DollarSign, Gift } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { doc } from "firebase/firestore";
 import { MinutesWidget } from "@/components/dashboard/minutes-widget";
@@ -92,6 +92,25 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold font-headline">Welcome, {welcomeName}!</h1>
           <p className="text-muted-foreground">Here's a summary of your activities and group updates.</p>
         </div>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Make a Contribution</CardTitle>
+                <CardDescription>Use the buttons below to pay your monthly contribution or make a special "miniharambee" payment via M-Pesa.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col sm:flex-row gap-4">
+                <Button asChild className="w-full" size="lg">
+                    <a href="https://lipana.dev/pay/monthly-contribution" target="_blank" rel="noopener noreferrer">
+                        <DollarSign className="mr-2 h-4 w-4" /> Pay Monthly Contribution
+                    </a>
+                </Button>
+                <Button asChild variant="secondary" className="w-full" size="lg">
+                    <a href="https://lipana.dev/pay/mini-harambee" target="_blank" rel="noopener noreferrer">
+                        <Gift className="mr-2 h-4 w-4" /> Pay Miniharambee
+                    </a>
+                </Button>
+            </CardContent>
+        </Card>
         
         <div className="grid gap-4 md:grid-cols-2">
             <Card className="bg-primary/5">
@@ -144,4 +163,3 @@ export default function DashboardPage() {
   );
 }
 
-    

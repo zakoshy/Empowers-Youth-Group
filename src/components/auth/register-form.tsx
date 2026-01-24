@@ -123,7 +123,7 @@ export function RegisterForm() {
             Click the button below to pay via M-Pesa. After a successful payment, you will be redirected back to complete your registration.
           </p>
           <Button asChild className="w-full">
-              <a href="https://lipana.dev/pay/registration-fee-3a29-1" rel="noopener noreferrer">
+              <a href="https://lipana.dev/pay/registration-fee-3a29-1" target="_blank" rel="noopener noreferrer">
                   <CreditCard className="mr-2 h-4 w-4" /> Pay Ksh 500 Now
               </a>
           </Button>

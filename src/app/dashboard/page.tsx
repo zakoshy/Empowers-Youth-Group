@@ -104,7 +104,7 @@ export default function DashboardPage() {
                         <DollarSign className="mr-2 h-4 w-4" /> Pay Monthly Contribution
                     </a>
                 </Button>
-                <Button asChild variant="secondary" className="w-full" size="lg">
+                <Button asChild style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}} className="w-full" size="lg">
                     <a href="https://lipana.dev/pay/mini-harambee" target="_blank" rel="noopener noreferrer">
                         <Gift className="mr-2 h-4 w-4" /> Pay Miniharambee
                     </a>

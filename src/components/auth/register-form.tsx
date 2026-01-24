@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -10,8 +9,7 @@ import * as z from "zod";
 import { useAuth, useFirestore } from "@/firebase";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, CreditCard } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +42,7 @@ const formSchema = z.object({
 });
 
 export function RegisterForm() {
+  const [step, setStep] = useState('payment'); // State for multi-step form
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -88,7 +87,6 @@ export function RegisterForm() {
 
       if (isAdmin) {
         const adminRoleRef = doc(firestore, "roles_admin", user.uid);
-        // This document grants admin privileges according to security rules.
         await setDoc(adminRoleRef, { email: values.email, role: 'Admin' });
       }
 
@@ -108,12 +106,45 @@ export function RegisterForm() {
       });
     }
   }
+  
+  if (step === 'payment') {
+    return (
+      <div className="grid gap-4">
+        <div className="grid gap-2 text-center">
+          <h1 className="text-3xl font-bold">Step 1: Registration Fee</h1>
+          <p className="text-balance text-muted-foreground">
+            A one-time registration fee of <span className="font-bold text-primary">Ksh 500</span> is required to join The Empowers youth group.
+          </p>
+        </div>
+        <div className="p-4 border rounded-lg bg-card text-center space-y-3">
+          <p className="text-sm">
+            Click the button below to pay via M-Pesa. After completing the payment, click "Continue" to create your account.
+          </p>
+          <Button asChild className="w-full">
+              <a href="https://lipana.dev/pay/registration-fee-3a29-1" target="_blank" rel="noopener noreferrer">
+                  <CreditCard className="mr-2 h-4 w-4" /> Pay Ksh 500 Now
+              </a>
+          </Button>
+        </div>
+        <Button variant="secondary" onClick={() => setStep('form')}>
+            Continue to Registration
+        </Button>
+        <div className="mt-4 text-center text-sm">
+          Already have an account?{" "}
+          <Link href="/login" className="underline">
+            Sign in
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
         <div className="grid gap-2 text-center">
-          <h1 className="text-3xl font-bold">Create an account</h1>
+          <h1 className="text-3xl font-bold">Step 2: Create an account</h1>
           <p className="text-balance text-muted-foreground">
             Enter your information to create an account
           </p>
@@ -166,7 +197,7 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>Phone Number</FormLabel>
               <FormControl>
-                <Input placeholder="+1 234 567 890" {...field} />
+                <Input placeholder="0712345678" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -200,14 +231,11 @@ export function RegisterForm() {
         />
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {form.formState.isSubmitting ? 'Creating account...' : 'Create account'}
+          {form.formState.isSubmitting ? 'Creating account...' : 'Create Account'}
         </Button>
       </form>
        <div className="mt-4 text-center text-sm">
-        Already have an account?{" "}
-        <Link href="/login" className="underline">
-          Sign in
-        </Link>
+         <button type="button" onClick={() => setStep('payment')} className="underline">Back to payment step</button>
       </div>
     </Form>
   );

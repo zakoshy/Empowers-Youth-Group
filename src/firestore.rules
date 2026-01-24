@@ -95,7 +95,10 @@ service cloud.firestore {
           // A user can update their own non-sensitive profile information.
           (isOwner(userId) && 
               request.resource.data.diff(resource.data).affectedKeys().hasOnly(['firstName', 'lastName', 'phone', 'photoURL']));
-      allow delete: if isAdmin() || isExistingOwner(userId);
+      allow delete: if 
+          isAdmin() || 
+          isExistingOwner(userId) || 
+          ((isChairperson() || isTreasurer()) && resource.data.status == 'pending');
     }
 
     /**
@@ -225,5 +228,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

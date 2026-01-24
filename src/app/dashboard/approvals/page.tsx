@@ -1,7 +1,7 @@
 'use client';
 
 import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
-import { collection, doc, updateDoc, runTransaction, where, query } from 'firebase/firestore';
+import { collection, doc, updateDoc, runTransaction, where, query, deleteDoc } from 'firebase/firestore';
 import {
   Table,
   TableBody,
@@ -14,10 +14,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Lock, CheckCircle2 } from 'lucide-react';
+import { Lock, CheckCircle2, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface CurrentUserProfile {
     role: string;
@@ -88,6 +99,18 @@ export default function ApprovalsPage() {
     } catch (e) {
       console.error('Error approving user: ', e);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not approve user.'});
+    }
+  };
+
+  const handleDelete = async (userId: string) => {
+    if (!firestore) return;
+    const userDocRef = doc(firestore, 'userProfiles', userId);
+    try {
+        await deleteDoc(userDocRef);
+        toast({ title: 'User Deleted', description: 'The pending registration has been deleted.' });
+    } catch (error) {
+        console.error('Error deleting user: ', error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not delete user.'});
     }
   };
   
@@ -175,7 +198,7 @@ export default function ApprovalsPage() {
                                 </Badge>
                             </div>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right space-x-2">
                            <Button 
                                 size="sm" 
                                 onClick={() => handleApprove(user)}
@@ -190,6 +213,26 @@ export default function ApprovalsPage() {
                                     'Approve'
                                 )}
                            </Button>
+                           <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete this pending registration.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(user.id)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </TableCell>
                         </TableRow>
                     );
@@ -207,5 +250,3 @@ export default function ApprovalsPage() {
     </Card>
   );
 }
-
-    

@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -83,13 +84,21 @@ service cloud.firestore {
      */
     match /userProfiles/{userId} {
       allow get: if isSignedIn() && (isOwner(userId) || isTreasurer() || isAdmin() || isChairperson());
-      allow list: if isSignedIn() && (isAdmin() || isTreasurer());
+      allow list: if isSignedIn() && (isAdmin() || isTreasurer() || isChairperson());
       allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId) &&
-                    !(('role' in request.resource.data) && 
-                      request.resource.data.role != resource.data.role);
-      allow update: if isSignedIn() && isAdmin();
-      allow delete: if isAdmin() || isExistingOwner(userId);
+      allow update: if 
+          // Admins can manage any user profile.
+          isAdmin() ||
+          // Treasurers and Chairpersons can update approval and status fields.
+          ((isTreasurer() || isChairperson()) && 
+              request.resource.data.diff(resource.data).affectedKeys().hasAny(['treasurerApproved', 'chairpersonApproved', 'status', 'role'])) ||
+          // A user can update their own non-sensitive profile information.
+          (isOwner(userId) && 
+              request.resource.data.diff(resource.data).affectedKeys().hasOnly(['firstName', 'lastName', 'phone', 'photoURL']));
+      allow delete: if 
+          isAdmin() || 
+          isExistingOwner(userId) || 
+          ((isChairperson() || isTreasurer()) && resource.data.status == 'pending');
     }
 
     /**
@@ -132,7 +141,7 @@ service cloud.firestore {
     match /events/{eventId} {
       allow get, list: if true;
       allow create, update: if isSignedIn() && isCoordinator();
-      allow delete: if false;
+      allow delete: if isSignedIn() && isCoordinator();
     }
 
     /**
@@ -162,6 +171,16 @@ service cloud.firestore {
     match /meetingMinutes/{minuteId} {
       allow get, list: if isSignedIn();
       allow create, update, delete: if isSignedIn() && (isSecretary() || isAdmin());
+    }
+
+    match /expenditures/{expenditureId} {
+      allow get, list: if isSignedIn();
+      allow create, update, delete: if isSignedIn() && (isTreasurer() || isAdmin());
+    }
+
+    match /miscellaneousIncomes/{incomeId} {
+        allow get, list: if isSignedIn();
+        allow create, update, delete: if isSignedIn() && (isTreasurer() || isAdmin());
     }
 
     /**
@@ -209,3 +228,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

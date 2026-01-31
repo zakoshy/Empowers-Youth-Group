@@ -47,7 +47,7 @@ export default function ContributionsPage() {
     );
   }
 
-  if (userProfile.role === 'Chairperson') {
+  if (userProfile.role === 'Chairperson' || userProfile.role === 'Admin') {
     return <TreasurerDashboard isReadOnly={true} />;
   }
   

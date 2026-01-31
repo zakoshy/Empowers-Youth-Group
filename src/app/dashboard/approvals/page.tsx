@@ -46,7 +46,7 @@ export default function ApprovalsPage() {
   );
   const { data: currentUserProfile, isLoading: isRoleLoading } = useDoc<CurrentUserProfile>(currentUserProfileRef);
 
-  const canApprove = currentUserProfile?.role === 'Admin' || currentUserProfile?.role === 'Treasurer' || currentUserProfile?.role === 'Chairperson';
+  const canApprove = currentUserProfile?.role === 'Treasurer' || currentUserProfile?.role === 'Chairperson';
 
   const pendingUsersRef = useMemoFirebase(() => 
     canApprove ? query(collection(firestore, 'userProfiles'), where('status', '==', 'pending')) : null, 
@@ -73,10 +73,6 @@ export default function ApprovalsPage() {
 
             if (currentRole === 'Treasurer') newTreasurerApproved = true;
             if (currentRole === 'Chairperson') newChairpersonApproved = true;
-            if (currentRole === 'Admin') {
-                newTreasurerApproved = true;
-                newChairpersonApproved = true;
-            }
             
             const updateData: Partial<UserProfile> = {
                 treasurerApproved: newTreasurerApproved,
@@ -122,10 +118,6 @@ export default function ApprovalsPage() {
 
     if (currentRole === "Treasurer") updateData.treasurerApproved = false;
     if (currentRole === "Chairperson") updateData.chairpersonApproved = false;
-    if (currentRole === "Admin") {
-        updateData.treasurerApproved = false;
-        updateData.chairpersonApproved = false;
-    }
 
     try {
         await updateDoc(userDocRef, updateData);
@@ -188,7 +180,7 @@ export default function ApprovalsPage() {
               </CardHeader>
               <CardContent className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
                   <Lock className="h-12 w-12 text-muted-foreground" />
-                  <p className="mt-4 text-muted-foreground">Only Admins, Chairpersons, and Treasurers can access this page.</p>
+                  <p className="mt-4 text-muted-foreground">Only Chairpersons and Treasurers can access this page.</p>
               </CardContent>
           </Card>
       )
@@ -218,13 +210,11 @@ export default function ApprovalsPage() {
                     
                     const canCurrentUserUnapprove = 
                         (currentUserProfile?.role === 'Treasurer' && isTreasurerApproved) ||
-                        (currentUserProfile?.role === 'Chairperson' && isChairpersonApproved) ||
-                        (currentUserProfile?.role === 'Admin' && (isTreasurerApproved || isChairpersonApproved));
+                        (currentUserProfile?.role === 'Chairperson' && isChairpersonApproved);
                     
                     const canCurrentUserApprove = 
                         (currentUserProfile?.role === 'Treasurer' && !isTreasurerApproved) ||
-                        (currentUserProfile?.role === 'Chairperson' && !isChairpersonApproved) ||
-                        (currentUserProfile?.role === 'Admin' && (!isTreasurerApproved || !isChairpersonApproved));
+                        (currentUserProfile?.role === 'Chairperson' && !isChairpersonApproved);
 
 
                     return (

@@ -1,16 +1,17 @@
-
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Wand2 } from "lucide-react";
+import { Wand2, Loader2 } from "lucide-react";
 import { getPersonalizedSuggestions } from "@/ai/flows/personalized-community-suggestions";
 import { investmentReports } from "@/lib/data";
 import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase } from "@/firebase";
@@ -37,7 +38,7 @@ interface SpecialContribution {
 
 export function PersonalizedSuggestions() {
   const [suggestions, setSuggestions] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { user } = useUser();
   const firestore = useFirestore();
@@ -66,44 +67,46 @@ export function PersonalizedSuggestions() {
   const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
   const { data: contributions } = useCollection<Contribution>(contributionsRef);
   const { data: specialContributions } = useCollection<SpecialContribution>(specialContributionsRef);
-  const { data: events, isLoading: eventsLoading } = useCollection<Event>(eventsRef);
+  const { data: events } = useCollection<Event>(eventsRef);
 
-  useEffect(() => {
-    async function fetchSuggestions() {
-      if (!userProfile || contributions === null || specialContributions === null || !events) return;
+  async function fetchSuggestions() {
+    if (!userProfile || contributions === null || specialContributions === null || !events) {
+        setError("Could not load your data to generate suggestions. Please try again in a moment.");
+        return;
+    }
 
-      try {
-        setLoading(true);
-        setError("");
-        
-        const contributionSummary = {
-            monthlyContributions: contributions,
-            specialContributions: specialContributions
-        }
-
-        const input = {
-          memberId: userProfile.id,
-          investmentReports: JSON.stringify(investmentReports),
-          upcomingEvents: JSON.stringify(events),
-          contributionSummary: JSON.stringify(contributionSummary),
-          memberRole: userProfile.role,
-        };
-
-        const result = await getPersonalizedSuggestions(input);
-        setSuggestions(result.suggestions);
-
-      } catch (err) {
-        console.error("Error fetching AI suggestions:", err);
-        setError("Could not load suggestions at this time. Please try again later.");
-      } finally {
-        setLoading(false);
+    try {
+      setLoading(true);
+      setError("");
+      setSuggestions("");
+      
+      const contributionSummary = {
+          monthlyContributions: contributions,
+          specialContributions: specialContributions
       }
-    }
 
-    if (userProfile && contributions !== null && specialContributions !== null && events) {
-      fetchSuggestions();
+      const input = {
+        memberId: userProfile.id,
+        investmentReports: JSON.stringify(investmentReports),
+        upcomingEvents: JSON.stringify(events),
+        contributionSummary: JSON.stringify(contributionSummary),
+        memberRole: userProfile.role,
+      };
+
+      const result = await getPersonalizedSuggestions(input);
+      setSuggestions(result.suggestions);
+
+    } catch (err: any) {
+      console.error("Error fetching AI suggestions:", err);
+      if (err.message && err.message.includes('RESOURCE_EXHAUSTED')) {
+         setError("The AI is a bit busy right now due to high demand. Please try again in a few moments.");
+      } else {
+         setError("Could not load suggestions at this time. Please try again later.");
+      }
+    } finally {
+      setLoading(false);
     }
-  }, [userProfile, contributions, specialContributions, events]);
+  }
 
   return (
     <Card className="bg-gradient-to-br from-primary/10 to-card">
@@ -125,12 +128,26 @@ export function PersonalizedSuggestions() {
           </div>
         )}
         {error && <p className="text-sm text-destructive">{error}</p>}
-        {!loading && !error && (
+
+        {suggestions && (
             <div className="text-sm text-foreground/80 whitespace-pre-line">
                 {suggestions}
             </div>
         )}
+        
+        {!loading && !error && !suggestions && (
+          <p className="text-sm text-muted-foreground">Click the button to get personalized suggestions from our AI mentor.</p>
+        )}
       </CardContent>
+      <CardFooter>
+        <Button onClick={fetchSuggestions} disabled={loading}>
+          {loading ? (
+            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
+          ) : (
+            "Get AI Suggestions"
+          )}
+        </Button>
+      </CardFooter>
     </Card>
   );
 }

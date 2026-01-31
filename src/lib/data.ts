@@ -204,7 +204,6 @@ export const MONTHS = [
 
 export const FINANCIAL_CONFIG = {
   MONTHLY_CONTRIBUTION: 200,
+  REGISTRATION_FEE: 500,
   FINANCIAL_YEAR_START_MONTH: 0, // January
 };
-
-    

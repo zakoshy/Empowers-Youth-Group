@@ -21,6 +21,7 @@ interface UserProfile {
   email: string;
   photoURL?: string;
   role: string;
+  status: 'pending' | 'active';
 }
 
 interface Contribution {
@@ -39,7 +40,7 @@ const getInitials = (firstName = '', lastName = '') => {
 };
 
 async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> {
-    const usersQuery = query(collection(firestore, 'userProfiles'), where('role', '!=', 'Admin'));
+    const usersQuery = query(collection(firestore, 'userProfiles'), where('status', '==', 'active'));
     
     const contributionsQuery = query(collectionGroup(firestore, 'contributions'));
     const specialContributionsQuery = query(collectionGroup(firestore, 'specialContributions'));
@@ -281,5 +282,3 @@ export default function SharesPage() {
     </Card>
   );
 }
-
-    

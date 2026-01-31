@@ -1,7 +1,7 @@
 'use client';
 
 import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
-import { collection, doc, updateDoc, runTransaction, where, query, deleteDoc } from 'firebase/firestore';
+import { collection, doc, updateDoc, runTransaction, where, query, deleteDoc, writeBatch, addDoc } from 'firebase/firestore';
 import {
   Table,
   TableBody,
@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Lock, CheckCircle2, Trash2 } from 'lucide-react';
+import { Lock, CheckCircle2, Trash2, Undo2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { FINANCIAL_CONFIG } from '@/lib/data';
 
 interface CurrentUserProfile {
     role: string;
@@ -70,13 +71,8 @@ export default function ApprovalsPage() {
             let newTreasurerApproved = userData.treasurerApproved;
             let newChairpersonApproved = userData.chairpersonApproved;
 
-            if (currentRole === 'Treasurer') {
-                newTreasurerApproved = true;
-            }
-            if (currentRole === 'Chairperson') {
-                newChairpersonApproved = true;
-            }
-            // Admin approval counts for both
+            if (currentRole === 'Treasurer') newTreasurerApproved = true;
+            if (currentRole === 'Chairperson') newChairpersonApproved = true;
             if (currentRole === 'Admin') {
                 newTreasurerApproved = true;
                 newChairpersonApproved = true;
@@ -87,18 +83,63 @@ export default function ApprovalsPage() {
                 chairpersonApproved: newChairpersonApproved,
             };
             
-            if (newTreasurerApproved && newChairpersonApproved) {
+            const becomesActive = newTreasurerApproved && newChairpersonApproved;
+            if (becomesActive) {
                 updateData.status = 'active';
                 updateData.role = 'Member';
             }
 
             transaction.update(userDocRef, updateData);
+
+            if (becomesActive) {
+              const incomeRef = doc(collection(firestore, 'miscellaneousIncomes'));
+              transaction.set(incomeRef, {
+                type: 'Registration Fee',
+                description: `Registration fee for ${userToApprove.firstName} ${userToApprove.lastName}`,
+                amount: FINANCIAL_CONFIG.REGISTRATION_FEE,
+                date: new Date().toISOString(),
+                memberId: userToApprove.id,
+                recordedBy: currentUser.uid,
+              });
+            }
         });
         
         toast({ title: 'Success', description: `${userToApprove.firstName} has been approved.`});
     } catch (e) {
       console.error('Error approving user: ', e);
       toast({ variant: 'destructive', title: 'Error', description: 'Could not approve user.'});
+    }
+  };
+
+  const handleUnapprove = async (userToUnapprove: UserProfile) => {
+    if (!currentUserProfile || !currentUser) return;
+    const userDocRef = doc(firestore, "userProfiles", userToUnapprove.id);
+    const currentRole = currentUserProfile.role;
+    const updateData: Partial<UserProfile> = {
+        status: 'pending',
+        role: 'Pending'
+    };
+
+    if (currentRole === "Treasurer") updateData.treasurerApproved = false;
+    if (currentRole === "Chairperson") updateData.chairpersonApproved = false;
+    if (currentRole === "Admin") {
+        updateData.treasurerApproved = false;
+        updateData.chairpersonApproved = false;
+    }
+
+    try {
+        await updateDoc(userDocRef, updateData);
+        toast({
+            title: "Approval Revoked",
+            description: `Your approval for ${userToUnapprove.firstName} has been revoked.`,
+        });
+    } catch (e) {
+        console.error("Error unapproving user: ", e);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not revoke approval.",
+        });
     }
   };
 
@@ -174,7 +215,17 @@ export default function ApprovalsPage() {
                 pendingUsers.map((user) => {
                     const isTreasurerApproved = user.treasurerApproved;
                     const isChairpersonApproved = user.chairpersonApproved;
-                    const alreadyApprovedByCurrentUser = (currentUserProfile?.role === 'Treasurer' && isTreasurerApproved) || (currentUserProfile?.role === 'Chairperson' && isChairpersonApproved);
+                    
+                    const canCurrentUserUnapprove = 
+                        (currentUserProfile?.role === 'Treasurer' && isTreasurerApproved) ||
+                        (currentUserProfile?.role === 'Chairperson' && isChairpersonApproved) ||
+                        (currentUserProfile?.role === 'Admin' && (isTreasurerApproved || isChairpersonApproved));
+                    
+                    const canCurrentUserApprove = 
+                        (currentUserProfile?.role === 'Treasurer' && !isTreasurerApproved) ||
+                        (currentUserProfile?.role === 'Chairperson' && !isChairpersonApproved) ||
+                        (currentUserProfile?.role === 'Admin' && (!isTreasurerApproved || !isChairpersonApproved));
+
 
                     return (
                         <TableRow key={user.id}>
@@ -199,20 +250,19 @@ export default function ApprovalsPage() {
                             </div>
                         </TableCell>
                         <TableCell className="text-right space-x-2">
-                           <Button 
-                                size="sm" 
-                                onClick={() => handleApprove(user)}
-                                disabled={alreadyApprovedByCurrentUser || currentUserProfile?.role === 'Admin'}
-                           >
-                                {alreadyApprovedByCurrentUser ? (
-                                    <>
-                                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                                        Approved
-                                    </>
-                                ) : (
-                                    'Approve'
-                                )}
-                           </Button>
+                           {canCurrentUserApprove && (
+                            <Button size="sm" onClick={() => handleApprove(user)}>
+                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                                Approve
+                            </Button>
+                           )}
+                           {canCurrentUserUnapprove && (
+                            <Button variant="secondary" size="sm" onClick={() => handleUnapprove(user)}>
+                                <Undo2 className="mr-2 h-4 w-4" />
+                                Unapprove
+                            </Button>
+                           )}
+
                            <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                 <Button variant="destructive" size="sm">

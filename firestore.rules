@@ -83,8 +83,8 @@ service cloud.firestore {
       allow list: if isSignedIn() && (isAdmin() || isTreasurer() || isChairperson());
       allow create: if isSignedIn() && isOwner(userId);
       allow update: if 
-          // Admins can update roles, but not approval status.
-          (isAdmin() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['treasurerApproved', 'chairpersonApproved'])) ||
+          // Admins can manage any user profile.
+          isAdmin() ||
           // Treasurers and Chairpersons can update approval and status fields.
           ((isTreasurer() || isChairperson()) && 
               request.resource.data.diff(resource.data).affectedKeys().hasAny(['treasurerApproved', 'chairpersonApproved', 'status', 'role'])) ||
@@ -170,12 +170,12 @@ service cloud.firestore {
 
     match /expenditures/{expenditureId} {
       allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn() && isTreasurer();
+      allow create, update, delete: if isSignedIn() && (isTreasurer() || isAdmin());
     }
 
     match /miscellaneousIncomes/{incomeId} {
         allow get, list: if isSignedIn();
-        allow create, update, delete: if isSignedIn() && (isTreasurer() || isChairperson());
+        allow create, update, delete: if isSignedIn() && (isTreasurer() || isAdmin());
     }
 
     /**

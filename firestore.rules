@@ -60,22 +60,10 @@ service cloud.firestore {
     }
 
     /**
-     * @description Checks if the user is an admin by verifying the existence of a document in the `roles_admin` collection.
+     * @description Checks if the user is an admin by verifying their role in their user profile.
      */
     function isAdmin() {
-      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-    }
-
-    /**
-     * @description Rules for the admin role collection.
-     * @path /roles_admin/{userId}
-     */
-    match /roles_admin/{userId} {
-      allow get: if isSignedIn() && isAdmin();
-      allow list: if false;
-      allow create: if isSignedIn() && request.auth.uid == userId ;
-      allow update: if false;
-      allow delete: if false;
+      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin';
     }
 
     /**
@@ -87,8 +75,8 @@ service cloud.firestore {
       allow list: if isSignedIn() && (isAdmin() || isTreasurer() || isChairperson());
       allow create: if isSignedIn() && isOwner(userId);
       allow update: if 
-          // Admins can manage any user profile.
-          isAdmin() ||
+          // Admins can update roles, but not approval status.
+          (isAdmin() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['treasurerApproved', 'chairpersonApproved'])) ||
           // Treasurers and Chairpersons can update approval and status fields.
           ((isTreasurer() || isChairperson()) && 
               request.resource.data.diff(resource.data).affectedKeys().hasAny(['treasurerApproved', 'chairpersonApproved', 'status', 'role'])) ||
@@ -174,12 +162,12 @@ service cloud.firestore {
 
     match /expenditures/{expenditureId} {
       allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn() && (isTreasurer() || isAdmin());
+      allow create, update, delete: if isSignedIn() && isTreasurer();
     }
 
     match /miscellaneousIncomes/{incomeId} {
         allow get, list: if isSignedIn();
-        allow create, update, delete: if isSignedIn() && (isTreasurer() || isAdmin() || isChairperson());
+        allow create, update, delete: if isSignedIn() && (isTreasurer() || isChairperson());
     }
 
     /**

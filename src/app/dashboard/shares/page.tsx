@@ -13,6 +13,15 @@ import { Lock, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { MiscellaneousIncome } from '@/lib/data';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import { PieChart, Pie, Cell } from 'recharts';
 
 interface UserProfile {
   id: string;
@@ -167,6 +176,20 @@ export default function SharesPage() {
         setIsLoading(false);
       });
   }, [initialLoading, isAdmin, firestore]);
+  
+  const chartConfig = useMemo(() => {
+    const config: ChartConfig = {};
+    if (sharesData?.memberShares) {
+      sharesData.memberShares.forEach((member, index) => {
+        config[member.id] = {
+          label: `${member.firstName} ${member.lastName}`,
+          color: `hsl(var(--chart-${(index % 5) + 1}))`,
+        };
+      });
+    }
+    return config;
+  }, [sharesData]);
+
 
   if (initialLoading || isLoading) {
     return (
@@ -231,54 +254,101 @@ export default function SharesPage() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>All-Time Member Shares</CardTitle>
-        <CardDescription>
-          An overview of each member's total contribution share. Total collected funds: <span className="font-bold text-primary">Ksh {sharesData?.grandTotal.toLocaleString() ?? 0}</span>.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[300px]">Member</TableHead>
-              <TableHead>Total Share Value</TableHead>
-              <TableHead className="w-[300px]">Share Percentage</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sharesData && sharesData.memberShares.length > 0 ? (
-                sharesData.memberShares.map(member => (
-              <TableRow key={member.id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar>
-                      <AvatarImage src={member.photoURL} />
-                      <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
-                    </Avatar>
-                    <div className="font-medium">{member.firstName} {member.lastName}</div>
-                  </div>
-                </TableCell>
-                <TableCell>Ksh {member.totalContribution.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Progress value={member.sharePercentage} className="w-40" />
-                    <span className="text-sm font-medium">{member.sharePercentage.toFixed(2)}%</span>
-                  </div>
-                </TableCell>
+    <>
+      {sharesData && sharesData.memberShares.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Shares Distribution</CardTitle>
+            <CardDescription>A visual breakdown of member share percentages.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[350px] w-full max-w-[350px]">
+              <PieChart>
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent
+                    nameKey="id"
+                    formatter={(value, name, item) => (
+                      <div className="text-sm">
+                          <div className="font-bold">{chartConfig[name]?.label}</div>
+                          <div className="text-muted-foreground">Share: {Number(value).toFixed(2)}%</div>
+                      </div>
+                  )} />}
+                />
+                <Pie
+                  data={sharesData.memberShares}
+                  dataKey="sharePercentage"
+                  nameKey="id"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                  labelLine={false}
+                  strokeWidth={2}
+                >
+                  {sharesData.memberShares.map((entry) => (
+                    <Cell key={`cell-${entry.id}`} fill={`var(--color-${entry.id})`} className="stroke-background hover:opacity-80" />
+                  ))}
+                </Pie>
+                <ChartLegend
+                  content={<ChartLegendContent nameKey="id" />}
+                  className="mt-4 flex-wrap justify-center"
+                />
+              </PieChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>All-Time Member Shares</CardTitle>
+          <CardDescription>
+            An overview of each member's total contribution share. Total collected funds: <span className="font-bold text-primary">Ksh {sharesData?.grandTotal.toLocaleString() ?? 0}</span>.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[300px]">Member</TableHead>
+                <TableHead>Total Share Value</TableHead>
+                <TableHead className="w-[300px]">Share Percentage</TableHead>
               </TableRow>
-            ))
-            ) : (
-                <TableRow>
-                    <TableCell colSpan={3} className="text-center">
-                        No contribution data available.
-                    </TableCell>
+            </TableHeader>
+            <TableBody>
+              {sharesData && sharesData.memberShares.length > 0 ? (
+                  sharesData.memberShares.map(member => (
+                <TableRow key={member.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar>
+                        <AvatarImage src={member.photoURL} />
+                        <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
+                      </Avatar>
+                      <div className="font-medium">{member.firstName} {member.lastName}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>Ksh {member.totalContribution.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Progress value={member.sharePercentage} className="w-40" />
+                      <span className="text-sm font-medium">{member.sharePercentage.toFixed(2)}%</span>
+                    </div>
+                  </TableCell>
                 </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+              ))
+              ) : (
+                  <TableRow>
+                      <TableCell colSpan={3} className="text-center">
+                          No contribution data available.
+                      </TableCell>
+                  </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </>
   );
 }

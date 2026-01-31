@@ -60,22 +60,18 @@ service cloud.firestore {
     }
 
     /**
-     * @description Checks if the user has the 'Admin' role in their user profile.
+     * @description Checks if the user is an admin by verifying their role in their user profile.
      */
     function isAdmin() {
       return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin';
     }
 
     /**
-     * @description Rules for the admin role collection. This is deprecated and no longer used for auth checks.
+     * @description DEPRECATED: This collection is no longer used for checking admin privileges.
      * @path /roles_admin/{userId}
      */
     match /roles_admin/{userId} {
-      allow get: if isSignedIn() && isAdmin();
-      allow list: if false;
-      allow create: if isSignedIn() && request.auth.uid == userId ;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list, create, update, delete: if false;
     }
 
     /**
@@ -227,3 +223,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

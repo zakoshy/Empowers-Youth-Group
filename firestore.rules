@@ -60,10 +60,22 @@ service cloud.firestore {
     }
 
     /**
-     * @description Checks if the user is an admin by verifying their role in their user profile.
+     * @description Checks if the user is an admin by verifying the existence of a document in the `roles_admin` collection.
      */
     function isAdmin() {
-      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin';
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    /**
+     * @description Rules for the admin role collection.
+     * @path /roles_admin/{userId}
+     */
+    match /roles_admin/{userId} {
+      allow get: if isSignedIn() && isAdmin();
+      allow list: if false;
+      allow create: if isSignedIn() && request.auth.uid == userId ;
+      allow update: if false;
+      allow delete: if false;
     }
 
     /**

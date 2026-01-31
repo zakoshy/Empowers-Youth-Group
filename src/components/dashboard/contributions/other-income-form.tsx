@@ -34,6 +34,7 @@ interface OtherIncomeFormDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   income?: MiscellaneousIncome | null;
   members: UserProfile[];
+  initialType?: 'Registration Fee' | 'Fine' | 'Loan Interest';
 }
 
 const formSchema = z.object({
@@ -50,7 +51,8 @@ export function OtherIncomeFormDialog({
   isOpen,
   onOpenChange,
   income,
-  members
+  members,
+  initialType
 }: OtherIncomeFormDialogProps) {
   const firestore = useFirestore();
   const { user } = useUser();
@@ -80,7 +82,7 @@ export function OtherIncomeFormDialog({
         });
       } else {
           form.reset({
-              type: 'Fine',
+              type: initialType || 'Fine',
               description: '',
               amount: 0,
               date: new Date(),
@@ -88,7 +90,7 @@ export function OtherIncomeFormDialog({
           });
       }
     }
-  }, [income, isOpen, form]);
+  }, [income, isOpen, form, initialType]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user) {
@@ -144,16 +146,16 @@ export function OtherIncomeFormDialog({
                 render={({ field }) => (
                     <FormItem>
                         <FormLabel>Income Type</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select an income type" />
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                <SelectItem value="Registration Fee">Registration Fee</SelectItem>
                                 <SelectItem value="Fine">Fine</SelectItem>
                                 <SelectItem value="Loan Interest">Loan Interest</SelectItem>
+                                <SelectItem value="Registration Fee" disabled>Registration Fee (Automatic)</SelectItem>
                             </SelectContent>
                         </Select>
                         <FormMessage />
@@ -168,7 +170,7 @@ export function OtherIncomeFormDialog({
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Select Member</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select the relevant member" />

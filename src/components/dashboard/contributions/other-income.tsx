@@ -1,14 +1,20 @@
-
 'use client';
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore';
 import type { MiscellaneousIncome, UserProfile } from '@/lib/data';
 import { OtherIncomeFormDialog } from './other-income-form';
 import { OtherIncomeList } from './other-income-list';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { PlusCircle } from 'lucide-react';
 
 interface OtherIncomeProps {
   members: UserProfile[];
@@ -17,11 +23,18 @@ interface OtherIncomeProps {
 export function OtherIncome({ members }: OtherIncomeProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingIncome, setEditingIncome] = useState<MiscellaneousIncome | null>(null);
+  const [incomeTypeToAdd, setIncomeTypeToAdd] = useState<'Fine' | 'Loan Interest' | 'Registration Fee'>('Fine');
 
   const handleEdit = (income: MiscellaneousIncome) => {
     setEditingIncome(income);
     setIsFormOpen(true);
   };
+
+  const handleAddNew = (type: 'Fine' | 'Loan Interest' | 'Registration Fee') => {
+      setEditingIncome(null);
+      setIncomeTypeToAdd(type);
+      setIsFormOpen(true);
+  }
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
@@ -38,7 +51,23 @@ export function OtherIncome({ members }: OtherIncomeProps) {
             <CardTitle>Manage Other Income</CardTitle>
             <CardDescription>Record registration fees, fines, and loan interest.</CardDescription>
           </div>
-          <Button onClick={() => setIsFormOpen(true)}>Add Income</Button>
+           <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Add Income
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+                <DropdownMenuLabel>Income Type</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => handleAddNew('Fine')}>Fine</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => handleAddNew('Loan Interest')}>Loan Interest</DropdownMenuItem>
+                <DropdownMenuItem disabled>
+                    Registration Fee (Automatic)
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </CardHeader>
         <CardContent>
           <OtherIncomeList onEdit={handleEdit} />
@@ -50,6 +79,7 @@ export function OtherIncome({ members }: OtherIncomeProps) {
         onOpenChange={handleOpenChange}
         income={editingIncome}
         members={members}
+        initialType={incomeTypeToAdd}
       />
     </div>
   );

@@ -22,6 +22,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { PieChart, Pie, Cell } from 'recharts';
+import { Separator } from '@/components/ui/separator';
 
 interface UserProfile {
   id: string;
@@ -39,6 +40,13 @@ interface Contribution {
   year: number;
 }
 
+interface SharesBreakdown {
+    totalMiscIncomes: number;
+    totalFromDeletedUsers: number;
+    totalPooledFunds: number;
+    numberOfMembers: number;
+}
+
 interface SharesData {
     memberShares: (UserProfile & { 
         personalContribution: number;
@@ -47,6 +55,7 @@ interface SharesData {
         sharePercentage: number 
     })[];
     grandTotal: number;
+    breakdown: SharesBreakdown;
 }
 
 const getInitials = (firstName = '', lastName = '') => {
@@ -104,15 +113,14 @@ async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> 
     const grandTotal = monthlyTotal + specialTotal + miscTotal;
     const numberOfMembers = currentMembers.length > 0 ? currentMembers.length : 1;
     
-    // Calculate equal shares from misc income and deleted members' funds.
-    const equalShareFromMisc = miscTotal / numberOfMembers;
-    const redistributedAmountPerMember = totalFromDeletedUsers / numberOfMembers;
-    const groupFundsShare = equalShareFromMisc + redistributedAmountPerMember;
+    const totalPooledFunds = miscTotal + totalFromDeletedUsers;
+    const groupFundsShare = totalPooledFunds / numberOfMembers;
 
     if (grandTotal === 0) {
         return {
             memberShares: currentMembers.map(u => ({ ...u, personalContribution: 0, groupFundsShare: 0, totalShareValue: 0, sharePercentage: 0 })),
             grandTotal: 0,
+            breakdown: { totalMiscIncomes: 0, totalFromDeletedUsers: 0, totalPooledFunds: 0, numberOfMembers: 0 }
         };
     }
     
@@ -143,13 +151,23 @@ async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> 
       };
     }).sort((a, b) => b.sharePercentage - a.sharePercentage);
 
-    return { memberShares, grandTotal };
+    return { 
+        memberShares, 
+        grandTotal,
+        breakdown: {
+            totalMiscIncomes: miscTotal,
+            totalFromDeletedUsers,
+            totalPooledFunds,
+            numberOfMembers
+        }
+    };
 }
 
 export default function SharesPage() {
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
   const [sharesData, setSharesData] = useState<SharesData | null>(null);
+  const [breakdown, setBreakdown] = useState<SharesBreakdown | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<{ message: string, link?: string, instructions?: string } | null>(null);
 
@@ -171,6 +189,7 @@ export default function SharesPage() {
     fetchAllDataForShares(firestore)
       .then(data => {
         setSharesData(data);
+        setBreakdown(data.breakdown);
         setError(null);
       })
       .catch(err => {
@@ -289,6 +308,42 @@ export default function SharesPage() {
 
   return (
     <>
+      {breakdown && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Group Funds Breakdown</CardTitle>
+            <CardDescription>
+              This is how the "Share of Group Funds" for each member is calculated.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+             <div className="space-y-2">
+              <div className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
+                <span>Total from Miscellaneous Incomes (Fines, etc.)</span>
+                <span className="font-bold">Ksh {breakdown.totalMiscIncomes.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
+                <span>Total from Deleted Members' Contributions</span>
+                <span className="font-bold">Ksh {breakdown.totalFromDeletedUsers.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+              <Separator className="my-2" />
+              <div className="flex justify-between items-center p-2">
+                <span className="font-semibold">Total Pooled Funds for Distribution</span>
+                <span className="font-bold">Ksh {breakdown.totalPooledFunds.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between items-center p-2">
+                <span className="text-muted-foreground">Divided by</span>
+                <span className="text-muted-foreground">{breakdown.numberOfMembers} Members</span>
+              </div>
+               <Separator className="my-2" />
+              <div className="flex justify-between items-center p-2 rounded-md bg-primary/10">
+                <span className="font-semibold text-primary">Resulting Share per Member</span>
+                <span className="font-bold text-primary">Ksh {(breakdown.totalPooledFunds / (breakdown.numberOfMembers || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>All-Time Member Shares</CardTitle>
@@ -384,3 +439,4 @@ export default function SharesPage() {
     </>
   );
 }
+

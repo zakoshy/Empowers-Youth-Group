@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
 import { collection, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import {
@@ -67,6 +68,17 @@ export default function ManageUsersPage() {
     [firestore, canFetchUsers]
   );
   const { data: users, isLoading: usersLoading } = useCollection<UserProfile>(usersRef);
+
+  const sortedUsers = useMemo(() => {
+    if (!users) return [];
+    return [...users].sort((a, b) => {
+        const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
+        const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
+        if (nameA < nameB) return -1;
+        if (nameA > nameB) return 1;
+        return 0;
+    });
+  }, [users]);
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     if (!firestore) return;
@@ -142,6 +154,7 @@ export default function ManageUsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px]">#</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
@@ -149,8 +162,9 @@ export default function ManageUsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users?.map((user) => (
+              {sortedUsers?.map((user, index) => (
                 <TableRow key={user.id}>
+                  <TableCell>{index + 1}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar>

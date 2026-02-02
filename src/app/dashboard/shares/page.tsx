@@ -67,7 +67,8 @@ async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> 
     console.log(`fetchAllDataForShares: specialContributionsSnapshot: ${specialContributionsSnapshot.docs.length} docs`);
     console.log(`fetchAllDataForShares: miscIncomesSnapshot: ${miscIncomesSnapshot.docs.length} docs`);
 
-    const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+    const allUsers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+    const users = allUsers.filter(user => user.role !== 'Admin'); // Exclude Admins
     const contributions = contributionsSnapshot.docs.map(doc => doc.data() as Contribution);
     const specialContributions = specialContributionsSnapshot.docs.map(doc => doc.data() as Contribution);
     const miscellaneousIncomes = miscIncomesSnapshot.docs.map(doc => doc.data() as MiscellaneousIncome);

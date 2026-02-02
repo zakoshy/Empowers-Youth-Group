@@ -85,26 +85,8 @@ async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> 
     const specialContributions = specialContributionsSnapshot.docs.map(doc => doc.data() as Contribution);
     const miscellaneousIncomes = miscIncomesSnapshot.docs.map(doc => doc.data() as MiscellaneousIncome);
 
-    // Identify contributions from users who have been deleted.
-    const allContributingUserIds = new Set<string>();
-    contributions.forEach(c => allContributingUserIds.add(c.userId));
-    specialContributions.forEach(sc => allContributingUserIds.add(sc.userId));
-    
-    const adminUserIds = new Set(allUsers.filter(u => u.role === 'Admin').map(u => u.id));
-
-    const deletedUserIds = [...allContributingUserIds].filter(id => !currentMemberIds.has(id) && !adminUserIds.has(id));
-
-    let totalFromDeletedUsers = 0;
-    contributions.forEach(c => {
-        if (deletedUserIds.includes(c.userId)) {
-            totalFromDeletedUsers += c.amount;
-        }
-    });
-    specialContributions.forEach(sc => {
-        if (deletedUserIds.includes(sc.userId)) {
-            totalFromDeletedUsers += sc.amount;
-        }
-    });
+    // Per user request, we assume no members are deleted until one is.
+    const totalFromDeletedUsers = 0;
 
     const monthlyTotal = contributions.reduce((sum, c) => sum + c.amount, 0);
     const specialTotal = specialContributions.reduce((sum, sc) => sum + sc.amount, 0);
@@ -113,7 +95,8 @@ async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> 
     const grandTotal = monthlyTotal + specialTotal + miscTotal;
     const numberOfMembers = currentMembers.length > 0 ? currentMembers.length : 1;
     
-    const totalPooledFunds = miscTotal + totalFromDeletedUsers;
+    // Group funds are now only miscellaneous incomes.
+    const totalPooledFunds = miscTotal;
     const groupFundsShare = totalPooledFunds / numberOfMembers;
 
     if (grandTotal === 0) {
@@ -322,10 +305,6 @@ export default function SharesPage() {
                 <span>Total from Miscellaneous Incomes (Fines, etc.)</span>
                 <span className="font-bold">Ksh {breakdown.totalMiscIncomes.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
-              <div className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
-                <span>Total from Deleted Members' Contributions</span>
-                <span className="font-bold">Ksh {breakdown.totalFromDeletedUsers.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              </div>
               <Separator className="my-2" />
               <div className="flex justify-between items-center p-2">
                 <span className="font-semibold">Total Pooled Funds for Distribution</span>
@@ -439,4 +418,3 @@ export default function SharesPage() {
     </>
   );
 }
-

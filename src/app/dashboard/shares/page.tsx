@@ -40,7 +40,12 @@ interface Contribution {
 }
 
 interface SharesData {
-    memberShares: (UserProfile & { totalContribution: number; sharePercentage: number })[];
+    memberShares: (UserProfile & { 
+        personalContribution: number;
+        groupFundsShare: number;
+        totalShareValue: number; 
+        sharePercentage: number 
+    })[];
     grandTotal: number;
 }
 
@@ -102,10 +107,11 @@ async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> 
     // Calculate equal shares from misc income and deleted members' funds.
     const equalShareFromMisc = miscTotal / numberOfMembers;
     const redistributedAmountPerMember = totalFromDeletedUsers / numberOfMembers;
+    const groupFundsShare = equalShareFromMisc + redistributedAmountPerMember;
 
     if (grandTotal === 0) {
         return {
-            memberShares: currentMembers.map(u => ({ ...u, totalContribution: 0, sharePercentage: 0 })),
+            memberShares: currentMembers.map(u => ({ ...u, personalContribution: 0, groupFundsShare: 0, totalShareValue: 0, sharePercentage: 0 })),
             grandTotal: 0,
         };
     }
@@ -125,12 +131,14 @@ async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> 
     
     const memberShares = currentMembers.map(user => {
       const personalContribution = memberPersonalTotals[user.id] || 0;
-      const totalEffectiveContribution = personalContribution + equalShareFromMisc + redistributedAmountPerMember;
-      const sharePercentage = grandTotal > 0 ? (totalEffectiveContribution / grandTotal) * 100 : 0;
+      const totalShareValue = personalContribution + groupFundsShare;
+      const sharePercentage = grandTotal > 0 ? (totalShareValue / grandTotal) * 100 : 0;
       
       return {
         ...user,
-        totalContribution: totalEffectiveContribution,
+        personalContribution,
+        groupFundsShare,
+        totalShareValue,
         sharePercentage,
       };
     }).sort((a, b) => b.sharePercentage - a.sharePercentage);
@@ -292,9 +300,11 @@ export default function SharesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[300px]">Member</TableHead>
+                <TableHead className="w-[250px]">Member</TableHead>
+                <TableHead>Personal Contributions</TableHead>
+                <TableHead>Share of Group Funds</TableHead>
                 <TableHead>Total Share Value</TableHead>
-                <TableHead className="w-[300px]">Share Percentage</TableHead>
+                <TableHead className="w-[200px]">Share Percentage</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -310,10 +320,12 @@ export default function SharesPage() {
                       <div className="font-medium">{member.firstName} {member.lastName}</div>
                     </div>
                   </TableCell>
-                  <TableCell>Ksh {member.totalContribution.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  <TableCell>Ksh {member.personalContribution.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  <TableCell>Ksh {member.groupFundsShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  <TableCell>Ksh {member.totalShareValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <Progress value={member.sharePercentage} className="w-40" />
+                      <Progress value={member.sharePercentage} className="w-24" />
                       <span className="text-sm font-medium">{member.sharePercentage.toFixed(2)}%</span>
                     </div>
                   </TableCell>
@@ -321,7 +333,7 @@ export default function SharesPage() {
               ))
               ) : (
                   <TableRow>
-                      <TableCell colSpan={3} className="text-center">
+                      <TableCell colSpan={5} className="text-center">
                           No contribution data available.
                       </TableCell>
                   </TableRow>

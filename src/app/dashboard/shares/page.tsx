@@ -48,6 +48,7 @@ const getInitials = (firstName = '', lastName = '') => {
 };
 
 async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> {
+    console.log("fetchAllDataForShares: Starting data fetch...");
     const usersQuery = query(collection(firestore, 'userProfiles'), where('status', '==', 'active'));
     
     const contributionsQuery = query(collectionGroup(firestore, 'contributions'));
@@ -55,11 +56,16 @@ async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> 
     const miscellaneousIncomesQuery = query(collection(firestore, 'miscellaneousIncomes'));
 
     const [usersSnapshot, contributionsSnapshot, specialContributionsSnapshot, miscIncomesSnapshot] = await Promise.all([
-        getDocs(usersQuery),
-        getDocs(contributionsQuery),
-        getDocs(specialContributionsQuery),
-        getDocs(miscellaneousIncomesQuery),
+        getDocs(usersQuery).catch(e => { console.error("Error fetching users:", e); throw e; }),
+        getDocs(contributionsQuery).catch(e => { console.error("Error fetching contributions:", e); throw e; }),
+        getDocs(specialContributionsQuery).catch(e => { console.error("Error fetching special contributions:", e); throw e; }),
+        getDocs(miscellaneousIncomesQuery).catch(e => { console.error("Error fetching misc incomes:", e); throw e; }),
     ]);
+
+    console.log(`fetchAllDataForShares: usersSnapshot: ${usersSnapshot.docs.length} docs`);
+    console.log(`fetchAllDataForShares: contributionsSnapshot: ${contributionsSnapshot.docs.length} docs`);
+    console.log(`fetchAllDataForShares: specialContributionsSnapshot: ${specialContributionsSnapshot.docs.length} docs`);
+    console.log(`fetchAllDataForShares: miscIncomesSnapshot: ${miscIncomesSnapshot.docs.length} docs`);
 
     const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
     const contributions = contributionsSnapshot.docs.map(doc => doc.data() as Contribution);
@@ -133,13 +139,15 @@ export default function SharesPage() {
     }
 
     setIsLoading(true);
+    console.log("SHARES_PAGE: Admin detected, fetching data...");
     fetchAllDataForShares(firestore)
       .then(data => {
+        console.log("SHARES_PAGE: Data fetched successfully", data);
         setSharesData(data);
         setError(null);
       })
       .catch(err => {
-        console.error("Error fetching shares data:", err);
+        console.error("SHARES_PAGE: Error fetching shares data:", err);
         
         if (err.code === 'failed-precondition' && err.message.includes('index')) {
             const urlMatch = err.message.match(/(https?:\/\/[^\s]+)/);

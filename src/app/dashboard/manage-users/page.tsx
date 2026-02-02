@@ -180,7 +180,7 @@ export default function ManageUsersPage() {
                         <span className="font-medium text-muted-foreground">{user.role}</span>
                     ) : (
                         <Select
-                            defaultValue={user.role}
+                            value={user.role}
                             onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
                             disabled={currentUserProfile?.role !== 'Admin'}
                         >

@@ -2,7 +2,7 @@
 
 import { useMemo, useEffect, useState } from 'react';
 import { useFirestore, useMemoFirebase, useUser, useDoc } from '@/firebase';
-import { collection, collectionGroup, doc, query, where, getDocs, Firestore } from 'firebase/firestore';
+import { collection, collectionGroup, doc, query, getDocs, Firestore } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -49,7 +49,7 @@ const getInitials = (firstName = '', lastName = '') => {
 
 async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> {
     console.log("fetchAllDataForShares: Starting data fetch...");
-    const usersQuery = query(collection(firestore, 'userProfiles'), where('status', '==', 'active'));
+    const usersQuery = query(collection(firestore, 'userProfiles'));
     
     const contributionsQuery = query(collectionGroup(firestore, 'contributions'));
     const specialContributionsQuery = query(collectionGroup(firestore, 'specialContributions'));

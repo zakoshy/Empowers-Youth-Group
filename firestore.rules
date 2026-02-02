@@ -36,15 +36,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
-    }
-
-    match /roles_admin/{userId} {
-      allow get: if isSignedIn();
-      allow list: if false;
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if false;
-      allow delete: if false;
+      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin';
     }
 
     match /userProfiles/{userId} {
@@ -100,13 +92,13 @@ service cloud.firestore {
 
     match /userProfiles/{userId}/specialContributions/{specialContributionId} {
       allow get, list: if isSignedIn() &&
-        (isOwner(userId) || isTreasurer() || isChairperson());
+        (isOwner(userId) || isTreasurer() || isChairperson() || isAdmin());
 
       allow create, update, delete: if isSignedIn() && isTreasurer();
     }
     
     match /{path=**}/specialContributions/{specialContributionId} {
-      allow list: if isSignedIn() &&
+      allow get, list: if isSignedIn() &&
         (isTreasurer() || isInvestmentLead() || isChairperson() || isAdmin());
     }
 

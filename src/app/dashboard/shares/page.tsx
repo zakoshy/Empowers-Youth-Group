@@ -3,7 +3,7 @@
 import { useMemo, useEffect, useState } from 'react';
 import { useFirestore, useMemoFirebase, useUser, useDoc } from '@/firebase';
 import { collection, collectionGroup, doc, query, where, getDocs, Firestore } from 'firebase/firestore';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -302,14 +302,9 @@ export default function SharesPage() {
             </TableBody>
           </Table>
         </CardContent>
-      </Card>
-      {sharesData && sharesData.memberShares.length > 0 && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Shares Distribution</CardTitle>
-            <CardDescription>A visual breakdown of member share percentages.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
+        {sharesData && sharesData.memberShares.length > 0 && (
+          <CardFooter className="flex-col items-center gap-4 border-t pt-6">
+            <h3 className="text-lg font-semibold text-center">Shares Distribution</h3>
             <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[350px] w-full max-w-[350px]">
               <PieChart>
                 <ChartTooltip
@@ -344,9 +339,9 @@ export default function SharesPage() {
                 />
               </PieChart>
             </ChartContainer>
-          </CardContent>
-        </Card>
-      )}
+          </CardFooter>
+        )}
+      </Card>
     </>
   );
 }

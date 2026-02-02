@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
@@ -48,59 +49,84 @@ const getInitials = (firstName = '', lastName = '') => {
 };
 
 async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> {
-    const usersQuery = query(collection(firestore, 'userProfiles'));
-    
+    const allUsersQuery = query(collection(firestore, 'userProfiles'));
     const contributionsQuery = query(collectionGroup(firestore, 'contributions'));
     const specialContributionsQuery = query(collectionGroup(firestore, 'specialContributions'));
     const miscellaneousIncomesQuery = query(collection(firestore, 'miscellaneousIncomes'));
 
-    const [usersSnapshot, contributionsSnapshot, specialContributionsSnapshot, miscIncomesSnapshot] = await Promise.all([
-        getDocs(usersQuery).catch(e => { throw e; }),
+    const [allUsersSnapshot, contributionsSnapshot, specialContributionsSnapshot, miscIncomesSnapshot] = await Promise.all([
+        getDocs(allUsersQuery).catch(e => { throw e; }),
         getDocs(contributionsQuery).catch(e => { throw e; }),
         getDocs(specialContributionsQuery).catch(e => { throw e; }),
         getDocs(miscellaneousIncomesQuery).catch(e => { throw e; }),
     ]);
 
-    const allUsers = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
-    const users = allUsers.filter(user => user.role !== 'Admin'); // Exclude Admins
+    const allUsers = allUsersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+    
+    // Current members are non-Admins
+    const currentMembers = allUsers.filter(user => user.role !== 'Admin');
+    const currentMemberIds = new Set(currentMembers.map(m => m.id));
+
     const contributions = contributionsSnapshot.docs.map(doc => doc.data() as Contribution);
     const specialContributions = specialContributionsSnapshot.docs.map(doc => doc.data() as Contribution);
     const miscellaneousIncomes = miscIncomesSnapshot.docs.map(doc => doc.data() as MiscellaneousIncome);
+
+    // Identify contributions from users who have been deleted.
+    const allContributingUserIds = new Set<string>();
+    contributions.forEach(c => allContributingUserIds.add(c.userId));
+    specialContributions.forEach(sc => allContributingUserIds.add(sc.userId));
+    
+    const adminUserIds = new Set(allUsers.filter(u => u.role === 'Admin').map(u => u.id));
+
+    const deletedUserIds = [...allContributingUserIds].filter(id => !currentMemberIds.has(id) && !adminUserIds.has(id));
+
+    let totalFromDeletedUsers = 0;
+    contributions.forEach(c => {
+        if (deletedUserIds.includes(c.userId)) {
+            totalFromDeletedUsers += c.amount;
+        }
+    });
+    specialContributions.forEach(sc => {
+        if (deletedUserIds.includes(sc.userId)) {
+            totalFromDeletedUsers += sc.amount;
+        }
+    });
 
     const monthlyTotal = contributions.reduce((sum, c) => sum + c.amount, 0);
     const specialTotal = specialContributions.reduce((sum, sc) => sum + sc.amount, 0);
     const miscTotal = miscellaneousIncomes.reduce((sum, income) => sum + income.amount, 0);
 
     const grandTotal = monthlyTotal + specialTotal + miscTotal;
-
-    const numberOfMembers = users.length > 0 ? users.length : 1;
+    const numberOfMembers = currentMembers.length > 0 ? currentMembers.length : 1;
+    
+    // Calculate equal shares from misc income and deleted members' funds.
     const equalShareFromMisc = miscTotal / numberOfMembers;
+    const redistributedAmountPerMember = totalFromDeletedUsers / numberOfMembers;
 
     if (grandTotal === 0) {
-      return {
-        memberShares: users.map(u => ({
-          ...u,
-          totalContribution: 0,
-          sharePercentage: 0,
-        })),
-        grandTotal: 0,
-      };
+        return {
+            memberShares: currentMembers.map(u => ({ ...u, totalContribution: 0, sharePercentage: 0 })),
+            grandTotal: 0,
+        };
     }
     
+    // Calculate personal totals for current members only.
     const memberPersonalTotals: Record<string, number> = {};
-
     contributions.forEach(c => {
-        memberPersonalTotals[c.userId] = (memberPersonalTotals[c.userId] || 0) + c.amount;
+        if (currentMemberIds.has(c.userId)) {
+            memberPersonalTotals[c.userId] = (memberPersonalTotals[c.userId] || 0) + c.amount;
+        }
     });
-
     specialContributions.forEach(sc => {
-        memberPersonalTotals[sc.userId] = (memberPersonalTotals[sc.userId] || 0) + sc.amount;
+        if (currentMemberIds.has(sc.userId)) {
+            memberPersonalTotals[sc.userId] = (memberPersonalTotals[sc.userId] || 0) + sc.amount;
+        }
     });
-
-    const memberShares = users.map(user => {
+    
+    const memberShares = currentMembers.map(user => {
       const personalContribution = memberPersonalTotals[user.id] || 0;
-      const totalEffectiveContribution = personalContribution + equalShareFromMisc;
-      const sharePercentage = (totalEffectiveContribution / grandTotal) * 100;
+      const totalEffectiveContribution = personalContribution + equalShareFromMisc + redistributedAmountPerMember;
+      const sharePercentage = grandTotal > 0 ? (totalEffectiveContribution / grandTotal) * 100 : 0;
       
       return {
         ...user,

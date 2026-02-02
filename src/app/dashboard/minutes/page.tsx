@@ -43,36 +43,24 @@ export default function ManageMinutesPage() {
     );
   }
   
-  if (!isSecretary) {
-      return (
-          <Card>
-              <CardHeader>
-                  <CardTitle>Access Denied</CardTitle>
-                  <CardDescription>This page is for managing meeting minutes.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                  <div className="flex flex-col items-center justify-center text-center p-8 border-2 border-dashed rounded-lg">
-                      <Lock className="h-12 w-12 text-muted-foreground" />
-                      <p className="mt-4 text-muted-foreground">Only the Secretary or an Admin can manage meeting minutes.</p>
-                      <p className="text-sm text-muted-foreground">You can view minutes on the main dashboard.</p>
-                  </div>
-              </CardContent>
-          </Card>
-      )
-  }
-
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Manage Meeting Minutes</CardTitle>
-            <CardDescription>Upload, update, and manage all group meeting minutes.</CardDescription>
+            <CardTitle>Meeting Minutes</CardTitle>
+            <CardDescription>
+              {isSecretary
+                ? "Upload, update, and manage all group meeting minutes."
+                : "Review the official records from group meetings."}
+            </CardDescription>
           </div>
-          <Button onClick={() => router.push('/dashboard/minutes/new')}>Upload New Minute</Button>
+          {isSecretary && (
+            <Button onClick={() => router.push('/dashboard/minutes/new')}>Upload New Minute</Button>
+          )}
         </CardHeader>
         <CardContent>
-          <MinutesList />
+          <MinutesList isReadOnly={!isSecretary} />
         </CardContent>
       </Card>
     </div>

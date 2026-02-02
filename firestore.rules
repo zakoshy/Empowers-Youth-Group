@@ -40,7 +40,7 @@ service cloud.firestore {
     }
 
     match /roles_admin/{userId} {
-      allow get: if isSignedIn() && isAdmin();
+      allow get: if isSignedIn();
       allow list: if false;
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if false;
@@ -83,7 +83,6 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // ✅ FIX: admin can read member contributions (shares)
     match /userProfiles/{userId}/contributions/{contributionId} {
       allow get, list: if isSignedIn() &&
         (isOwner(userId) || isTreasurer() || isChairperson() || isAdmin());
@@ -94,7 +93,6 @@ service cloud.firestore {
       allow delete: if isExistingOwner(userId);
     }
 
-    // ✅ FIX: admin collection-group shares query
     match /{path=**}/contributions/{contributionId} {
       allow get, list: if isSignedIn() &&
         (isInvestmentLead() || isChairperson() || isAdmin() || isTreasurer());

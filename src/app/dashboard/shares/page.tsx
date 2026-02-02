@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
@@ -255,51 +254,6 @@ export default function SharesPage() {
 
   return (
     <>
-      {sharesData && sharesData.memberShares.length > 0 && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Shares Distribution</CardTitle>
-            <CardDescription>A visual breakdown of member share percentages.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[350px] w-full max-w-[350px]">
-              <PieChart>
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent
-                    nameKey="id"
-                    formatter={(value, name, item) => (
-                      <div className="text-sm">
-                          <div className="font-bold">{chartConfig[name]?.label}</div>
-                          <div className="text-muted-foreground">Share: {Number(value).toFixed(2)}%</div>
-                      </div>
-                  )} />}
-                />
-                <Pie
-                  data={sharesData.memberShares}
-                  dataKey="sharePercentage"
-                  nameKey="id"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={100}
-                  label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}
-                  strokeWidth={2}
-                >
-                  {sharesData.memberShares.map((entry) => (
-                    <Cell key={`cell-${entry.id}`} fill={`var(--color-${entry.id})`} className="stroke-background hover:opacity-80" />
-                  ))}
-                </Pie>
-                <ChartLegend
-                  content={<ChartLegendContent nameKey="id" />}
-                  className="mt-4 flex-wrap justify-center"
-                />
-              </PieChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      )}
-
       <Card>
         <CardHeader>
           <CardTitle>All-Time Member Shares</CardTitle>
@@ -349,6 +303,50 @@ export default function SharesPage() {
           </Table>
         </CardContent>
       </Card>
+      {sharesData && sharesData.memberShares.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Shares Distribution</CardTitle>
+            <CardDescription>A visual breakdown of member share percentages.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[350px] w-full max-w-[350px]">
+              <PieChart>
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent
+                    nameKey="id"
+                    formatter={(value, name, item) => (
+                      <div className="text-sm">
+                          <div className="font-bold">{chartConfig[name]?.label}</div>
+                          <div className="text-muted-foreground">Share: {Number(value).toFixed(2)}%</div>
+                      </div>
+                  )} />}
+                />
+                <Pie
+                  data={sharesData.memberShares}
+                  dataKey="sharePercentage"
+                  nameKey="id"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                  labelLine={false}
+                  strokeWidth={2}
+                >
+                  {sharesData.memberShares.map((entry) => (
+                    <Cell key={`cell-${entry.id}`} fill={`var(--color-${entry.id})`} className="stroke-background hover:opacity-80" />
+                  ))}
+                </Pie>
+                <ChartLegend
+                  content={<ChartLegendContent nameKey="id" />}
+                  className="mt-4 flex-wrap justify-center"
+                />
+              </PieChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      )}
     </>
   );
 }

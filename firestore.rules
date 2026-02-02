@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -35,17 +36,21 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Secretary';
     }
 
+    function isAdmin() {
+      return get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin';
+    }
+
     match /userProfiles/{userId} {
       allow get: if isSignedIn() &&
-        (isOwner(userId) || isTreasurer() || isChairperson() || get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin');
+        (isOwner(userId) || isTreasurer() || isChairperson() || isAdmin());
 
       allow list: if isSignedIn() &&
-        (isTreasurer() || isChairperson() || get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin');
+        (isTreasurer() || isChairperson() || isAdmin());
 
       allow create: if isSignedIn() && isOwner(userId);
 
       allow update: if 
-        (get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin' &&
+        (isAdmin() &&
           !request.resource.data.diff(resource.data)
             .affectedKeys()
             .hasAny(['treasurerApproved', 'chairpersonApproved'])) ||
@@ -59,7 +64,7 @@ service cloud.firestore {
             .hasOnly(['firstName', 'lastName', 'phone', 'photoURL']));
 
       allow delete: if 
-        get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin' ||
+        isAdmin() ||
         isExistingOwner(userId) ||
         ((isChairperson() || isTreasurer()) && resource.data.status == 'pending');
     }
@@ -73,7 +78,7 @@ service cloud.firestore {
 
     match /userProfiles/{userId}/contributions/{contributionId} {
       allow get, list: if isSignedIn() &&
-        (isOwner(userId) || isTreasurer() || isChairperson() || get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin');
+        (isOwner(userId) || isTreasurer() || isChairperson() || isAdmin());
 
       allow create, update: if isSignedIn() &&
         (request.auth.uid == userId || isTreasurer());
@@ -83,19 +88,19 @@ service cloud.firestore {
 
     match /{path=**}/contributions/{contributionId} {
       allow get, list: if isSignedIn() &&
-        (isInvestmentLead() || isChairperson() || isTreasurer() || get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin');
+        (isInvestmentLead() || isChairperson() || isTreasurer() || isAdmin());
     }
 
     match /userProfiles/{userId}/specialContributions/{specialContributionId} {
       allow get, list: if isSignedIn() &&
-        (isOwner(userId) || isTreasurer() || isChairperson() || get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin');
+        (isOwner(userId) || isTreasurer() || isChairperson() || isAdmin());
 
       allow create, update, delete: if isSignedIn() && isTreasurer();
     }
     
     match /{path=**}/specialContributions/{specialContributionId} {
       allow get, list: if isSignedIn() &&
-        (isTreasurer() || isInvestmentLead() || isChairperson() || get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin');
+        (isTreasurer() || isInvestmentLead() || isChairperson() || isAdmin());
     }
 
     match /events/{eventId} {
@@ -144,13 +149,13 @@ service cloud.firestore {
         request.auth.uid == request.resource.data.creatorId;
 
       allow update: if isSignedIn() &&
-        (isOwner(resource.data.creatorId) || isChairperson() || get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin');
+        (isOwner(resource.data.creatorId) || isChairperson() || isAdmin());
 
       allow delete: if isSignedIn() &&
         ((resource.data.creatorId != null &&
           resource.data.creatorId == request.auth.uid)
          || isChairperson()
-         || get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin');
+         || isAdmin());
 
       allow update: if isSignedIn() &&
         request.resource.data.diff(resource.data)
@@ -166,7 +171,7 @@ service cloud.firestore {
       allow get: if isSignedIn();
 
       allow list: if isSignedIn() &&
-        (hasVoted(pollId) || isChairperson() || get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin');
+        (hasVoted(pollId) || isChairperson() || isAdmin());
 
       allow create, update: if isSignedIn() &&
         voteId == request.auth.uid &&
@@ -176,7 +181,9 @@ service cloud.firestore {
         (isOwner(voteId)
          || isOwner(get(/databases/$(database)/documents/polls/$(pollId)).data.creatorId)
          || isChairperson()
-         || get(/databases/$(database)/documents/userProfiles/$(request.auth.uid)).data.role == 'Admin');
+         || isAdmin());
     }
   }
 }
+
+    

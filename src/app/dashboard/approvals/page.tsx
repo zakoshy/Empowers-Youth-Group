@@ -231,10 +231,10 @@ export default function ApprovalsPage() {
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
                             <div className="flex flex-col gap-1">
-                                <Badge variant={isTreasurerApproved ? "default" : "secondary"} className={isTreasurerApproved ? 'bg-green-500' : ''}>
+                                <Badge variant={isTreasurerApproved ? "default" : "secondary"}>
                                     Treasurer: {isTreasurerApproved ? 'Approved' : 'Pending'}
                                 </Badge>
-                                <Badge variant={isChairpersonApproved ? "default" : "secondary"} className={isChairpersonApproved ? 'bg-green-500' : ''}>
+                                <Badge variant={isChairpersonApproved ? "default" : "secondary"}>
                                     Chairperson: {isChairpersonApproved ? 'Approved' : 'Pending'}
                                 </Badge>
                             </div>

@@ -239,9 +239,9 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
                           <div className="flex flex-col">
                               <span>Ksh {amount.toLocaleString()}</span>
                               {isPaid ? (
-                                  <Badge variant="default" className="bg-green-500 w-fit mt-1">Paid</Badge>
+                                  <Badge variant="default" className="w-fit mt-1">Paid</Badge>
                               ) : isPartial ? (
-                                  <Badge variant="secondary" className="bg-yellow-500 w-fit mt-1">Partial</Badge>
+                                  <Badge variant="accent" className="w-fit mt-1">Partial</Badge>
                               ) : (
                                   <Badge variant="destructive" className="w-fit mt-1">Unpaid</Badge>
                               )}

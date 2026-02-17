@@ -136,7 +136,7 @@ service cloud.firestore {
     }
 
     match /expenditures/{expenditureId} {
-      allow get, list: if isSignedIn() && (isTreasurer() || isAdmin());
+      allow get, list: if isSignedIn() && (isTreasurer() || isAdmin() || isChairperson());
       allow create, update, delete: if isSignedIn() && (isTreasurer() || isAdmin());
     }
 

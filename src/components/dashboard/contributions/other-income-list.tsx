@@ -26,9 +26,10 @@ import { Badge } from '@/components/ui/badge';
 
 interface OtherIncomeListProps {
   onEdit: (income: MiscellaneousIncome) => void;
+  isReadOnly: boolean;
 }
 
-export function OtherIncomeList({ onEdit }: OtherIncomeListProps) {
+export function OtherIncomeList({ onEdit, isReadOnly }: OtherIncomeListProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const incomesRef = useMemoFirebase(
@@ -86,7 +87,7 @@ export function OtherIncomeList({ onEdit }: OtherIncomeListProps) {
             <TableHead>Description</TableHead>
             <TableHead>Date</TableHead>
             <TableHead>Amount</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            {!isReadOnly && <TableHead className="text-right">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -99,37 +100,39 @@ export function OtherIncomeList({ onEdit }: OtherIncomeListProps) {
                 <TableCell className="font-medium">{income.description}</TableCell>
                 <TableCell>{format(new Date(income.date), 'PPP')}</TableCell>
                 <TableCell>Ksh {income.amount.toLocaleString()}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => onEdit(income)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete this income record.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDelete(income.id)}>
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </TableCell>
+                {!isReadOnly && (
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={() => onEdit(income)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete this income record.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(income.id)}>
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </TableCell>
+                )}
               </TableRow>
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={5} className="text-center">
+              <TableCell colSpan={isReadOnly ? 4 : 5} className="text-center">
                 No income records found.
               </TableCell>
             </TableRow>

@@ -18,9 +18,10 @@ import { PlusCircle } from 'lucide-react';
 
 interface OtherIncomeProps {
   members: UserProfile[];
+  isReadOnly: boolean;
 }
 
-export function OtherIncome({ members }: OtherIncomeProps) {
+export function OtherIncome({ members, isReadOnly }: OtherIncomeProps) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingIncome, setEditingIncome] = useState<MiscellaneousIncome | null>(null);
   const [incomeTypeToAdd, setIncomeTypeToAdd] = useState<'Fine' | 'Loan Interest' | 'Registration Fee'>('Fine');
@@ -48,9 +49,12 @@ export function OtherIncome({ members }: OtherIncomeProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Manage Other Income</CardTitle>
-            <CardDescription>Record registration fees, fines, and loan interest.</CardDescription>
+            <CardTitle>{isReadOnly ? 'Other Income' : 'Manage Other Income'}</CardTitle>
+            <CardDescription>
+                {isReadOnly ? 'A summary of registration fees, fines, and loan interest.' : 'Record registration fees, fines, and loan interest.'}
+            </CardDescription>
           </div>
+          {!isReadOnly && (
            <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button>
@@ -68,19 +72,22 @@ export function OtherIncome({ members }: OtherIncomeProps) {
                 </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          )}
         </CardHeader>
         <CardContent>
-          <OtherIncomeList onEdit={handleEdit} />
+          <OtherIncomeList onEdit={handleEdit} isReadOnly={isReadOnly} />
         </CardContent>
       </Card>
       
-      <OtherIncomeFormDialog 
-        isOpen={isFormOpen} 
-        onOpenChange={handleOpenChange}
-        income={editingIncome}
-        members={members}
-        initialType={incomeTypeToAdd}
-      />
+      {!isReadOnly && (
+        <OtherIncomeFormDialog 
+            isOpen={isFormOpen} 
+            onOpenChange={handleOpenChange}
+            income={editingIncome}
+            members={members}
+            initialType={incomeTypeToAdd}
+        />
+      )}
     </div>
   );
 }

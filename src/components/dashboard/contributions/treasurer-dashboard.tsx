@@ -510,7 +510,7 @@ export default function TreasurerDashboard({ isReadOnly }: TreasurerDashboardPro
             </Card>
           </TabsContent>
           <TabsContent value="other-income">
-             <OtherIncome members={members} />
+             <OtherIncome members={members} isReadOnly={isReadOnly} />
           </TabsContent>
         </Tabs>
       </div>

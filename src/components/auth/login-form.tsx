@@ -53,13 +53,22 @@ export function LoginForm() {
         title: "Login Successful",
         description: "Redirecting you to your dashboard...",
       });
-      router.push('/dashboard');
+      
+      // Using window.location.href instead of router.push to ensure a full page reload
+      // and avoid RSC prefetch failures during the sensitive auth state transition.
+      window.location.href = '/dashboard';
     } catch (error: any) {
       console.error("Login Error: ", error);
+      
+      // Provide a more descriptive message for network errors like "Failed to fetch"
+      const errorMessage = error.message === "Failed to fetch" 
+        ? "Network error: Please check your connection and try again."
+        : (error.message || "Invalid email or password.");
+
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: error.message || "Invalid email or password.",
+        description: errorMessage,
       });
     }
   }

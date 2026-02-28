@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -8,7 +9,7 @@ import type { InvestmentReport } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Edit, Trash2, Download, FileText } from 'lucide-react';
+import { Edit, Trash2, Download, FileText, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import {
   AlertDialog,
@@ -23,7 +24,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 
-export function ReportsList() {
+interface ReportsListProps {
+  isReadOnly?: boolean;
+}
+
+export function ReportsList({ isReadOnly = false }: ReportsListProps) {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
@@ -90,43 +95,50 @@ export function ReportsList() {
                   )}
                 </TableCell>
                 <TableCell className="text-right">
-                  {report.fileUrl ? (
-                     <Button variant="outline" size="sm" asChild>
-                       <a href={report.fileUrl} target="_blank" rel="noopener noreferrer" download={report.fileName}>
-                         Download
-                       </a>
-                    </Button>
-                  ) : (
-                    <Button variant="outline" size="sm" asChild>
-                       <a href={`/dashboard/reports/view?id=${report.id}`} target="_blank" rel="noopener noreferrer">
-                         View
-                       </a>
-                    </Button>
-                  )}
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(report.id)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                        <Trash2 className="h-4 w-4" />
+                  <div className="flex justify-end gap-2">
+                    {report.fileUrl ? (
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={report.fileUrl} target="_blank" rel="noopener noreferrer" download={report.fileName}>
+                          <Download className="mr-2 h-4 w-4" /> Download
+                        </a>
                       </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete the investment report.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDelete(report.id)}>
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                    ) : (
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={`/dashboard/reports/view?id=${report.id}`} target="_blank" rel="noopener noreferrer">
+                          <Eye className="mr-2 h-4 w-4" /> View
+                        </a>
+                      </Button>
+                    )}
+                    
+                    {!isReadOnly && (
+                      <>
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(report.id)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the investment report.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(report.id)}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))

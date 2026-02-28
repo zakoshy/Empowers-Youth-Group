@@ -1,5 +1,4 @@
 
-
 export type Event = {
   id: string;
   title: string;
@@ -156,7 +155,7 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
     { href: "/dashboard/polls", label: "Polls", icon: "Vote", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/events", label: "Manage Events", icon: "Calendar", roles: ["Coordinator", "Admin"] },
     { href: "https://meet.google.com/new", label: "Virtual Meeting", icon: "Video", roles: ["Coordinator", "Admin"] },
-    { href: "/dashboard/reports", label: "Manage Reports", icon: "TrendingUp", roles: ["Investment Lead", "Admin"] },
+    { href: "/dashboard/reports", label: "Investment Reports", icon: "TrendingUp", roles: ["Member", "Admin", "Chairperson", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/constitution", label: "Manage Constitution", icon: "FileText", roles: ["Chairperson", "Admin"] },
     { href: "/dashboard/constitution", label: "Constitution", icon: "FileText", roles: ["Member", "Vice Chairperson", "Treasurer", "Coordinator", "Secretary", "Investment Lead"] },
     { href: "/dashboard/minutes", label: "Manage Minutes", icon: "BookOpen", roles: ["Admin", "Secretary"] },
@@ -164,13 +163,13 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
     { href: "/dashboard/manage-users", label: "Manage Users", icon: "Users", roles: ["Admin"] },
   ];
   
-  // Customize labels for Admin role
-  if (userRole === 'Admin') {
+  // Customize labels for management roles
+  if (userRole === 'Admin' || userRole === 'Investment Lead') {
       allLinks = allLinks.map(link => {
-          if (link.href === '/dashboard/events') return { ...link, label: 'Events' };
-          if (link.href === '/dashboard/reports') return { ...link, label: 'Investments' };
-          if (link.href === '/dashboard/constitution') return { ...link, label: 'Constitution' };
-          if (link.href === '/dashboard/minutes') return { ...link, label: 'Minutes' };
+          if (link.href === '/dashboard/reports') return { ...link, label: userRole === 'Admin' ? 'Investments' : 'Manage Reports' };
+          if (link.href === '/dashboard/events' && userRole === 'Admin') return { ...link, label: 'Events' };
+          if (link.href === '/dashboard/constitution' && userRole === 'Admin') return { ...link, label: 'Constitution' };
+          if (link.href === '/dashboard/minutes' && userRole === 'Admin') return { ...link, label: 'Minutes' };
           return link;
       });
   }
@@ -183,13 +182,13 @@ export const dashboardNavLinks = (userRole: string = "Member") => {
         uniqueLinks.set(link.href, link);
       } else {
           const existingLink = uniqueLinks.get(link.href);
-          // For Admin, prefer the non-"Manage" label if duplicates exist for the same href
-          if (userRole === 'Admin' && !link.label.startsWith("Manage")) {
+          // For specific roles, prefer labels that indicate management
+          if (['Admin', 'Investment Lead'].includes(userRole) && link.label.includes("Manage")) {
               uniqueLinks.set(link.href, link);
           } 
-          // For other roles, prefer the "Manage" link
-          else if (userRole !== 'Admin' && link.label.startsWith("Manage") && !existingLink.label.startsWith("Manage")) {
-              uniqueLinks.set(link.href, link);
+          // Default logic
+          else if (!existingLink.label.includes("Manage") && link.label.includes("Manage")) {
+              // uniqueLinks.set(link.href, link); // Keep existing
           }
       }
   });

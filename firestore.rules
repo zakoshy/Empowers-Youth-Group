@@ -131,12 +131,11 @@ service cloud.firestore {
 
     match /meetingMinutes/{minuteId} {
       allow get, list: if isSignedIn();
-      allow create, update, delete: if isSignedIn() &&
-        (isSecretary() || isAdmin());
+      allow create, update, delete: if isSignedIn() && (isSecretary() || isAdmin());
     }
 
     match /expenditures/{expenditureId} {
-      allow get, list: if isSignedIn() && (isTreasurer() || isAdmin() || isChairperson());
+      allow get, list: if isSignedIn();
       allow create, update, delete: if isSignedIn() && (isTreasurer() || isAdmin());
     }
 

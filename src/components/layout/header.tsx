@@ -53,7 +53,6 @@ export function Header() {
         setIsMenuOpen(false);
       }
     } else {
-        // If on a different page, just navigate
         setIsMenuOpen(false);
     }
   };
@@ -65,10 +64,9 @@ export function Header() {
         <div className="flex items-center">
           <Link href="/" className="mr-6 flex items-center space-x-3">
             <TheEmpowersYouthGroupLogo className="h-14 w-14" />
-            <span className="hidden lg:inline font-bold font-headline text-xl leading-tight text-primary">
-              The Empowers <br /> <span className="text-sm font-sans font-normal text-muted-foreground uppercase tracking-widest">Youth Group</span>
+            <span className="font-bold font-headline text-lg md:text-xl text-primary leading-tight">
+              The Empowers <span className="text-foreground/80">Youth Group</span>
             </span>
-            <span className="sm:hidden font-bold font-headline text-lg text-primary">The Empowers</span>
           </Link>
         </div>
         
@@ -107,7 +105,6 @@ export function Header() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       {isMenuOpen && (
         <div className="md:hidden border-t bg-background animate-in slide-in-from-top duration-300">
           <nav className="container flex flex-col gap-4 py-6">

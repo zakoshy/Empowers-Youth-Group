@@ -2,18 +2,25 @@ import { TheEmpowersYouthGroupLogo } from "@/components/icons";
 
 export function Footer() {
   return (
-    <footer className="border-t bg-muted/30">
-      <div className="container flex flex-col items-center justify-between gap-6 py-12 md:flex-row md:h-28 md:py-0">
-        <div className="flex flex-col items-center gap-4 md:flex-row md:gap-6">
+    <footer className="border-t bg-muted/30 py-8 md:py-0">
+      <div className="container grid grid-cols-1 md:grid-cols-3 items-center gap-6 md:h-32">
+        {/* Left Section: Logo and Tagline */}
+        <div className="flex items-center gap-4 justify-center md:justify-start">
           <TheEmpowersYouthGroupLogo className="h-16 w-16" />
-          <div className="text-center md:text-left">
-            <p className="font-headline font-bold text-lg text-primary leading-tight">The Empowers youth group</p>
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Empowering Youth, Building Community</p>
-          </div>
+          <p className="text-sm font-medium text-muted-foreground italic max-w-[150px] leading-tight">
+            Built for a brighter future
+          </p>
         </div>
-        <p className="text-center text-sm text-muted-foreground">
-          Built for a brighter future. &copy; {new Date().getFullYear()} The Empowers youth group.
-        </p>
+
+        {/* Center Section: Copyright */}
+        <div className="text-center order-last md:order-none">
+          <p className="text-sm text-muted-foreground">
+            &copy; {new Date().getFullYear()} <span className="font-semibold text-foreground">The Empowers Youth Group</span>.
+          </p>
+        </div>
+
+        {/* Right Section: Spacer for alignment */}
+        <div className="hidden md:block"></div>
       </div>
     </footer>
   );

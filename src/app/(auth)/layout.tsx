@@ -15,7 +15,7 @@ export default function AuthLayout({
       <div className="mx-auto grid w-full max-w-sm gap-6 sm:w-[350px]">
         <div className="grid gap-2 text-center">
           <Link href="/" className="flex flex-col items-center justify-center space-y-2 mb-4">
-            <TheEmpowersYouthGroupLogo className="h-8 w-8 text-primary" />
+            <TheEmpowersYouthGroupLogo className="h-20 w-20" />
             <h1 className="text-3xl font-bold font-headline whitespace-nowrap">The Empowers youth group</h1>
           </Link>
         </div>

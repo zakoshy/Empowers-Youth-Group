@@ -1,4 +1,3 @@
-
 'use client';
 import Link from "next/link";
 import React, { useState } from 'react';
@@ -79,9 +78,9 @@ export function DashboardSidebar() {
         <>
             <Sidebar>
                 <SidebarHeader>
-                    <Link href="/dashboard" className="flex items-center gap-2 font-semibold font-headline text-lg">
-                        <TheEmpowersYouthGroupLogo className="h-6 w-6 text-primary" />
-                        <span>The Empowers youth group</span>
+                    <Link href="/dashboard" className="flex items-center gap-2 font-semibold font-headline text-lg py-4">
+                        <TheEmpowersYouthGroupLogo className="h-10 w-10" />
+                        <span className="leading-tight">The Empowers youth group</span>
                     </Link>
                 </SidebarHeader>
                 <SidebarContent>
@@ -122,5 +121,3 @@ export function DashboardSidebar() {
         </>
     )
 }
-
-    

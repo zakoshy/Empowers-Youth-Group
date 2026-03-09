@@ -64,7 +64,7 @@ export function DashboardHeader() {
     <header className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6">
       <SidebarTrigger className="md:hidden" />
       <Link href="/dashboard" className="md:hidden">
-        <TheEmpowersYouthGroupLogo className="h-6 w-6 text-primary" />
+        <TheEmpowersYouthGroupLogo className="h-10 w-10" />
         <span className="sr-only">The Empowers youth group</span>
       </Link>
       <div className="w-full flex-1">

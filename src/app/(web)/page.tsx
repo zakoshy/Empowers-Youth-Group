@@ -54,7 +54,7 @@ export default function HomePage() {
                     From shared hardship to a beacon of hope, The Empowers youth group is a youth-led initiative dedicated to giving back and uplifting our society.
                 </p>
                 <div className="mt-10 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
-                    <Button size="lg" asChild className="h-14 px-8 text-lg rounded-full">
+                    <Button size="lg" asChild className="h-14 px-8 text-lg rounded-full bg-accent text-accent-foreground hover:bg-accent/90 border-none">
                         <Link href="/register">Join Our Movement</Link>
                     </Button>
                 </div>
@@ -125,7 +125,7 @@ export default function HomePage() {
                 Having found our own paths to stability, we felt a collective responsibility to return to our roots and build the support system we wished we'd had. We decided to pool our resources, knowledge, and energy to create a platform for the next generation.
               </p>
               <div className="pt-4">
-                <Button variant="outline" asChild className="rounded-full">
+                <Button variant="outline" asChild className="rounded-full border-primary text-primary hover:bg-primary hover:text-white">
                   <Link href="/register">Learn More About Joining</Link>
                 </Button>
               </div>
@@ -263,10 +263,10 @@ export default function HomePage() {
                 Become a part of our journey. Whether you're from our village or share our vision from afar, there's a vital place for you at The Empowers youth group.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Button size="lg" asChild className="h-16 px-10 text-xl rounded-full bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto">
+                <Button size="lg" asChild className="h-16 px-10 text-xl rounded-full bg-accent text-accent-foreground hover:bg-accent/90 w-full sm:w-auto border-none">
                   <Link href="/register">Join Us Today</Link>
                 </Button>
-                <Button size="lg" variant="outline" asChild className="h-16 px-10 text-xl rounded-full border-white/30 text-white hover:bg-white/10 w-full sm:w-auto">
+                <Button size="lg" variant="outline" asChild className="h-16 px-10 text-xl rounded-full border-2 border-accent text-accent hover:bg-accent hover:text-accent-foreground w-full sm:w-auto">
                   <Link href="#about">Learn More</Link>
                 </Button>
               </div>

@@ -11,7 +11,7 @@ import { InvestmentSuggestions } from "@/components/dashboard/investment-suggest
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { FileText, Phone, Wand2, Loader2, Banknote as BankIcon, DollarSign, Gift } from "lucide-react";
+import { FileText, Phone, Banknote as BankIcon, DollarSign, Gift } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { doc } from "firebase/firestore";
 import { MinutesWidget } from "@/components/dashboard/minutes-widget";
@@ -82,7 +82,7 @@ export default function DashboardPage() {
         <p className="text-sm sm:text-base text-muted-foreground">Here's a summary of your activities and group updates.</p>
       </div>
 
-      <Card className="w-full">
+      <Card className="w-full border-primary/20">
           <CardHeader>
               <CardTitle className="text-xl sm:text-2xl">Make a Contribution</CardTitle>
               <CardDescription className="text-sm">Use the buttons below to pay your monthly contribution or make a special "miniharambee" payment via M-Pesa.</CardDescription>
@@ -102,7 +102,7 @@ export default function DashboardPage() {
       </Card>
       
       <div className="grid gap-4 sm:grid-cols-2 w-full">
-          <Card className="bg-primary/5 w-full">
+          <Card className="bg-primary/5 w-full border-primary/10">
               <CardHeader className="p-4 sm:p-6">
               <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <Phone className="h-5 w-5 text-primary shrink-0" />
@@ -116,7 +116,7 @@ export default function DashboardPage() {
               <p className="text-xl sm:text-2xl font-bold font-mono tracking-widest break-all">0112263590</p>
               </CardContent>
           </Card>
-          <Card className="bg-accent/10 w-full">
+          <Card className="bg-accent/10 w-full border-accent/20">
               <CardHeader className="p-4 sm:p-6">
               <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                   <BankIcon className="h-5 w-5 text-accent shrink-0" />
@@ -129,7 +129,7 @@ export default function DashboardPage() {
               <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
               <p className="text-xl sm:text-2xl font-bold font-mono tracking-widest break-all">1050187008802</p>
               </CardContent>
-          </div>
+          </Card>
       </div>
 
       <StatsCards />

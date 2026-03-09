@@ -118,9 +118,9 @@ export function SavedIdeasWidget() {
                             <AlertDialogContent>
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AccordionContent>
+                                <AlertDialogDescription>
                                 This action cannot be undone. This will permanently delete this saved idea.
-                                </AccordionContent>
+                                </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>

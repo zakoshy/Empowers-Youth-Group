@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Lightbulb, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { format } from "date-fns";
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import ReactMarkdown from 'react-markdown';
 
 
 interface InvestmentIdea {
@@ -100,10 +101,9 @@ export function SavedIdeasWidget() {
       <CardContent className="space-y-4">
         {ideas.map((idea) => (
             <div key={idea.id} className="p-4 border rounded-lg bg-background/50 group">
-                <div 
-                    className="prose prose-sm max-w-none text-foreground/90 dark:prose-invert"
-                    dangerouslySetInnerHTML={{ __html: idea.content }}
-                />
+                <div className="prose prose-sm max-w-none text-foreground/90 dark:prose-invert">
+                    <ReactMarkdown>{idea.content}</ReactMarkdown>
+                </div>
                 <div className="flex justify-between items-center mt-2 pt-2 border-t">
                     <p className="text-xs text-muted-foreground">
                         Saved on {format(new Date(idea.savedDate), "MMM d, yyyy")}
@@ -118,9 +118,9 @@ export function SavedIdeasWidget() {
                             <AlertDialogContent>
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
+                                <AccordionContent>
                                 This action cannot be undone. This will permanently delete this saved idea.
-                                </AlertDialogDescription>
+                                </AccordionContent>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>

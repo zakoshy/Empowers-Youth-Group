@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -17,6 +16,7 @@ import { getInvestmentSuggestions } from "@/ai/flows/investment-suggestions";
 import { useFirestore, useUser } from "@/firebase";
 import { collectionGroup, query, getDocs, addDoc, collection } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from "react-markdown";
 
 interface Contribution {
     amount: number;
@@ -126,9 +126,9 @@ export function InvestmentSuggestions() {
         )}
         {error && <p className="text-sm text-destructive">{error}</p>}
         {!loading && !error && (
-            <div className="prose prose-sm max-w-none text-foreground/80 dark:prose-invert prose-headings:font-headline prose-headings:text-foreground"
-                dangerouslySetInnerHTML={{ __html: suggestions }}
-            />
+            <div className="prose prose-sm max-w-none text-foreground/80 dark:prose-invert prose-headings:font-headline prose-headings:text-foreground">
+                <ReactMarkdown>{suggestions}</ReactMarkdown>
+            </div>
         )}
       </CardContent>
       {!loading && !error && suggestions && (
@@ -146,5 +146,3 @@ export function InvestmentSuggestions() {
     </Card>
   );
 }
-
-    

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -24,28 +23,17 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
-  firstName: z.string().min(2, {
-    message: "First name must be at least 2 characters.",
-  }),
-  lastName: z.string().min(2, {
-    message: "Last name must be at least 2 characters.",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  phone: z.string().min(10, {
-    message: "Please enter a valid phone number.",
-  }),
-  password: z.string().min(6, {
-    message: "Password must be at least 6 characters.",
-  }),
+  firstName: z.string().min(2, "First name must be at least 2 characters.").max(50, "First name is too long."),
+  lastName: z.string().min(2, "Last name must be at least 2 characters.").max(50, "Last name is too long."),
+  email: z.string().email("Please enter a valid email address.").max(100, "Email is too long."),
+  phone: z.string().min(10, "Please enter a valid phone number.").max(15, "Phone number is too long."),
+  password: z.string().min(6, "Password must be at least 6 characters.").max(100, "Password is too long."),
 });
 
 export function RegisterForm() {
   const { toast } = useToast();
   const auth = useAuth();
   const firestore = useFirestore();
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -89,7 +77,6 @@ export function RegisterForm() {
         description: "Please complete the payment to finalize your registration. Your account will be activated after approval.",
       });
 
-      // Redirect to M-Pesa payment link
       window.location.href = 'https://lipana.dev/pay/registration-fee-3a29-1';
 
     } catch (error: any) {
@@ -119,7 +106,7 @@ export function RegisterForm() {
                 <FormItem>
                 <FormLabel>First Name</FormLabel>
                 <FormControl>
-                    <Input placeholder="John" {...field} />
+                    <Input placeholder="John" {...field} maxLength={50} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -132,7 +119,7 @@ export function RegisterForm() {
                 <FormItem>
                 <FormLabel>Last Name</FormLabel>
                 <FormControl>
-                    <Input placeholder="Doe" {...field} />
+                    <Input placeholder="Doe" {...field} maxLength={50} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -146,7 +133,7 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="m@example.com" {...field} />
+                <Input placeholder="m@example.com" {...field} maxLength={100} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -159,7 +146,7 @@ export function RegisterForm() {
             <FormItem>
               <FormLabel>Phone Number</FormLabel>
               <FormControl>
-                <Input placeholder="0712345678" {...field} />
+                <Input placeholder="0712345678" {...field} maxLength={15} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -173,7 +160,7 @@ export function RegisterForm() {
               <FormLabel>Password</FormLabel>
               <div className="relative">
                 <FormControl>
-                  <Input type={showPassword ? "text" : "password"} {...field} />
+                  <Input type={showPassword ? "text" : "password"} {...field} maxLength={100} />
                 </FormControl>
                 <button
                   type="button"
@@ -205,5 +192,3 @@ export function RegisterForm() {
     </Form>
   );
 }
-
-    

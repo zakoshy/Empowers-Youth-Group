@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,7 +5,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useFirestore, useUser } from '@/firebase';
-import { collection, addDoc, updateDoc, doc, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
 import {
   Dialog,
   DialogContent,
@@ -34,8 +33,8 @@ interface PollFormDialogProps {
 }
 
 const formSchema = z.object({
-  question: z.string().min(10, 'Question must be at least 10 characters.'),
-  options: z.array(z.object({ text: z.string().min(1, 'Option cannot be empty.') })).min(2, 'Must have at least two options.'),
+  question: z.string().min(10, 'Question must be at least 10 characters.').max(200, 'Question is too long.'),
+  options: z.array(z.object({ text: z.string().min(1, 'Option cannot be empty.').max(100, 'Option is too long.') })).min(2, 'Must have at least two options.').max(10, 'Too many options.'),
   endDate: z.date({
     required_error: 'An end date is required.',
   }),
@@ -58,7 +57,7 @@ export function PollFormDialog({
       : {
           question: '',
           options: [{ text: '' }, { text: '' }],
-          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to 1 week from now
+          endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), 
         },
   });
   
@@ -94,7 +93,6 @@ export function PollFormDialog({
     setIsSubmitting(true);
     try {
         if (poll) {
-            // Update existing poll
             const pollRef = doc(firestore, 'polls', poll.id);
             const newOptions = values.options.map((opt, index) => ({
                 id: poll.options[index]?.id || `opt${Date.now()}${index}`,
@@ -109,7 +107,6 @@ export function PollFormDialog({
             toast({ title: 'Success!', description: 'Poll has been updated.'});
 
         } else {
-            // Create new poll
             const pollData = {
                 question: values.question,
                 options: values.options.map((opt, index) => ({ id: `opt${Date.now()}${index}`, text: opt.text, votes: 0 })),
@@ -153,7 +150,7 @@ export function PollFormDialog({
                 <FormItem>
                   <FormLabel>Poll Question</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., What should be our next team-building activity?" {...field} />
+                    <Input placeholder="e.g., What should be our next team-building activity?" {...field} maxLength={200} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -171,7 +168,7 @@ export function PollFormDialog({
                       render={({ field }) => (
                         <FormItem className="flex-grow">
                           <FormControl>
-                            <Input placeholder={`Option ${index + 1}`} {...field} />
+                            <Input placeholder={`Option ${index + 1}`} {...field} maxLength={100} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -189,6 +186,7 @@ export function PollFormDialog({
                   size="sm"
                   className="mt-2"
                   onClick={() => append({ text: "" })}
+                  disabled={fields.length >= 10}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Option
@@ -247,5 +245,3 @@ export function PollFormDialog({
     </Dialog>
   );
 }
-
-    

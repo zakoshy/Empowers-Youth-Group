@@ -1,10 +1,8 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -18,6 +16,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Wand2 } from 'lucide-react';
 import { getTreasurerInsights } from '@/ai/flows/treasurer-insights';
+import ReactMarkdown from 'react-markdown';
 
 interface TreasurerInsightsProps {
   allMembersData: any[];
@@ -93,9 +92,9 @@ export function TreasurerInsights({
                     )}
                     {error && <p className="text-sm text-destructive">{error}</p>}
                     {!loading && !error && (
-                    <div className="prose prose-sm max-w-none text-foreground/80 dark:prose-invert prose-headings:font-headline prose-headings:text-foreground"
-                        dangerouslySetInnerHTML={{ __html: insights }}
-                    />
+                    <div className="prose prose-sm max-w-none text-foreground/80 dark:prose-invert prose-headings:font-headline prose-headings:text-foreground">
+                        <ReactMarkdown>{insights}</ReactMarkdown>
+                    </div>
                     )}
                 </AccordionContent>
             </AccordionItem>

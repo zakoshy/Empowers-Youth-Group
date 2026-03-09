@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -35,12 +34,12 @@ interface EventFormDialogProps {
 }
 
 const formSchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters.'),
-  description: z.string().min(10, 'Description must be at least 10 characters.'),
+  title: z.string().min(3, 'Title must be at least 3 characters.').max(100, 'Title is too long.'),
+  description: z.string().min(10, 'Description must be at least 10 characters.').max(1000, 'Description is too long.'),
   date: z.date({
     required_error: 'A date is required.',
   }),
-  location: z.string().min(3, 'Location must be at least 3 characters.'),
+  location: z.string().min(3, 'Location must be at least 3 characters.').max(200, 'Location is too long.'),
 });
 
 export function EventFormDialog({
@@ -91,7 +90,6 @@ export function EventFormDialog({
       };
 
       if (event) {
-        // Update existing event
         const eventRef = doc(firestore, 'events', event.id);
         await updateDoc(eventRef, eventData);
         toast({
@@ -99,7 +97,6 @@ export function EventFormDialog({
           description: 'Event has been updated.',
         });
       } else {
-        // Create new event
         await addDoc(collection(firestore, 'events'), eventData);
         toast({
           title: 'Success!',
@@ -139,7 +136,7 @@ export function EventFormDialog({
                 <FormItem>
                   <FormLabel>Event Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Annual Community Cleanup" {...field} />
+                    <Input placeholder="e.g., Annual Community Cleanup" {...field} maxLength={100} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -152,7 +149,7 @@ export function EventFormDialog({
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="A brief description of the event..." {...field} />
+                    <Textarea placeholder="A brief description of the event..." {...field} maxLength={1000} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -165,7 +162,7 @@ export function EventFormDialog({
                 <FormItem>
                   <FormLabel>Location</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Village Center" {...field} />
+                    <Input placeholder="e.g., Village Center" {...field} maxLength={200} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

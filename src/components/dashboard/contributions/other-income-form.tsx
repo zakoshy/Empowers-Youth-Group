@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useFirestore, useUser } from '@/firebase';
@@ -39,8 +38,8 @@ interface OtherIncomeFormDialogProps {
 
 const formSchema = z.object({
   type: z.enum(['Registration Fee', 'Fine', 'Loan Interest']),
-  description: z.string().min(3, 'Description must be at least 3 characters.'),
-  amount: z.coerce.number().min(1, 'Amount must be greater than 0.'),
+  description: z.string().min(3, 'Description must be at least 3 characters.').max(500, 'Description is too long.'),
+  amount: z.coerce.number().min(1, 'Amount must be greater than 0.').max(1000000, 'Amount is unusually high.'),
   date: z.date({
     required_error: 'A date is required.',
   }),
@@ -197,7 +196,7 @@ export function OtherIncomeFormDialog({
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="e.g., Late contribution fine for May" {...field} />
+                    <Textarea placeholder="e.g., Late contribution fine for May" {...field} maxLength={500} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -35,9 +34,9 @@ interface ExpenditureFormDialogProps {
 }
 
 const formSchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters.'),
-  description: z.string().min(10, 'Description must be at least 10 characters.'),
-  amount: z.coerce.number().min(1, 'Amount must be greater than 0.'),
+  title: z.string().min(3, 'Title must be at least 3 characters.').max(100, 'Title is too long.'),
+  description: z.string().min(10, 'Description must be at least 10 characters.').max(500, 'Description is too long.'),
+  amount: z.coerce.number().min(1, 'Amount must be greater than 0.').max(1000000, 'Amount is unusually high.'),
   date: z.date({
     required_error: 'A date is required.',
   }),
@@ -138,7 +137,7 @@ export function ExpenditureFormDialog({
                 <FormItem>
                   <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Purchase of stationery" {...field} />
+                    <Input placeholder="e.g., Purchase of stationery" {...field} maxLength={100} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -151,7 +150,7 @@ export function ExpenditureFormDialog({
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="A brief description of what was purchased..." {...field} />
+                    <Textarea placeholder="A brief description of what was purchased..." {...field} maxLength={500} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

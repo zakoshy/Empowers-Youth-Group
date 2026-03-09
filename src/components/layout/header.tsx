@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -61,61 +60,79 @@ export function Header() {
 
 
   return (
-    <header className="w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 max-w-screen-2xl items-center">
-        <div className="mr-4 flex">
-          <Link href="/" className="mr-6 flex items-center space-x-2">
-            <TheEmpowersYouthGroupLogo className="h-12 w-12" />
-            <span className="hidden sm:inline font-bold font-headline text-lg">The Empowers youth group</span>
+    <header className="w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+      <div className="container flex h-20 max-w-screen-2xl items-center justify-between">
+        <div className="flex items-center">
+          <Link href="/" className="mr-6 flex items-center space-x-3">
+            <TheEmpowersYouthGroupLogo className="h-14 w-14" />
+            <span className="hidden lg:inline font-bold font-headline text-xl leading-tight text-primary">
+              The Empowers <br /> <span className="text-sm font-sans font-normal text-muted-foreground uppercase tracking-widest">Youth Group</span>
+            </span>
+            <span className="sm:hidden font-bold font-headline text-lg text-primary">The Empowers</span>
           </Link>
         </div>
-        <nav className="hidden flex-1 md:flex justify-center gap-6">
+        
+        <nav className="hidden md:flex flex-1 justify-center gap-8">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               onClick={(e) => handleLinkClick(e, link.href)}
               className={cn(
-                "flex items-center text-sm font-medium transition-colors hover:text-primary",
-                activeLink === link.href ? "text-primary" : "text-foreground/60"
+                "flex items-center text-sm font-semibold transition-colors hover:text-primary",
+                activeLink === link.href ? "text-primary border-b-2 border-primary" : "text-foreground/60"
               )}
             >
               {link.label}
             </Link>
           ))}
         </nav>
-        <div className="flex flex-1 items-center justify-end space-x-2 md:flex-initial">
-          <Button variant="ghost" asChild>
-            <Link href="/login">Login</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/register">Register</Link>
-          </Button>
+
+        <div className="flex items-center justify-end space-x-3">
+          <div className="hidden sm:flex items-center space-x-2">
+            <Button variant="ghost" asChild size="sm">
+              <Link href="/login">Login</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link href="/register">Register</Link>
+            </Button>
+          </div>
           <button
             className="inline-flex items-center justify-center p-2 rounded-md text-foreground/60 md:hidden"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Toggle menu"
           >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isMenuOpen ? <X className="h-7 w-7" /> : <Menu className="h-7 w-7" />}
           </button>
         </div>
       </div>
+
+      {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden">
-          <nav className="container flex flex-col gap-4 py-4">
+        <div className="md:hidden border-t bg-background animate-in slide-in-from-top duration-300">
+          <nav className="container flex flex-col gap-4 py-6">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={(e) => handleLinkClick(e, link.href)}
                 className={cn(
-                  "text-lg font-medium",
-                  activeLink === link.href ? "text-primary" : "text-foreground/80"
+                  "text-lg font-semibold px-2 py-1 rounded-md",
+                  activeLink === link.href ? "text-primary bg-primary/5" : "text-foreground/80 hover:text-primary"
                 )}
               >
                 {link.label}
               </Link>
             ))}
+            <hr className="my-2" />
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <Button variant="outline" asChild className="w-full">
+                <Link href="/login" onClick={() => setIsMenuOpen(false)}>Login</Link>
+              </Button>
+              <Button asChild className="w-full">
+                <Link href="/register" onClick={() => setIsMenuOpen(false)}>Register</Link>
+              </Button>
+            </div>
           </nav>
         </div>
       )}

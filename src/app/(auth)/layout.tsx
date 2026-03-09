@@ -1,7 +1,4 @@
-
-import Image from "next/image";
 import Link from "next/link";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { TheEmpowersYouthGroupLogo } from "@/components/icons";
 
 export default function AuthLayout({
@@ -11,15 +8,20 @@ export default function AuthLayout({
 }) {
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-center py-12 px-4">
-      <div className="mx-auto grid w-full max-w-sm gap-6 sm:w-[350px]">
-        <div className="grid gap-2 text-center">
-          <Link href="/" className="flex flex-col items-center justify-center space-y-2 mb-4">
-            <TheEmpowersYouthGroupLogo className="h-20 w-20" />
-            <h1 className="text-3xl font-bold font-headline whitespace-nowrap">The Empowers youth group</h1>
+    <div className="w-full min-h-screen flex items-center justify-center py-12 px-4 bg-muted/10">
+      <div className="mx-auto grid w-full max-w-sm gap-8 sm:w-[400px]">
+        <div className="grid gap-4 text-center">
+          <Link href="/" className="flex flex-col items-center justify-center space-y-4">
+            <TheEmpowersYouthGroupLogo className="h-24 w-24" />
+            <div className="space-y-1">
+              <h1 className="text-3xl font-bold font-headline text-primary">The Empowers</h1>
+              <p className="text-xs text-muted-foreground uppercase tracking-[0.2em]">Youth Group</p>
+            </div>
           </Link>
         </div>
-        {children}
+        <div className="bg-card p-8 rounded-xl border shadow-sm">
+          {children}
+        </div>
       </div>
     </div>
   );

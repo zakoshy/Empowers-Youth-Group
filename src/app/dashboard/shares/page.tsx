@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
@@ -290,9 +289,9 @@ export default function SharesPage() {
   }
 
   return (
-    <>
+    <div className="space-y-6">
       {breakdown && (
-        <Card className="mb-6">
+        <Card>
           <CardHeader>
             <CardTitle>Group Funds Breakdown</CardTitle>
             <CardDescription>
@@ -302,7 +301,7 @@ export default function SharesPage() {
           <CardContent>
              <div className="space-y-2">
               <div className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
-                <span>Total from Miscellaneous Incomes (Fines, etc.)</span>
+                <span>Total from Miscellaneous Incomes</span>
                 <span className="font-bold">Ksh {breakdown.totalMiscIncomes.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <Separator className="my-2" />
@@ -310,19 +309,15 @@ export default function SharesPage() {
                 <span className="font-semibold">Total Pooled Funds for Distribution</span>
                 <span className="font-bold">Ksh {breakdown.totalPooledFunds.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
-              <div className="flex justify-between items-center p-2">
-                <span className="text-muted-foreground">Divided by</span>
-                <span className="text-muted-foreground">{breakdown.numberOfMembers} Members</span>
-              </div>
-               <Separator className="my-2" />
-              <div className="flex justify-between items-center p-2 rounded-md bg-primary/10">
-                <span className="font-semibold text-primary">Resulting Share per Member</span>
-                <span className="font-bold text-primary">Ksh {(breakdown.totalPooledFunds / (breakdown.numberOfMembers || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <div className="flex justify-between items-center p-2 text-sm">
+                <span className="text-muted-foreground italic">Divided by {breakdown.numberOfMembers} Members</span>
+                <span className="text-muted-foreground font-medium">Ksh {(breakdown.totalPooledFunds / (breakdown.numberOfMembers || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} each</span>
               </div>
             </div>
           </CardContent>
         </Card>
       )}
+      
       <Card>
         <CardHeader>
           <CardTitle>All-Time Member Shares</CardTitle>
@@ -331,61 +326,63 @@ export default function SharesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[250px]">Member</TableHead>
-                <TableHead>Personal Contributions</TableHead>
-                <TableHead>Share of Group Funds</TableHead>
-                <TableHead>Total Share Value</TableHead>
-                <TableHead className="w-[200px]">Share Percentage</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sharesData && sharesData.memberShares.length > 0 ? (
-                  sharesData.memberShares.map(member => (
-                <TableRow key={member.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={member.photoURL} />
-                        <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
-                      </Avatar>
-                      <div className="font-medium">{member.firstName} {member.lastName}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>Ksh {member.personalContribution.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                  <TableCell>Ksh {member.groupFundsShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                  <TableCell>Ksh {member.totalShareValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Progress value={member.sharePercentage} className="w-24" />
-                      <span className="text-sm font-medium">{member.sharePercentage.toFixed(2)}%</span>
-                    </div>
-                  </TableCell>
+          <div className="overflow-x-auto -mx-6 px-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[200px]">Member</TableHead>
+                  <TableHead className="min-w-[150px]">Personal Contributions</TableHead>
+                  <TableHead className="min-w-[150px]">Share of Group Funds</TableHead>
+                  <TableHead className="min-w-[150px]">Total Share Value</TableHead>
+                  <TableHead className="min-w-[180px]">Share Percentage</TableHead>
                 </TableRow>
-              ))
-              ) : (
-                  <TableRow>
-                      <TableCell colSpan={5} className="text-center">
-                          No contribution data available.
-                      </TableCell>
+              </TableHeader>
+              <TableBody>
+                {sharesData && sharesData.memberShares.length > 0 ? (
+                    sharesData.memberShares.map(member => (
+                  <TableRow key={member.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar>
+                          <AvatarImage src={member.photoURL} />
+                          <AvatarFallback>{getInitials(member.firstName, member.lastName)}</AvatarFallback>
+                        </Avatar>
+                        <div className="font-medium whitespace-nowrap">{member.firstName} {member.lastName}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>Ksh {member.personalContribution.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell>Ksh {member.groupFundsShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="font-semibold text-primary">Ksh {member.totalShareValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Progress value={member.sharePercentage} className="w-16 sm:w-24" />
+                        <span className="text-sm font-medium">{member.sharePercentage.toFixed(2)}%</span>
+                      </div>
+                    </TableCell>
                   </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                            No contribution data available.
+                        </TableCell>
+                    </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
         {sharesData && sharesData.memberShares.length > 0 && (
           <CardFooter className="flex-col items-center gap-4 border-t pt-6">
             <h3 className="text-lg font-semibold text-center">Shares Distribution</h3>
-            <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[350px] w-full max-w-[350px]">
+            <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[300px] sm:h-[350px] w-full max-w-[350px]">
               <PieChart>
                 <ChartTooltip
                   cursor={false}
                   content={<ChartTooltipContent
                     nameKey="id"
                     formatter={(value, name, item) => (
-                      <div className="text-sm">
+                      <div className="text-xs p-1">
                           <div className="font-bold">{chartConfig[name]?.label}</div>
                           <div className="text-muted-foreground">Share: {Number(value).toFixed(2)}%</div>
                       </div>
@@ -397,7 +394,7 @@ export default function SharesPage() {
                   nameKey="id"
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
+                  outerRadius="80%"
                   label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                   labelLine={false}
                   strokeWidth={2}
@@ -408,13 +405,13 @@ export default function SharesPage() {
                 </Pie>
                 <ChartLegend
                   content={<ChartLegendContent nameKey="id" />}
-                  className="mt-4 flex-wrap justify-center"
+                  className="mt-4 flex-wrap justify-center text-[10px]"
                 />
               </PieChart>
             </ChartContainer>
           </CardFooter>
         )}
       </Card>
-    </>
+    </div>
   );
 }

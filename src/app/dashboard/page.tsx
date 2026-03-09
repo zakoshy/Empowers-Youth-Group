@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from "react";
@@ -18,13 +17,6 @@ import { doc } from "firebase/firestore";
 import { MinutesWidget } from "@/components/dashboard/minutes-widget";
 import { SavedIdeasWidget } from "@/components/dashboard/saved-ideas-widget";
 import { ApprovalPending } from "@/components/dashboard/approval-pending";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
 
 interface UserProfile {
   firstName: string;
@@ -48,7 +40,7 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 w-full max-w-full overflow-x-hidden">
         <div className="space-y-2">
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-4 w-1/2" />
@@ -79,87 +71,81 @@ export default function DashboardPage() {
     return <ApprovalPending />;
   }
 
-
   const welcomeName = userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : user?.displayName || 'Member';
   const userRole = userProfile?.role;
-  const isMemberView = userRole && !['Admin', 'Investment Lead', 'Treasurer'].includes(userRole);
   const showPersonalizedSuggestions = userRole && !['Admin', 'Investment Lead'].includes(userRole);
 
   return (
-    <>
-      <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-3xl font-bold font-headline">Welcome, {welcomeName}!</h1>
-          <p className="text-muted-foreground">Here's a summary of your activities and group updates.</p>
-        </div>
+    <div className="flex flex-col gap-6 w-full max-w-full overflow-x-hidden">
+      <div className="space-y-1">
+        <h1 className="text-2xl sm:text-3xl font-bold font-headline">Welcome, {welcomeName}!</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">Here's a summary of your activities and group updates.</p>
+      </div>
 
-        <Card>
-            <CardHeader>
-                <CardTitle>Make a Contribution</CardTitle>
-                <CardDescription>Use the buttons below to pay your monthly contribution or make a special "miniharambee" payment via M-Pesa.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col sm:flex-row gap-4">
-                <Button asChild className="w-full" size="lg">
-                    <a href="https://lipana.dev/pay/monthly-contribution" target="_blank" rel="noopener noreferrer">
-                        <DollarSign className="mr-2 h-4 w-4" /> Pay Monthly Contribution
-                    </a>
-                </Button>
-                <Button asChild style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}} className="w-full" size="lg">
-                    <a href="https://lipana.dev/pay/mini-harambee" target="_blank" rel="noopener noreferrer">
-                        <Gift className="mr-2 h-4 w-4" /> Pay Miniharambee
-                    </a>
-                </Button>
-            </CardContent>
-        </Card>
-        
-        <div className="grid gap-4 md:grid-cols-2">
-            <Card className="bg-primary/5">
-                <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Phone className="h-5 w-5" />
-                    <span>M-Pesa Contribution Details</span>
-                </CardTitle>
-                <CardDescription>
-                    Use the till number below to send your monthly contributions.
-                </CardDescription>
-                </CardHeader>
-                <CardContent>
-                <p className="text-2xl font-bold font-mono tracking-widest">0112263590</p>
-                </CardContent>
-            </Card>
-            <Card className="bg-accent/10">
-                <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <BankIcon className="h-5 w-5" />
-                    <span>Equity Bank Account</span>
-                </CardTitle>
-                <CardDescription>
-                    Use Paybill <strong>247247</strong> with the account number below.
-                </CardDescription>
-                </CardHeader>
-                <CardContent>
-                <p className="text-2xl font-bold font-mono tracking-widest">1050187008802</p>
-                </CardContent>
-            </Card>
-        </div>
-
-
-        <StatsCards />
-
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2 grid gap-6">
-              {userRole === 'Investment Lead' ? <InvestmentSuggestions /> : (showPersonalizedSuggestions && <PersonalizedSuggestions />)}
-              <SavedIdeasWidget />
-              <ReportsWidget />
-              <MinutesWidget />
+      <Card className="w-full">
+          <CardHeader>
+              <CardTitle className="text-xl sm:text-2xl">Make a Contribution</CardTitle>
+              <CardDescription className="text-sm">Use the buttons below to pay your monthly contribution or make a special "miniharambee" payment via M-Pesa.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col sm:flex-row gap-4">
+              <Button asChild className="w-full" size="lg">
+                  <a href="https://lipana.dev/pay/monthly-contribution" target="_blank" rel="noopener noreferrer">
+                      <DollarSign className="mr-2 h-4 w-4" /> Pay Monthly
+                  </a>
+              </Button>
+              <Button asChild style={{backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}} className="w-full" size="lg">
+                  <a href="https://lipana.dev/pay/mini-harambee" target="_blank" rel="noopener noreferrer">
+                      <Gift className="mr-2 h-4 w-4" /> Pay Miniharambee
+                  </a>
+              </Button>
+          </CardContent>
+      </Card>
+      
+      <div className="grid gap-4 sm:grid-cols-2 w-full">
+          <Card className="bg-primary/5 w-full">
+              <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Phone className="h-5 w-5 text-primary shrink-0" />
+                  <span>M-Pesa Contribution</span>
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                  Use the till number below.
+              </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+              <p className="text-xl sm:text-2xl font-bold font-mono tracking-widest break-all">0112263590</p>
+              </CardContent>
+          </Card>
+          <Card className="bg-accent/10 w-full">
+              <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <BankIcon className="h-5 w-5 text-accent shrink-0" />
+                  <span>Equity Bank Account</span>
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                  Use Paybill <strong>247247</strong>.
+              </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+              <p className="text-xl sm:text-2xl font-bold font-mono tracking-widest break-all">1050187008802</p>
+              </CardContent>
           </div>
-          <div className="lg:col-span-1 grid gap-6">
-              <EventsWidget />
-              {userRole !== 'Admin' && <PollsWidget />}
-          </div>
+      </div>
+
+      <StatsCards />
+
+      <div className="grid gap-6 lg:grid-cols-3 w-full">
+        <div className="lg:col-span-2 grid gap-6">
+            {userRole === 'Investment Lead' ? <InvestmentSuggestions /> : (showPersonalizedSuggestions && <PersonalizedSuggestions />)}
+            <SavedIdeasWidget />
+            <ReportsWidget />
+            <MinutesWidget />
+        </div>
+        <div className="lg:col-span-1 grid gap-6">
+            <EventsWidget />
+            {userRole !== 'Admin' && <PollsWidget />}
         </div>
       </div>
-    </>
+    </div>
   );
 }
-

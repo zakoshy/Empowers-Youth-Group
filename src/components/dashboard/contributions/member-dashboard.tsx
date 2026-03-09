@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -72,14 +72,12 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
         setAvailableYears(sortedYears);
     }
     
-    // Calculate total debt up to the current year
     let calculatedTotalDebt = 0;
     for (let year = Math.min(...sortedYears); year <= currentYear; year++) {
         const contributionsThisYear = allContributions.filter(c => c.year === year).reduce((sum, c) => sum + c.amount, 0);
         calculatedTotalDebt += (annualTarget - contributionsThisYear);
     }
 
-    // Data for selected year
     const dataForSelectedYear = allContributions.reduce((acc, curr) => {
         if (curr.year === selectedYear) {
           acc[MONTHS[curr.month].toLowerCase()] = curr.amount;
@@ -89,10 +87,8 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
 
     const totalContributionForSelectedYear = Object.values(dataForSelectedYear).reduce((sum, amount) => sum + amount, 0);
     
-    // Grand totals for all time
     const allTimeMonthlyTotal = allContributions.reduce((sum, c) => sum + c.amount, 0);
     const allTimeSpecialTotal = allSpecialContributions.reduce((sum, sc) => sum + sc.amount, 0);
-
 
     return { 
         yearlyData: dataForSelectedYear,
@@ -126,31 +122,31 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
 
   if (isLoading) {
     return (
-        <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Skeleton className="h-28" />
-                <Skeleton className="h-28" />
-                <Skeleton className="h-28" />
-                <Skeleton className="h-28" />
+        <div className="space-y-6 w-full max-w-full overflow-x-hidden">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                <Skeleton className="h-28 w-full" />
+                <Skeleton className="h-28 w-full" />
+                <Skeleton className="h-28 w-full" />
+                <Skeleton className="h-28 w-full" />
             </div>
-            <Skeleton className="h-96" />
+            <Skeleton className="h-96 w-full" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
+    <div className="space-y-6 w-full max-w-full overflow-x-hidden">
+      <Card className="w-full">
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <CardTitle>My Contributions - {selectedYear}</CardTitle>
-              <CardDescription>
-                A summary of your financial status.
+              <CardTitle className="text-xl sm:text-2xl">My Contributions - {selectedYear}</CardTitle>
+              <CardDescription className="text-sm sm:text-base">
+                Your financial status overview.
               </CardDescription>
             </div>
              <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(Number(value))}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Select year" />
               </SelectTrigger>
               <SelectContent>
@@ -161,113 +157,118 @@ export default function MemberDashboard({ userId }: MemberDashboardProps) {
             </Select>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Contributions This Year</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">Ksh {totalContributionForYear.toLocaleString()}</div>
-                    <p className="text-xs text-muted-foreground">out of Ksh {annualTarget.toLocaleString()}</p>
-                </CardContent>
+        <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+             <Card className="p-4">
+                <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">This Year</p>
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                    <div className="text-xl font-bold truncate">Ksh {totalContributionForYear.toLocaleString()}</div>
+                    <p className="text-[10px] text-muted-foreground">Target: Ksh {annualTarget.toLocaleString()}</p>
+                </div>
             </Card>
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Outstanding Debt</CardTitle>
-                    <TrendingDown className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">Ksh {totalDebt > 0 ? totalDebt.toLocaleString() : 0}</div>
-                     <p className="text-xs text-muted-foreground">across all years</p>
-                </CardContent>
+             <Card className="p-4">
+                <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Outstanding</p>
+                    <TrendingDown className="h-4 w-4 text-destructive" />
+                </div>
+                <div>
+                    <div className="text-xl font-bold truncate">Ksh {totalDebt > 0 ? totalDebt.toLocaleString() : 0}</div>
+                     <p className="text-[10px] text-muted-foreground">Across all years</p>
+                </div>
             </Card>
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">All-Time Miniharambees</CardTitle>
-                    <Gift className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">Ksh {totalSpecialContribution.toLocaleString()}</div>
-                     <p className="text-xs text-muted-foreground">total raised</p>
-                </CardContent>
+             <Card className="p-4">
+                <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Miniharambees</p>
+                    <Gift className="h-4 w-4 text-accent" />
+                </div>
+                <div>
+                    <div className="text-xl font-bold truncate">Ksh {totalSpecialContribution.toLocaleString()}</div>
+                     <p className="text-[10px] text-muted-foreground">Total raised</p>
+                </div>
             </Card>
-            <Card className="bg-primary/10">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">All-Time Grand Total</CardTitle>
-                    <Banknote className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">Ksh {grandTotal.toLocaleString()}</div>
-                     <p className="text-xs text-muted-foreground">all contributions</p>
-                </CardContent>
+            <Card className="p-4 bg-primary/5">
+                <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Grand Total</p>
+                    <Banknote className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                    <div className="text-xl font-bold truncate text-primary">Ksh {grandTotal.toLocaleString()}</div>
+                     <p className="text-[10px] text-muted-foreground">All contributions</p>
+                </div>
             </Card>
           </div>
             <div className="space-y-2">
-                <p className="text-sm font-medium">{selectedYear} Contribution Progress</p>
-                <Progress value={progressPercentage} className="w-full" />
-                <p className="text-xs text-muted-foreground text-right">{progressPercentage.toFixed(0)}% complete</p>
+                <div className="flex justify-between items-center text-sm font-medium">
+                    <span>{selectedYear} Progress</span>
+                    <span>{progressPercentage.toFixed(0)}%</span>
+                </div>
+                <Progress value={progressPercentage} className="w-full h-2" />
             </div>
         </CardContent>
       </Card>
       
-      <Card>
-          <CardHeader>
-              <CardTitle>Detailed Breakdown for {selectedYear}</CardTitle>
+      <Card className="w-full overflow-hidden">
+          <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl">Detailed Breakdown for {selectedYear}</CardTitle>
           </CardHeader>
-          <CardContent>
-          <Table>
-              <TableHeader>
-              <TableRow>
-                  <TableHead>Month</TableHead>
-                  <TableHead>Contribution Status</TableHead>
-                  <TableHead>Miniharambee Details</TableHead>
-              </TableRow>
-              </TableHeader>
-              <TableBody>
-              {MONTHS.map((month) => {
-                  const amount = yearlyData[month.toLowerCase()] || 0;
-                  const isPaid = amount >= FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION;
-                  const isPartial = amount > 0 && amount < FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION;
-                  const specialCons = monthlySpecialContributions[month] || [];
-                  
-                  return (
-                  <TableRow key={month}>
-                      <TableCell className="font-medium">{month}</TableCell>
-                      <TableCell>
-                          <div className="flex flex-col">
-                              <span>Ksh {amount.toLocaleString()}</span>
-                              {isPaid ? (
-                                  <Badge variant="default" className="w-fit mt-1">Paid</Badge>
-                              ) : isPartial ? (
-                                  <Badge variant="accent" className="w-fit mt-1">Partial</Badge>
-                              ) : (
-                                  <Badge variant="destructive" className="w-fit mt-1">Unpaid</Badge>
-                              )}
-                          </div>
-                      </TableCell>
-                      <TableCell>
-                          {specialCons.length > 0 ? (
-                              <ul className="space-y-1 text-sm">
-                                  {specialCons.map(sc => (
-                                      <li key={sc.id} className="flex items-center gap-2">
-                                          <Gift className="h-4 w-4 text-primary" />
-                                          <div>
-                                            <span className="font-semibold">Ksh {sc.amount.toLocaleString()}</span> - <span className="text-muted-foreground">on {format(new Date(sc.date), "MMM d, yyyy")}</span>
-                                          </div>
-                                      </li>
-                                  ))}
-                              </ul>
-                          ) : (
-                              <p className="text-sm text-muted-foreground">None</p>
-                          )}
-                      </TableCell>
+          <CardContent className="p-0 sm:p-6 sm:pt-0">
+            <div className="overflow-x-auto w-full">
+              <Table>
+                  <TableHeader>
+                  <TableRow>
+                      <TableHead className="w-[100px]">Month</TableHead>
+                      <TableHead className="w-[150px]">Contribution</TableHead>
+                      <TableHead className="min-w-[200px]">Miniharambee Details</TableHead>
                   </TableRow>
-                  );
-              })}
-              </TableBody>
-          </Table>
+                  </TableHeader>
+                  <TableBody>
+                  {MONTHS.map((month) => {
+                      const amount = yearlyData[month.toLowerCase()] || 0;
+                      const isPaid = amount >= FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION;
+                      const isPartial = amount > 0 && amount < FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION;
+                      const specialCons = monthlySpecialContributions[month] || [];
+                      
+                      return (
+                      <TableRow key={month}>
+                          <TableCell className="font-medium">{month}</TableCell>
+                          <TableCell>
+                              <div className="flex flex-col gap-1">
+                                  <span className="text-sm font-semibold">Ksh {amount.toLocaleString()}</span>
+                                  {isPaid ? (
+                                      <Badge variant="default" className="w-fit text-[10px] px-1.5 py-0">Paid</Badge>
+                                  ) : isPartial ? (
+                                      <Badge variant="accent" className="w-fit text-[10px] px-1.5 py-0">Partial</Badge>
+                                  ) : (
+                                      <Badge variant="destructive" className="w-fit text-[10px] px-1.5 py-0">Unpaid</Badge>
+                                  )}
+                              </div>
+                          </TableCell>
+                          <TableCell>
+                              {specialCons.length > 0 ? (
+                                  <div className="space-y-2">
+                                      {specialCons.map(sc => (
+                                          <div key={sc.id} className="flex items-center gap-2 text-xs">
+                                              <Gift className="h-3 w-3 text-accent shrink-0" />
+                                              <div className="flex flex-wrap gap-x-1">
+                                                <span className="font-bold">Ksh {sc.amount.toLocaleString()}</span>
+                                                <span className="text-muted-foreground">({format(new Date(sc.date), "MMM d")})</span>
+                                              </div>
+                                          </div>
+                                      ))}
+                                  </div>
+                              ) : (
+                                  <p className="text-xs text-muted-foreground italic">No special contributions</p>
+                              )}
+                          </TableCell>
+                      </TableRow>
+                      );
+                  })}
+                  </TableBody>
+              </Table>
+            </div>
           </CardContent>
       </Card>
     </div>

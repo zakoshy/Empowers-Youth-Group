@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, collectionGroup, getDocs, query } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { useUser, useFirestore } from '@/firebase';
+import { collection, getDocs, query } from 'firebase/firestore';
 import {
   Card,
   CardContent,
@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Skeleton } from '@/components/ui/skeleton';
-import { DollarSign, TrendingUp, TrendingDown, Scale, Calendar, Gift, Banknote } from "lucide-react";
+import { TrendingUp, TrendingDown, Scale, Calendar, Gift, Banknote } from "lucide-react";
 import { FINANCIAL_CONFIG } from "@/lib/data";
 
 interface Contribution {
@@ -89,113 +89,104 @@ export function StatsCards() {
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Skeleton className="h-28" />
-        <Skeleton className="h-28" />
-        <Skeleton className="h-28" />
-        <Skeleton className="h-28" />
-        <Skeleton className="h-28" />
-        <Skeleton className="h-28" />
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 w-full">
+        {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-28 w-full" />)}
       </div>
     );
   }
 
   const getNextDueDate = () => {
     const today = new Date();
-    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-    const lastDayOfNextMonth = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), 0);
-    
     const currentMonthDueDate = new Date(today.getFullYear(), today.getMonth(), 30);
     if(today > currentMonthDueDate) {
       const nextMonthDate = new Date(today.getFullYear(), today.getMonth() + 1, 30);
        return nextMonthDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
-    
     return currentMonthDueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
   
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 w-full max-w-full">
+      <Card className="w-full">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4">
           <CardTitle className="text-sm font-medium">
             Contribution ({currentYear})
           </CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <TrendingUp className="h-4 w-4 text-muted-foreground shrink-0" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
+        <CardContent className="p-4 pt-0">
+          <div className="text-xl sm:text-2xl font-bold truncate">
             Ksh {totalContribution.toLocaleString()}
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
             out of Ksh {annualTarget.toLocaleString()}
           </p>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <Card className="w-full">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4">
           <CardTitle className="text-sm font-medium">
-            Total Outstanding Debt
+            Outstanding Debt
           </CardTitle>
-          <TrendingDown className="h-4 w-4 text-muted-foreground" />
+          <TrendingDown className="h-4 w-4 text-muted-foreground shrink-0" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
+        <CardContent className="p-4 pt-0">
+          <div className="text-xl sm:text-2xl font-bold truncate">
             Ksh {totalDebt.toLocaleString()}
           </div>
-          <p className="text-xs text-muted-foreground">
-            Cumulative from previous years
+          <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+            Cumulative total
           </p>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <Card className="w-full">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4">
           <CardTitle className="text-sm font-medium">Monthly Amount</CardTitle>
-          <Scale className="h-4 w-4 text-muted-foreground" />
+          <Scale className="h-4 w-4 text-muted-foreground shrink-0" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
+        <CardContent className="p-4 pt-0">
+          <div className="text-xl sm:text-2xl font-bold truncate">
             Ksh {FINANCIAL_CONFIG.MONTHLY_CONTRIBUTION.toLocaleString()}
           </div>
-          <p className="text-xs text-muted-foreground">
-            Your fixed monthly amount
+          <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+            Fixed monthly requirement
           </p>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">All-Time Miniharambees</CardTitle>
-          <Gift className="h-4 w-4 text-muted-foreground" />
+      <Card className="w-full">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4">
+          <CardTitle className="text-sm font-medium">Miniharambees</CardTitle>
+          <Gift className="h-4 w-4 text-muted-foreground shrink-0" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
+        <CardContent className="p-4 pt-0">
+          <div className="text-xl sm:text-2xl font-bold truncate">
             Ksh {totalSpecialContribution.toLocaleString()}
           </div>
-           <p className="text-xs text-muted-foreground">Total special contributions</p>
+           <p className="text-[10px] sm:text-xs text-muted-foreground truncate">All-time special</p>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <Card className="w-full">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4">
           <CardTitle className="text-sm font-medium">Next Due Date</CardTitle>
-          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
+        <CardContent className="p-4 pt-0">
+          <div className="text-xl sm:text-2xl font-bold truncate">
             {getNextDueDate()}
           </div>
-          <p className="text-xs text-muted-foreground">
-            For the next contribution cycle
+          <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+            Next cycle deadline
           </p>
         </CardContent>
       </Card>
-        <Card className="bg-primary/10">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">All-Time Grand Total</CardTitle>
-                <Banknote className="h-4 w-4 text-muted-foreground" />
+        <Card className="bg-primary/10 w-full">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4">
+                <CardTitle className="text-sm font-medium">Grand Total</CardTitle>
+                <Banknote className="h-4 w-4 text-muted-foreground shrink-0" />
             </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">Ksh {grandTotal.toLocaleString()}</div>
-                    <p className="text-xs text-muted-foreground">all contributions made</p>
+            <CardContent className="p-4 pt-0">
+                <div className="text-xl sm:text-2xl font-bold truncate">Ksh {grandTotal.toLocaleString()}</div>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate">All contributions made</p>
             </CardContent>
         </Card>
     </div>

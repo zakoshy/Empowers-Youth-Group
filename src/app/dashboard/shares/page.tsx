@@ -10,17 +10,15 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Lock, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/alert';
 import type { MiscellaneousIncome } from '@/lib/data';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-  ChartLegend,
-  ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
 import { Separator } from '@/components/ui/separator';
 
 interface UserProfile {
@@ -84,17 +82,15 @@ async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> 
     const specialContributions = specialContributionsSnapshot.docs.map(doc => doc.data() as Contribution);
     const miscellaneousIncomes = miscIncomesSnapshot.docs.map(doc => doc.data() as MiscellaneousIncome);
 
-    // Per user request, we assume no members are deleted until one is.
-    const totalFromDeletedUsers = 0;
+    // Group funds are miscellaneous incomes.
+    const miscTotal = miscellaneousIncomes.reduce((sum, income) => sum + income.amount, 0);
 
     const monthlyTotal = contributions.reduce((sum, c) => sum + c.amount, 0);
     const specialTotal = specialContributions.reduce((sum, sc) => sum + sc.amount, 0);
-    const miscTotal = miscellaneousIncomes.reduce((sum, income) => sum + income.amount, 0);
 
     const grandTotal = monthlyTotal + specialTotal + miscTotal;
     const numberOfMembers = currentMembers.length > 0 ? currentMembers.length : 1;
     
-    // Group funds are now only miscellaneous incomes.
     const totalPooledFunds = miscTotal;
     const groupFundsShare = totalPooledFunds / numberOfMembers;
 
@@ -106,7 +102,6 @@ async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> 
         };
     }
     
-    // Calculate personal totals for current members only.
     const memberPersonalTotals: Record<string, number> = {};
     contributions.forEach(c => {
         if (currentMemberIds.has(c.userId)) {
@@ -138,7 +133,7 @@ async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> 
         grandTotal,
         breakdown: {
             totalMiscIncomes: miscTotal,
-            totalFromDeletedUsers,
+            totalFromDeletedUsers: 0,
             totalPooledFunds,
             numberOfMembers
         }
@@ -176,54 +171,31 @@ export default function SharesPage() {
       })
       .catch(err => {
         console.error("Error fetching shares data:", err);
-        
-        if (err.code === 'failed-precondition' && err.message.includes('index')) {
-            const urlMatch = err.message.match(/(https?:\/\/[^\s]+)/);
-            const isNotReady = err.message.includes('not ready yet');
-            const isContributionsIndex = err.message.includes('collection contributions');
-            const isSpecialContributionsIndex = err.message.includes('collection specialContributions');
-            
-            let instructions = `This feature requires a database index. Please click the link to create it, wait a few minutes for it to build, then refresh the page.`;
-            let errorMessage = `Action Required: Database Index Needed`;
-
-            if (isNotReady) {
-                instructions = `The required database index for ${isContributionsIndex ? 'contributions' : 'special contributions'} is still being built. This can take a few minutes. Please wait and then refresh the page.`;
-                errorMessage = `Action Required: Database Index Building`;
-            } else if (isContributionsIndex) {
-                 instructions = `This page requires an index for regular contributions. Click the link to create it, wait a few minutes, then refresh.`;
-                 errorMessage = `Missing Index for Contributions`;
-            } else if (isSpecialContributionsIndex) {
-                instructions = `This page requires an index for special contributions. Click the link to create it, wait a few minutes, then refresh.`;
-                errorMessage = `Missing Index for Special Contributions`;
-            }
-
-            setError({ 
-                message: errorMessage,
-                instructions,
-                link: urlMatch ? urlMatch[0] : undefined
-            });
-
-        } else {
-             setError({ message: "An unexpected error occurred.", instructions: `Failed to fetch member shares data. You may not have the required permissions. ${err.message}` });
-        }
+        setError({ message: "An unexpected error occurred.", instructions: `Failed to fetch member shares data. You may not have the required permissions. ${err.message}` });
       })
       .finally(() => {
         setIsLoading(false);
       });
   }, [initialLoading, isAdmin, firestore]);
   
-  const chartConfig = useMemo(() => {
-    const config: ChartConfig = {};
-    if (sharesData?.memberShares) {
-      sharesData.memberShares.forEach((member, index) => {
-        config[member.id] = {
-          label: `${member.firstName} ${member.lastName}`,
-          color: `hsl(var(--chart-${(index % 5) + 1}))`,
-        };
-      });
-    }
-    return config;
+  const chartData = useMemo(() => {
+    if (!sharesData?.memberShares) return [];
+    return sharesData.memberShares.map(member => ({
+        name: `${member.firstName} ${member.lastName}`,
+        share: member.sharePercentage,
+        id: member.id
+    }));
   }, [sharesData]);
+
+  const chartConfig = useMemo(() => {
+    const config: ChartConfig = {
+        share: {
+            label: "Share Percentage",
+            color: "hsl(var(--primary))",
+        }
+    };
+    return config;
+  }, []);
 
 
   if (initialLoading || isLoading) {
@@ -259,35 +231,6 @@ export default function SharesPage() {
     );
   }
 
-  if (error) {
-    return (
-        <Card>
-          <CardHeader>
-            <CardTitle>All-Time Member Shares</CardTitle>
-            <CardDescription>
-                An overview of each member's total contribution share.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>{error.message}</AlertTitle>
-            <AlertDescription>
-                {error.instructions}
-                {error.link && (
-                    <Button asChild className="mt-4">
-                        <a href={error.link} target="_blank" rel="noopener noreferrer">
-                            Create/View Firestore Index
-                        </a>
-                    </Button>
-                )}
-            </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
-    )
-  }
-
   return (
     <div className="space-y-6">
       {breakdown && (
@@ -295,7 +238,7 @@ export default function SharesPage() {
           <CardHeader>
             <CardTitle>Group Funds Breakdown</CardTitle>
             <CardDescription>
-              This is how the "Share of Group Funds" for each member is calculated.
+              Calculation of "Share of Group Funds" distributed equally across active members.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -320,9 +263,9 @@ export default function SharesPage() {
       
       <Card>
         <CardHeader>
-          <CardTitle>All-Time Member Shares</CardTitle>
+          <CardTitle>Member Shares Ranking</CardTitle>
           <CardDescription>
-            An overview of each member's total contribution share. Total collected funds: <span className="font-bold text-primary">Ksh {sharesData?.grandTotal.toLocaleString() ?? 0}</span>.
+            Members ranked by their total contribution share. Total group funds: <span className="font-bold text-primary">Ksh {sharesData?.grandTotal.toLocaleString() ?? 0}</span>.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -330,17 +273,19 @@ export default function SharesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[60px]">#</TableHead>
                   <TableHead className="min-w-[200px]">Member</TableHead>
                   <TableHead className="min-w-[150px]">Personal Contributions</TableHead>
-                  <TableHead className="min-w-[150px]">Share of Group Funds</TableHead>
-                  <TableHead className="min-w-[150px]">Total Share Value</TableHead>
-                  <TableHead className="min-w-[180px]">Share Percentage</TableHead>
+                  <TableHead className="min-w-[150px]">Group Share</TableHead>
+                  <TableHead className="min-w-[150px]">Total Value</TableHead>
+                  <TableHead className="min-w-[120px]">Percentage</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sharesData && sharesData.memberShares.length > 0 ? (
-                    sharesData.memberShares.map(member => (
-                  <TableRow key={member.id}>
+                    sharesData.memberShares.map((member, index) => (
+                  <TableRow key={member.id} className={index < 3 ? "bg-primary/5" : ""}>
+                    <TableCell className="font-bold text-muted-foreground">{index + 1}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar>
@@ -350,20 +295,19 @@ export default function SharesPage() {
                         <div className="font-medium whitespace-nowrap">{member.firstName} {member.lastName}</div>
                       </div>
                     </TableCell>
-                    <TableCell>Ksh {member.personalContribution.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell>Ksh {member.groupFundsShare.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell className="font-semibold text-primary">Ksh {member.totalShareValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell>Ksh {member.personalContribution.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</TableCell>
+                    <TableCell>Ksh {member.groupFundsShare.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</TableCell>
+                    <TableCell className="font-semibold text-primary">Ksh {member.totalShareValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <Progress value={member.sharePercentage} className="w-16 sm:w-24" />
-                        <span className="text-sm font-medium">{member.sharePercentage.toFixed(2)}%</span>
+                        <span className="text-sm font-bold">{member.sharePercentage.toFixed(1)}%</span>
                       </div>
                     </TableCell>
                   </TableRow>
                 ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                        <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                             No contribution data available.
                         </TableCell>
                     </TableRow>
@@ -372,43 +316,39 @@ export default function SharesPage() {
             </Table>
           </div>
         </CardContent>
-        {sharesData && sharesData.memberShares.length > 0 && (
-          <CardFooter className="flex-col items-center gap-4 border-t pt-6">
-            <h3 className="text-lg font-semibold text-center">Shares Distribution</h3>
-            <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[300px] sm:h-[350px] w-full max-w-[350px]">
-              <PieChart>
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent
-                    nameKey="id"
-                    formatter={(value, name, item) => (
-                      <div className="text-xs p-1">
-                          <div className="font-bold">{chartConfig[name]?.label}</div>
-                          <div className="text-muted-foreground">Share: {Number(value).toFixed(2)}%</div>
-                      </div>
-                  )} />}
-                />
-                <Pie
-                  data={sharesData.memberShares}
-                  dataKey="sharePercentage"
-                  nameKey="id"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius="80%"
-                  label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                  labelLine={false}
-                  strokeWidth={2}
-                >
-                  {sharesData.memberShares.map((entry) => (
-                    <Cell key={`cell-${entry.id}`} fill={`var(--color-${entry.id})`} className="stroke-background hover:opacity-80" />
-                  ))}
-                </Pie>
-                <ChartLegend
-                  content={<ChartLegendContent nameKey="id" />}
-                  className="mt-4 flex-wrap justify-center text-[10px]"
-                />
-              </PieChart>
-            </ChartContainer>
+        {chartData.length > 0 && (
+          <CardFooter className="flex-col items-stretch gap-4 border-t pt-6">
+            <h3 className="text-lg font-semibold text-center">Group Performance Chart</h3>
+            <div className="h-[400px] w-full mt-4">
+                <ChartContainer config={chartConfig}>
+                    <BarChart
+                        data={chartData}
+                        layout="vertical"
+                        margin={{ left: 40, right: 20 }}
+                        barSize={32}
+                    >
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                        <XAxis type="number" hide />
+                        <YAxis
+                            dataKey="name"
+                            type="category"
+                            width={120}
+                            tick={{ fontSize: 12 }}
+                            axisLine={false}
+                            tickLine={false}
+                        />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar dataKey="share" fill="var(--color-share)" radius={[0, 4, 4, 0]}>
+                            {chartData.map((entry, index) => (
+                                <Cell 
+                                    key={`cell-${index}`} 
+                                    fill={index < 3 ? 'hsl(var(--accent))' : 'hsl(var(--primary))'} 
+                                />
+                            ))}
+                        </Bar>
+                    </BarChart>
+                </ChartContainer>
+            </div>
           </CardFooter>
         )}
       </Card>

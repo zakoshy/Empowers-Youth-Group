@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -46,9 +47,6 @@ export default function DashboardPage() {
           <Skeleton className="h-4 w-1/2" />
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Skeleton className="h-28" />
-          <Skeleton className="h-28" />
-          <Skeleton className="h-28" />
           <Skeleton className="h-28" />
           <Skeleton className="h-28" />
           <Skeleton className="h-28" />

@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -62,11 +63,16 @@ export function Header() {
     <header className="w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
       <div className="container flex h-20 max-w-screen-2xl items-center justify-between">
         <div className="flex items-center">
-          <Link href="/" className="mr-6 flex items-center space-x-3">
-            <TheEmpowersYouthGroupLogo className="h-14 w-14" />
-            <span className="font-bold font-headline text-lg md:text-xl text-primary leading-tight">
-              The Empowers <span className="text-foreground/80">Youth Group</span>
-            </span>
+          <Link href="/" className="mr-6 flex items-center space-x-4 group">
+            <TheEmpowersYouthGroupLogo className="h-14 w-14 transition-transform group-hover:scale-105" />
+            <div className="flex flex-col">
+              <span className="font-bold font-headline text-xl md:text-2xl text-primary leading-none">
+                The Empowers
+              </span>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold">
+                Youth Group
+              </span>
+            </div>
           </Link>
         </div>
         
@@ -77,8 +83,8 @@ export function Header() {
               href={link.href}
               onClick={(e) => handleLinkClick(e, link.href)}
               className={cn(
-                "flex items-center text-sm font-semibold transition-colors hover:text-primary",
-                activeLink === link.href ? "text-primary border-b-2 border-primary" : "text-foreground/60"
+                "flex items-center text-sm font-semibold transition-colors hover:text-primary relative py-2",
+                activeLink === link.href ? "text-primary after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary" : "text-foreground/60"
               )}
             >
               {link.label}
@@ -88,10 +94,10 @@ export function Header() {
 
         <div className="flex items-center justify-end space-x-3">
           <div className="hidden sm:flex items-center space-x-2">
-            <Button variant="ghost" asChild size="sm">
+            <Button variant="ghost" asChild size="sm" className="rounded-full">
               <Link href="/login">Login</Link>
             </Button>
-            <Button asChild size="sm">
+            <Button asChild size="sm" className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90">
               <Link href="/register">Register</Link>
             </Button>
           </div>
@@ -123,10 +129,10 @@ export function Header() {
             ))}
             <hr className="my-2" />
             <div className="grid grid-cols-2 gap-4 pt-2">
-              <Button variant="outline" asChild className="w-full">
+              <Button variant="outline" asChild className="w-full rounded-full">
                 <Link href="/login" onClick={() => setIsMenuOpen(false)}>Login</Link>
               </Button>
-              <Button asChild className="w-full">
+              <Button asChild className="w-full rounded-full bg-accent text-accent-foreground">
                 <Link href="/register" onClick={() => setIsMenuOpen(false)}>Register</Link>
               </Button>
             </div>

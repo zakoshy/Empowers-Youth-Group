@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useEffect, useState } from 'react';
@@ -7,10 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
-import { Lock, AlertTriangle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription, AlertTitle } from '@/alert';
+import { Lock } from 'lucide-react';
 import type { MiscellaneousIncome } from '@/lib/data';
 import {
   ChartContainer,
@@ -18,7 +16,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell, LabelList } from 'recharts';
 import { Separator } from '@/components/ui/separator';
 
 interface UserProfile {
@@ -74,7 +72,6 @@ async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> 
 
     const allUsers = allUsersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
     
-    // Current members are non-Admins
     const currentMembers = allUsers.filter(user => user.role !== 'Admin');
     const currentMemberIds = new Set(currentMembers.map(m => m.id));
 
@@ -82,9 +79,7 @@ async function fetchAllDataForShares(firestore: Firestore): Promise<SharesData> 
     const specialContributions = specialContributionsSnapshot.docs.map(doc => doc.data() as Contribution);
     const miscellaneousIncomes = miscIncomesSnapshot.docs.map(doc => doc.data() as MiscellaneousIncome);
 
-    // Group funds are miscellaneous incomes.
     const miscTotal = miscellaneousIncomes.reduce((sum, income) => sum + income.amount, 0);
-
     const monthlyTotal = contributions.reduce((sum, c) => sum + c.amount, 0);
     const specialTotal = specialContributions.reduce((sum, sc) => sum + sc.amount, 0);
 
@@ -146,7 +141,7 @@ export default function SharesPage() {
   const [sharesData, setSharesData] = useState<SharesData | null>(null);
   const [breakdown, setBreakdown] = useState<SharesBreakdown | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<{ message: string, link?: string, instructions?: string } | null>(null);
+  const [error, setError] = useState<any>(null);
 
   const userProfileRef = useMemoFirebase(() => (user ? doc(firestore, 'userProfiles', user.uid) : null), [firestore, user]);
   const { data: currentUserProfile, isLoading: isProfileLoading } = useDoc<UserProfile>(userProfileRef);
@@ -171,7 +166,7 @@ export default function SharesPage() {
       })
       .catch(err => {
         console.error("Error fetching shares data:", err);
-        setError({ message: "An unexpected error occurred.", instructions: `Failed to fetch member shares data. You may not have the required permissions. ${err.message}` });
+        setError(err);
       })
       .finally(() => {
         setIsLoading(false);
@@ -180,7 +175,8 @@ export default function SharesPage() {
   
   const chartData = useMemo(() => {
     if (!sharesData?.memberShares) return [];
-    return sharesData.memberShares.map(member => ({
+    // Only show top 10 or all for the chart to keep it clean, but ranking is preserved
+    return [...sharesData.memberShares].reverse().map(member => ({
         name: `${member.firstName} ${member.lastName}`,
         share: member.sharePercentage,
         id: member.id
@@ -232,7 +228,7 @@ export default function SharesPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-x-hidden">
       {breakdown && (
         <Card>
           <CardHeader>
@@ -261,15 +257,15 @@ export default function SharesPage() {
         </Card>
       )}
       
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Member Shares Ranking</CardTitle>
           <CardDescription>
             Members ranked by their total contribution share. Total group funds: <span className="font-bold text-primary">Ksh {sharesData?.grandTotal.toLocaleString() ?? 0}</span>.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto -mx-6 px-6">
+        <CardContent className="p-0 sm:p-6 sm:pt-0">
+          <div className="overflow-x-auto w-full">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -295,9 +291,9 @@ export default function SharesPage() {
                         <div className="font-medium whitespace-nowrap">{member.firstName} {member.lastName}</div>
                       </div>
                     </TableCell>
-                    <TableCell>Ksh {member.personalContribution.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</TableCell>
-                    <TableCell>Ksh {member.groupFundsShare.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</TableCell>
-                    <TableCell className="font-semibold text-primary">Ksh {member.totalShareValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</TableCell>
+                    <TableCell>Ksh {member.personalContribution.toLocaleString()}</TableCell>
+                    <TableCell>Ksh {member.groupFundsShare.toLocaleString()}</TableCell>
+                    <TableCell className="font-semibold text-primary">Ksh {member.totalShareValue.toLocaleString()}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-bold">{member.sharePercentage.toFixed(1)}%</span>
@@ -318,33 +314,43 @@ export default function SharesPage() {
         </CardContent>
         {chartData.length > 0 && (
           <CardFooter className="flex-col items-stretch gap-4 border-t pt-6">
-            <h3 className="text-lg font-semibold text-center">Group Performance Chart</h3>
-            <div className="h-[400px] w-full mt-4">
+            <h3 className="text-lg font-semibold text-center">Group Performance Chart (%)</h3>
+            <div className="h-[500px] w-full mt-4">
                 <ChartContainer config={chartConfig}>
                     <BarChart
                         data={chartData}
                         layout="vertical"
-                        margin={{ left: 40, right: 20 }}
-                        barSize={32}
+                        margin={{ left: 40, right: 60, top: 10, bottom: 10 }}
+                        barSize={24}
                     >
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} opacity={0.3} />
                         <XAxis type="number" hide />
                         <YAxis
                             dataKey="name"
                             type="category"
                             width={120}
-                            tick={{ fontSize: 12 }}
+                            tick={{ fontSize: 11 }}
                             axisLine={false}
                             tickLine={false}
                         />
                         <ChartTooltip content={<ChartTooltipContent />} />
                         <Bar dataKey="share" fill="var(--color-share)" radius={[0, 4, 4, 0]}>
-                            {chartData.map((entry, index) => (
-                                <Cell 
-                                    key={`cell-${index}`} 
-                                    fill={index < 3 ? 'hsl(var(--accent))' : 'hsl(var(--primary))'} 
-                                />
-                            ))}
+                            <LabelList 
+                                dataKey="share" 
+                                position="right" 
+                                formatter={(val: number) => `${val.toFixed(1)}%`}
+                                style={{ fill: 'hsl(var(--foreground))', fontSize: '11px', fontWeight: 'bold' }}
+                            />
+                            {chartData.map((entry, index) => {
+                                // Reverse index for color because chart data is reversed
+                                const trueIndex = chartData.length - 1 - index;
+                                return (
+                                    <Cell 
+                                        key={`cell-${index}`} 
+                                        fill={trueIndex < 3 ? 'hsl(var(--accent))' : 'hsl(var(--primary))'} 
+                                    />
+                                );
+                            })}
                         </Bar>
                     </BarChart>
                 </ChartContainer>

@@ -51,7 +51,7 @@ export function SavedIdeasWidget() {
   const ideasRef = useMemoFirebase(() => query(
     collection(firestore, 'investmentIdeas'),
     orderBy('savedDate', 'desc'),
-    limit(5)
+    limit(10)
   ), [firestore]);
 
   const { data: ideas, isLoading } = useCollection<InvestmentIdea>(ideasRef);
@@ -89,42 +89,43 @@ export function SavedIdeasWidget() {
   }
 
   if (!ideas || ideas.length === 0) {
-    return null; // Don't render the card if there are no saved ideas
+    return null; 
   }
 
   return (
-    <Card>
+    <Card className="w-full overflow-hidden">
       <CardHeader>
         <CardTitle>Saved Investment Ideas</CardTitle>
         <CardDescription>Promising ideas for the group to consider.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {ideas.map((idea) => (
-            <div key={idea.id} className="p-4 border rounded-lg bg-background/50 group">
+            <div key={idea.id} className="p-4 border rounded-lg bg-background/50 flex flex-col gap-4">
                 <div className="prose prose-sm max-w-none text-foreground/90 dark:prose-invert">
                     <ReactMarkdown>{idea.content}</ReactMarkdown>
                 </div>
-                <div className="flex justify-between items-center mt-2 pt-2 border-t">
-                    <p className="text-xs text-muted-foreground">
-                        Saved on {format(new Date(idea.savedDate), "MMM d, yyyy")}
+                <div className="flex justify-between items-center pt-2 border-t mt-auto">
+                    <p className="text-xs text-muted-foreground italic">
+                        Saved {format(new Date(idea.savedDate), "MMM d, yyyy")}
                     </p>
                     {canManage && (
                          <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Trash2 className="h-4 w-4" />
+                                <Button variant="outline" size="sm" className="text-destructive border-destructive/20 hover:bg-destructive hover:text-destructive-foreground">
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete
                                 </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent>
+                            <AlertDialogContent className="w-[90vw] max-w-md">
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                <AlertDialogTitle>Delete this idea?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete this saved idea.
+                                This action will remove this suggestion from the group's saved records.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(idea.id)}>
+                            <AlertDialogFooter className="flex flex-row gap-2 justify-end">
+                                <AlertDialogCancel className="mt-0">Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(idea.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                                 Delete
                                 </AlertDialogAction>
                             </AlertDialogFooter>
